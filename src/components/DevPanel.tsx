@@ -4,6 +4,7 @@ import { X, Database, User, Trash2, Plus, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserService } from '@/services/UserService';
 import { BillService } from '@/services/BillService';
+import { EventService } from '@/services/EventService';
 import { UserSettings } from '@/types/bill';
 import {
   Select,
@@ -37,12 +38,18 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
 
   const handleClearData = () => {
     UserService.clearAllData();
+    EventService.clearAllEvents();
     setSettings(UserService.getSettings());
     onDataChange();
   };
 
   const handleInjectBills = () => {
     BillService.injectTestBills(5);
+    onDataChange();
+  };
+
+  const handleInjectEvents = () => {
+    EventService.injectTestEvents(2);
     onDataChange();
   };
 
@@ -109,6 +116,17 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
         >
           <Plus className="w-4 h-4 mr-2" />
           Inject 5 Test Bills
+        </Button>
+
+        {/* Inject Test Events */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleInjectEvents}
+          className="w-full"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Inject 2 Test Events
         </Button>
 
         {/* View Storage State */}

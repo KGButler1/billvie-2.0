@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Calendar } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,8 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bill, PaymentMethod, PAYMENT_METHOD_LABELS } from '@/types/bill';
-import { format } from 'date-fns';
+import { 
+  Bill, 
+  BillCategory,
+  PaymentMethod, 
+  RecurringInterval,
+  ResponsibleParty,
+  PAYMENT_METHOD_LABELS,
+  CATEGORY_LABELS,
+  RECURRING_LABELS,
+  RESPONSIBLE_PARTY_LABELS,
+} from '@/types/bill';
 
 interface QuickAddBillProps {
   onAdd: (bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
@@ -25,7 +34,10 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
+  const [category, setCategory] = useState<BillCategory | ''>('');
+  const [responsibleParty, setResponsibleParty] = useState<ResponsibleParty | ''>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +49,10 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
       amount: amount ? parseFloat(amount) : undefined,
       dueDate: dueDate || undefined,
       isRecurring,
-      recurringInterval: isRecurring ? 'monthly' : undefined,
+      recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
+      category: category || undefined,
+      responsibleParty: responsibleParty || undefined,
     });
   };
 
@@ -58,7 +72,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 100 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-dramatic p-6 pb-8"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-dramatic p-6 pb-8 max-h-[85vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Add Bill</h2>
@@ -106,16 +120,31 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="dueDate">Due Date</Label>
-              <div className="relative">
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="h-12"
-                />
-              </div>
+              <Input
+                id="dueDate"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-12"
+              />
             </div>
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select value={category} onValueChange={(v) => setCategory(v as BillCategory)}>
+              <SelectTrigger className="h-12">
+                <SelectValue placeholder="Auto-detect or select" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Payment Method */}
@@ -135,6 +164,23 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
             </Select>
           </div>
 
+          {/* Responsible Party */}
+          <div className="space-y-2">
+            <Label>Who's Responsible?</Label>
+            <Select value={responsibleParty} onValueChange={(v) => setResponsibleParty(v as ResponsibleParty)}>
+              <SelectTrigger className="h-12">
+                <SelectValue placeholder="Optional - assign responsibility" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(RESPONSIBLE_PARTY_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between py-2">
             <Label htmlFor="recurring" className="cursor-pointer">
@@ -146,6 +192,25 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
               onCheckedChange={setIsRecurring}
             />
           </div>
+
+          {/* Recurring Interval */}
+          {isRecurring && (
+            <div className="space-y-2">
+              <Label>Frequency</Label>
+              <Select value={recurringInterval} onValueChange={(v) => setRecurringInterval(v as RecurringInterval)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(RECURRING_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Submit */}
           <Button
