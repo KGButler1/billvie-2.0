@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
-import { Check, RotateCcw, Trash2, CreditCard, RefreshCw } from 'lucide-react';
-import { Bill, PAYMENT_METHOD_LABELS } from '@/types/bill';
+import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, User } from 'lucide-react';
+import { Bill, PAYMENT_METHOD_LABELS, RECURRING_LABELS, RESPONSIBLE_PARTY_LABELS } from '@/types/bill';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import CategoryBadge from './CategoryBadge';
 
 interface BillCardProps {
   bill: Bill;
@@ -47,7 +48,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Bill name and status */}
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className={cn(
               'font-semibold text-foreground truncate',
               isPaid && 'line-through'
@@ -57,10 +58,22 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             {bill.isRecurring && (
               <RefreshCw className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             )}
+            {bill.isAutoDebited && (
+              <span title="Auto-debited">
+                <Zap className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              </span>
+            )}
           </div>
 
+          {/* Category badge */}
+          {bill.category && (
+            <div className="mb-2">
+              <CategoryBadge category={bill.category} />
+            </div>
+          )}
+
           {/* Amount and due date */}
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
             {bill.amount !== undefined && (
               <span className="font-medium text-foreground">
                 ${bill.amount.toFixed(2)}
@@ -77,7 +90,20 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
                 {PAYMENT_METHOD_LABELS[bill.paymentMethod]}
               </span>
             )}
+            {bill.isRecurring && bill.recurringInterval && (
+              <span className="text-xs">
+                {RECURRING_LABELS[bill.recurringInterval]}
+              </span>
+            )}
           </div>
+
+          {/* Responsible party */}
+          {bill.responsibleParty && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+              <User className="w-3 h-3" />
+              <span>{RESPONSIBLE_PARTY_LABELS[bill.responsibleParty]}</span>
+            </div>
+          )}
         </div>
 
         {/* Status badge */}

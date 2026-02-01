@@ -1,24 +1,40 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Scan } from 'lucide-react';
 import { BillService } from '@/services/BillService';
+import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
-import { Bill } from '@/types/bill';
+import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
 import BillCard from '@/components/BillCard';
 import QuickAddBill from '@/components/QuickAddBill';
+import BillScanModal from '@/components/BillScanModal';
 import BottomNav from '@/components/BottomNav';
 import DevPanel from '@/components/DevPanel';
 import DashboardHeader from '@/components/DashboardHeader';
+import DashboardStats from '@/components/DashboardStats';
+import SpendingChart from '@/components/SpendingChart';
+import ActiveEventsWidget from '@/components/ActiveEventsWidget';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
   const [isAddingBill, setIsAddingBill] = useState(false);
+  const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<BillCategory | 'all'>('all');
+  const [showFabMenu, setShowFabMenu] = useState(false);
 
   // Initialize data on mount
   useEffect(() => {
     UserService.initializeTheme();
     BillService.initialize();
+    EventService.initialize();
     loadBills();
 
     // Dev panel keyboard shortcut
@@ -49,6 +65,7 @@ const Dashboard = () => {
     BillService.addBill(billData);
     loadBills();
     setIsAddingBill(false);
+    setIsScanningBill(false);
   };
 
   const handleMarkPaid = (id: string) => {
@@ -66,13 +83,22 @@ const Dashboard = () => {
     loadBills();
   };
 
-  // Group bills by status
-  const overdueBills = bills.filter(b => b.status === 'overdue');
-  const dueSoonBills = bills.filter(b => b.status === 'due_soon');
-  const upcomingBills = bills.filter(b => b.status === 'pending');
-  const paidBills = bills.filter(b => b.status === 'paid');
+  // Group bills by status with optional category filter
+  const filteredBills = categoryFilter === 'all' 
+    ? bills 
+    : bills.filter(b => b.category === categoryFilter);
+  
+  const overdueBills = filteredBills.filter(b => b.status === 'overdue');
+  const dueSoonBills = filteredBills.filter(b => b.status === 'due_soon');
+  const upcomingBills = filteredBills.filter(b => b.status === 'pending');
+  const paidBills = filteredBills.filter(b => b.status === 'paid');
 
   const hasSampleBills = bills.some(b => b.isSample);
+  
+  // Dashboard stats
+  const upcomingTotal = BillService.getUpcomingTotal();
+  const spending = BillService.getSpendingByCategory();
+  const activeEvents = EventService.getActiveEvents();
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -85,6 +111,36 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 pt-20">
+        {/* Dashboard Stats */}
+        <DashboardStats 
+          upcomingTotal={upcomingTotal}
+          dueSoonCount={dueSoonBills.length}
+          overdueCount={overdueBills.length}
+        />
+
+        {/* Spending Chart */}
+        <SpendingChart spending={spending} />
+
+        {/* Active Events Widget */}
+        <ActiveEventsWidget events={activeEvents} />
+
+        {/* Category Filter */}
+        {bills.length > 0 && (
+          <div className="mb-4">
+            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as BillCategory | 'all')}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Overdue Bills */}
         {overdueBills.length > 0 && (
           <BillSection 
@@ -148,15 +204,49 @@ const Dashboard = () => {
         )}
       </main>
 
-      {/* FAB */}
-      <motion.button
-        onClick={() => setIsAddingBill(true)}
-        className="fab"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
+      {/* FAB with menu */}
+      <div className="fixed bottom-24 right-6 z-50">
+        <AnimatePresence>
+          {showFabMenu && (
+            <>
+              <motion.button
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                onClick={() => {
+                  setShowFabMenu(false);
+                  setIsScanningBill(true);
+                }}
+                className="absolute bottom-16 right-0 w-12 h-12 rounded-full bg-secondary flex items-center justify-center shadow-lg"
+              >
+                <Scan className="w-5 h-5" />
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.05 } }}
+                exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                onClick={() => {
+                  setShowFabMenu(false);
+                  setIsAddingBill(true);
+                }}
+                className="absolute bottom-32 right-0 w-12 h-12 rounded-full bg-secondary flex items-center justify-center shadow-lg"
+              >
+                <Plus className="w-5 h-5" />
+              </motion.button>
+            </>
+          )}
+        </AnimatePresence>
+        
+        <motion.button
+          onClick={() => setShowFabMenu(!showFabMenu)}
+          className="fab relative"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          animate={{ rotate: showFabMenu ? 45 : 0 }}
+        >
+          <Plus className="w-6 h-6" />
+        </motion.button>
+      </div>
 
       {/* Quick Add Modal */}
       <AnimatePresence>
@@ -164,6 +254,16 @@ const Dashboard = () => {
           <QuickAddBill
             onAdd={handleAddBill}
             onClose={() => setIsAddingBill(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Bill Scan Modal */}
+      <AnimatePresence>
+        {isScanningBill && (
+          <BillScanModal
+            onAdd={handleAddBill}
+            onClose={() => setIsScanningBill(false)}
           />
         )}
       </AnimatePresence>

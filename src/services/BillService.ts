@@ -1,5 +1,6 @@
-import { Bill, BillStatus } from '@/types/bill';
-import { differenceInDays, parseISO, isAfter, isBefore, startOfDay } from 'date-fns';
+import { Bill, BillStatus, BillCategory, RecurringInterval } from '@/types/bill';
+import { differenceInDays, parseISO, startOfDay, addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import { categorizeByName } from '@/utils/billCategorizer';
 
 const STORAGE_KEY = 'billvie_bills';
 const SAMPLE_DATA_SHOWN_KEY = 'billvie_sample_shown';
@@ -24,6 +25,26 @@ export const calculateBillStatus = (bill: Bill): BillStatus => {
   return 'pending';
 };
 
+// Calculate next due date based on recurring interval
+export const calculateNextDueDate = (currentDueDate: string, interval: RecurringInterval): string => {
+  const date = parseISO(currentDueDate);
+  
+  switch (interval) {
+    case 'weekly':
+      return addWeeks(date, 1).toISOString();
+    case 'biweekly':
+      return addWeeks(date, 2).toISOString();
+    case 'monthly':
+      return addMonths(date, 1).toISOString();
+    case 'quarterly':
+      return addMonths(date, 3).toISOString();
+    case 'yearly':
+      return addYears(date, 1).toISOString();
+    default:
+      return currentDueDate;
+  }
+};
+
 // Get sample bills for first-time users
 const getSampleBills = (): Bill[] => {
   const today = new Date();
@@ -37,6 +58,7 @@ const getSampleBills = (): Bill[] => {
       isRecurring: true,
       recurringInterval: 'monthly',
       paymentMethod: 'direct_debit',
+      category: 'utilities',
       status: 'due_soon',
       isSample: true,
       createdAt: new Date().toISOString(),
@@ -50,6 +72,7 @@ const getSampleBills = (): Bill[] => {
       isRecurring: true,
       recurringInterval: 'monthly',
       paymentMethod: 'credit_card',
+      category: 'services',
       status: 'pending',
       isSample: true,
       createdAt: new Date().toISOString(),
@@ -63,6 +86,7 @@ const getSampleBills = (): Bill[] => {
       isRecurring: true,
       recurringInterval: 'monthly',
       paymentMethod: 'credit_card',
+      category: 'services',
       status: 'overdue',
       isSample: true,
       createdAt: new Date().toISOString(),
@@ -76,6 +100,7 @@ const getSampleBills = (): Bill[] => {
       isRecurring: true,
       recurringInterval: 'monthly',
       paymentMethod: 'credit_card',
+      category: 'subscriptions',
       status: 'pending',
       isSample: true,
       createdAt: new Date().toISOString(),
@@ -89,6 +114,7 @@ const getSampleBills = (): Bill[] => {
       isRecurring: true,
       recurringInterval: 'monthly',
       paymentMethod: 'transfer',
+      category: 'insurance',
       status: 'due_soon',
       isSample: true,
       createdAt: new Date().toISOString(),
@@ -102,6 +128,7 @@ const getSampleBills = (): Bill[] => {
       isRecurring: true,
       recurringInterval: 'monthly',
       paymentMethod: 'transfer',
+      category: 'rent_mortgage',
       status: 'paid',
       paidDate: new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString(),
       isSample: true,
@@ -147,9 +174,14 @@ export class BillService {
   // Add new bill
   static addBill(billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Bill {
     const now = new Date().toISOString();
+    
+    // Auto-categorize if no category provided
+    const category = billData.category || categorizeByName(billData.name);
+    
     const newBill: Bill = {
       ...billData,
       id: generateId(),
+      category,
       status: 'pending',
       createdAt: now,
       updatedAt: now,
@@ -188,11 +220,32 @@ export class BillService {
   }
 
   // Mark bill as paid
-  static markAsPaid(id: string): Bill | undefined {
-    return this.updateBill(id, {
+  static markAsPaid(id: string, createNextRecurrence: boolean = false): Bill | undefined {
+    const bill = this.getBillById(id);
+    if (!bill) return undefined;
+    
+    const updatedBill = this.updateBill(id, {
       status: 'paid',
       paidDate: new Date().toISOString(),
     });
+    
+    // If recurring and should create next occurrence
+    if (createNextRecurrence && bill.isRecurring && bill.dueDate && bill.recurringInterval && bill.recurringInterval !== 'one_time') {
+      const nextDueDate = calculateNextDueDate(bill.dueDate, bill.recurringInterval);
+      this.addBill({
+        name: bill.name,
+        amount: bill.amount,
+        dueDate: nextDueDate,
+        isRecurring: bill.isRecurring,
+        recurringInterval: bill.recurringInterval,
+        paymentMethod: bill.paymentMethod,
+        category: bill.category,
+        responsibleParty: bill.responsibleParty,
+        isAutoDebited: bill.isAutoDebited,
+      });
+    }
+    
+    return updatedBill;
   }
 
   // Mark bill as unpaid
@@ -206,6 +259,65 @@ export class BillService {
     });
     
     return updatedBill;
+  }
+
+  // Set auto-debit status
+  static setAutoDebit(id: string, isAutoDebited: boolean): Bill | undefined {
+    return this.updateBill(id, { isAutoDebited });
+  }
+
+  // Get bills by category
+  static getBillsByCategory(): Record<BillCategory, Bill[]> {
+    const bills = this.getAllBills().filter(b => b.status !== 'paid');
+    const categories: Record<BillCategory, Bill[]> = {
+      utilities: [],
+      subscriptions: [],
+      insurance: [],
+      rent_mortgage: [],
+      loans: [],
+      services: [],
+      other: [],
+    };
+    
+    bills.forEach(bill => {
+      const cat = bill.category || 'other';
+      categories[cat].push(bill);
+    });
+    
+    return categories;
+  }
+
+  // Get spending by category for current month
+  static getSpendingByCategory(): Record<BillCategory, number> {
+    const bills = this.getAllBills();
+    const spending: Record<BillCategory, number> = {
+      utilities: 0,
+      subscriptions: 0,
+      insurance: 0,
+      rent_mortgage: 0,
+      loans: 0,
+      services: 0,
+      other: 0,
+    };
+    
+    bills.forEach(bill => {
+      if (bill.amount) {
+        const cat = bill.category || 'other';
+        spending[cat] += bill.amount;
+      }
+    });
+    
+    return spending;
+  }
+
+  // Get upcoming total
+  static getUpcomingTotal(): number {
+    return this.getUpcomingBills().reduce((sum, bill) => sum + (bill.amount || 0), 0);
+  }
+
+  // Get due soon bills (within 7 days)
+  static getDueSoonBills(): Bill[] {
+    return this.getAllBills().filter(b => b.status === 'due_soon');
   }
 
   // Delete bill
