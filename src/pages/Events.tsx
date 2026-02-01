@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Calendar, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
-import { Event, EVENT_TYPE_LABELS } from '@/types/bill';
+import { UserService } from '@/services/UserService';
+import { Event, EVENT_TYPE_LABELS, EVENT_LIMITS } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import CreateEventModal from '@/components/CreateEventModal';
+import UpgradeModal from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -15,6 +17,7 @@ const Events = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     EventService.initialize();
@@ -23,6 +26,22 @@ const Events = () => {
 
   const loadEvents = () => {
     setEvents(EventService.getAllEvents());
+  };
+
+  const canAddEvent = (): boolean => {
+    const settings = UserService.getSettings();
+    if (!settings.hasEventsAccess) return false;
+    const currentCount = EventService.getEventCount();
+    const limit = EVENT_LIMITS[settings.userType];
+    return currentCount < limit;
+  };
+
+  const handleTryCreateEvent = () => {
+    if (canAddEvent()) {
+      setIsCreating(true);
+    } else {
+      setShowUpgradeModal(true);
+    }
   };
 
   const handleCreateEvent = (eventData: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>) => {
@@ -36,16 +55,31 @@ const Events = () => {
     loadEvents();
   };
 
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
+  };
+
   const activeEvents = events.filter(e => e.status === 'active' || e.status === 'planning');
   const completedEvents = events.filter(e => e.status === 'completed' || e.status === 'archived');
   const hasSampleEvents = events.some(e => e.isSample);
+  const settings = UserService.getSettings();
+  const eventLimit = EVENT_LIMITS[settings.userType];
+  const currentEventCount = EventService.getEventCount();
 
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-bold">Events</h1>
+          <div>
+            <h1 className="text-xl font-bold">Events</h1>
+            {eventLimit !== Infinity && (
+              <p className="text-xs text-muted-foreground">
+                {currentEventCount} / {eventLimit} events used
+              </p>
+            )}
+          </div>
           {hasSampleEvents && (
             <Button
               variant="ghost"
@@ -113,7 +147,7 @@ const Events = () => {
             <p className="text-muted-foreground mb-6">
               Track trips, weddings, moves, and more!
             </p>
-            <Button onClick={() => setIsCreating(true)} className="btn-hero">
+            <Button onClick={handleTryCreateEvent} className="btn-hero">
               <Plus className="w-4 h-4 mr-2" />
               Create Event
             </Button>
@@ -124,7 +158,7 @@ const Events = () => {
       {/* FAB */}
       {events.length > 0 && (
         <motion.button
-          onClick={() => setIsCreating(true)}
+          onClick={handleTryCreateEvent}
           className="fab"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -143,11 +177,18 @@ const Events = () => {
         )}
       </AnimatePresence>
 
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="events"
+        onUpgrade={handleUpgrade}
+      />
+
       <BottomNav />
     </div>
   );
 };
-
 interface EventCardProps {
   event: Event;
   index: number;
