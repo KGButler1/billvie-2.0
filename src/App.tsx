@@ -7,10 +7,13 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import EventComparison from "./pages/EventComparison";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
 import LoanReady from "./pages/LoanReady";
 import FinancialInfo from "./pages/FinancialInfo";
+import TaxDocuments from "./pages/TaxDocuments";
+import AccountantPortal from "./pages/AccountantPortal";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
@@ -35,10 +38,13 @@ const App = () => {
             <Route path="/bills" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/events/compare" element={<EventComparison />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/more" element={<More />} />
             <Route path="/loanready" element={<LoanReady />} />
             <Route path="/financial" element={<FinancialInfo />} />
+            <Route path="/tax-documents" element={<TaxDocuments />} />
+            <Route path="/accountant" element={<AccountantPortal />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, Trash2 } from 'lucide-react';
+import { Plus, Calendar, BarChart3, Copy, Share2, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
-import { Event, EVENT_TYPE_LABELS, EVENT_LIMITS } from '@/types/bill';
+import { Event, EVENT_LIMITS } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
+import EventCard from '@/components/events/EventCard';
+import EventTemplateModal from '@/components/events/EventTemplateModal';
+import ShareModal from '@/components/sharing/ShareModal';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { format, parseISO, differenceInDays } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 const Events = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
+  const [templateEvent, setTemplateEvent] = useState<Event | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEventId, setShareEventId] = useState<string | undefined>();
+
+  const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   useEffect(() => {
     EventService.initialize();
@@ -29,7 +36,6 @@ const Events = () => {
   };
 
   const canAddEvent = (): boolean => {
-    const settings = UserService.getSettings();
     if (!settings.hasEventsAccess) return false;
     const currentCount = EventService.getEventCount();
     const limit = EVENT_LIMITS[settings.userType];
@@ -40,6 +46,7 @@ const Events = () => {
     if (canAddEvent()) {
       setIsCreating(true);
     } else {
+      setUpgradeReason('events');
       setShowUpgradeModal(true);
     }
   };
@@ -60,10 +67,27 @@ const Events = () => {
     setShowUpgradeModal(false);
   };
 
+  const handleCreateFromTemplate = (event: Event) => {
+    if (!isPaid) {
+      setUpgradeReason('general');
+      setShowUpgradeModal(true);
+      return;
+    }
+    setTemplateEvent(event);
+  };
+
+  const handleCompare = () => {
+    if (!isPaid) {
+      setUpgradeReason('general');
+      setShowUpgradeModal(true);
+      return;
+    }
+    navigate('/events/compare');
+  };
+
   const activeEvents = events.filter(e => e.status === 'active' || e.status === 'planning');
   const completedEvents = events.filter(e => e.status === 'completed' || e.status === 'archived');
   const hasSampleEvents = events.some(e => e.isSample);
-  const settings = UserService.getSettings();
   const eventLimit = EVENT_LIMITS[settings.userType];
   const currentEventCount = EventService.getEventCount();
 
@@ -80,23 +104,53 @@ const Events = () => {
               </p>
             )}
           </div>
-          {hasSampleEvents && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                EventService.clearSampleEvents();
-                loadEvents();
-              }}
-              className="text-muted-foreground text-xs"
-            >
-              Clear samples
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {hasSampleEvents && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  EventService.clearSampleEvents();
+                  loadEvents();
+                }}
+                className="text-muted-foreground text-xs"
+              >
+                Clear samples
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        {/* Advanced Features Bar */}
+        {events.length > 0 && (
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCompare}
+              className="whitespace-nowrap"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Compare Events
+              {!isPaid && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
+            </Button>
+            {completedEvents.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleCreateFromTemplate(completedEvents[0])}
+                className="whitespace-nowrap"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Create from Template
+                {!isPaid && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Active Events */}
         {activeEvents.length > 0 && (
           <section className="mb-8">
@@ -118,16 +172,38 @@ const Events = () => {
         {/* Completed Events */}
         {completedEvents.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-muted-foreground">Completed</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-muted-foreground">Completed</h2>
+              {isPaid && (
+                <span className="text-xs text-muted-foreground">
+                  Click any event to use as template
+                </span>
+              )}
+            </div>
             <div className="space-y-4 opacity-60">
               {completedEvents.map((event, index) => (
-                <EventCard 
-                  key={event.id} 
-                  event={event} 
-                  index={index}
-                  onDelete={handleDeleteEvent}
-                  onClick={() => navigate(`/events/${event.id}`)}
-                />
+                <div key={event.id} className="relative">
+                  <EventCard 
+                    event={event} 
+                    index={index}
+                    onDelete={handleDeleteEvent}
+                    onClick={() => navigate(`/events/${event.id}`)}
+                  />
+                  {isPaid && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-2 right-12"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTemplateEvent(event);
+                      }}
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Template
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
           </section>
@@ -177,114 +253,30 @@ const Events = () => {
         )}
       </AnimatePresence>
 
+      {/* Template Modal */}
+      <AnimatePresence>
+        {templateEvent && (
+          <EventTemplateModal
+            templateEvent={templateEvent}
+            onClose={() => setTemplateEvent(null)}
+            onCreate={(newEvent) => {
+              loadEvents();
+              navigate(`/events/${newEvent.id}`);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        reason="events"
+        reason={upgradeReason}
         onUpgrade={handleUpgrade}
       />
 
       <BottomNav />
     </div>
-  );
-};
-interface EventCardProps {
-  event: Event;
-  index: number;
-  onDelete: (id: string) => void;
-  onClick: () => void;
-}
-
-const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
-  const totalSpent = EventService.getTotalSpent(event);
-  const totalPlanned = EventService.getTotalPlanned(event);
-  const progress = event.budget ? (totalSpent / event.budget) * 100 : 0;
-  const isOverBudget = event.budget && totalSpent > event.budget;
-  
-  const daysUntil = event.startDate 
-    ? differenceInDays(parseISO(event.startDate), new Date())
-    : null;
-
-  const statusColors = {
-    planning: 'bg-blue-500/10 text-blue-500',
-    active: 'bg-green-500/10 text-green-500',
-    completed: 'bg-muted text-muted-foreground',
-    archived: 'bg-muted text-muted-foreground',
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="card-bill cursor-pointer hover:border-primary/50 transition-colors"
-      onClick={onClick}
-    >
-      {/* Sample indicator */}
-      {event.isSample && (
-        <span className="absolute top-2 right-2 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-          Sample
-        </span>
-      )}
-
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-foreground truncate">{event.name}</h3>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{EVENT_TYPE_LABELS[event.type]}</span>
-            {daysUntil !== null && daysUntil > 0 && (
-              <span className="text-primary font-medium">• {daysUntil} days away</span>
-            )}
-          </div>
-        </div>
-        <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', statusColors[event.status])}>
-          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-        </span>
-      </div>
-
-      {/* Budget Progress */}
-      <div className="space-y-2 mb-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">
-            Spent: <span className={cn('font-medium', isOverBudget ? 'text-destructive' : 'text-foreground')}>
-              ${totalSpent.toLocaleString()}
-            </span>
-          </span>
-          {event.budget && (
-            <span className="text-muted-foreground">
-              Budget: <span className="font-medium text-foreground">${event.budget.toLocaleString()}</span>
-            </span>
-          )}
-        </div>
-        {event.budget && (
-          <Progress 
-            value={Math.min(progress, 100)} 
-            className={cn('h-2', isOverBudget && '[&>div]:bg-destructive')}
-          />
-        )}
-      </div>
-
-      {/* Expenses count */}
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <span className="text-sm text-muted-foreground">
-          {event.expenses.length} expense{event.expenses.length !== 1 ? 's' : ''}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(event.id);
-          }}
-          className="text-destructive hover:bg-destructive/10"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-    </motion.div>
   );
 };
 

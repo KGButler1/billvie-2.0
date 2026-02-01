@@ -15,6 +15,7 @@ import DashboardStats from '@/components/DashboardStats';
 import SpendingChart from '@/components/SpendingChart';
 import ActiveEventsWidget from '@/components/ActiveEventsWidget';
 import UpgradeModal from '@/components/UpgradeModal';
+import ProgressiveHints from '@/components/ProgressiveHints';
 import {
   Select,
   SelectContent,
@@ -314,6 +315,9 @@ const Dashboard = () => {
         reason="bills"
         onUpgrade={handleUpgrade}
       />
+
+      {/* Progressive Hints */}
+      <ProgressiveHints />
     </div>
   );
 };
