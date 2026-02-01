@@ -14,16 +14,18 @@ export class UserService {
   static getSettings(): UserSettings {
     const data = localStorage.getItem(SETTINGS_KEY);
     if (!data) {
-      // Initialize with defaults and set theme
-      this.saveSettings(DEFAULT_SETTINGS);
+      // Initialize with defaults (don't call saveSettings to avoid recursion)
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
+      this.applyTheme(DEFAULT_SETTINGS.theme);
       return DEFAULT_SETTINGS;
     }
     return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
   }
 
-  // Save settings
+  // Save settings (reads directly from localStorage to avoid recursion)
   static saveSettings(settings: Partial<UserSettings>): UserSettings {
-    const current = this.getSettings();
+    const data = localStorage.getItem(SETTINGS_KEY);
+    const current = data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS;
     const updated = { ...current, ...settings };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
     
