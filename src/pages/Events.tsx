@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, DollarSign, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { Event, EVENT_TYPE_LABELS } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
@@ -11,6 +12,7 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const Events = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -72,6 +74,7 @@ const Events = () => {
                   event={event} 
                   index={index}
                   onDelete={handleDeleteEvent}
+                  onClick={() => navigate(`/events/${event.id}`)}
                 />
               ))}
             </div>
@@ -89,6 +92,7 @@ const Events = () => {
                   event={event} 
                   index={index}
                   onDelete={handleDeleteEvent}
+                  onClick={() => navigate(`/events/${event.id}`)}
                 />
               ))}
             </div>
@@ -148,9 +152,10 @@ interface EventCardProps {
   event: Event;
   index: number;
   onDelete: (id: string) => void;
+  onClick: () => void;
 }
 
-const EventCard = ({ event, index, onDelete }: EventCardProps) => {
+const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
   const totalSpent = EventService.getTotalSpent(event);
   const totalPlanned = EventService.getTotalPlanned(event);
   const progress = event.budget ? (totalSpent / event.budget) * 100 : 0;
@@ -172,7 +177,8 @@ const EventCard = ({ event, index, onDelete }: EventCardProps) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="card-bill"
+      className="card-bill cursor-pointer hover:border-primary/50 transition-colors"
+      onClick={onClick}
     >
       {/* Sample indicator */}
       {event.isSample && (
@@ -228,7 +234,10 @@ const EventCard = ({ event, index, onDelete }: EventCardProps) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onDelete(event.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(event.id);
+          }}
           className="text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="w-4 h-4" />
