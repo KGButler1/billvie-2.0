@@ -83,6 +83,11 @@ const Dashboard = () => {
     loadBills();
   };
 
+  // Dashboard stats - calculate these first so they're available below
+  const upcomingTotal = BillService.getUpcomingTotal();
+  const spending = BillService.getSpendingByCategory();
+  const activeEvents = EventService.getActiveEvents();
+
   // Group bills by status with optional category filter
   const filteredBills = categoryFilter === 'all' 
     ? bills 
@@ -94,11 +99,6 @@ const Dashboard = () => {
   const paidBills = filteredBills.filter(b => b.status === 'paid');
 
   const hasSampleBills = bills.some(b => b.isSample);
-  
-  // Dashboard stats
-  const upcomingTotal = BillService.getUpcomingTotal();
-  const spending = BillService.getSpendingByCategory();
-  const activeEvents = EventService.getActiveEvents();
 
   return (
     <div className="min-h-screen bg-background pb-24">
