@@ -4,7 +4,7 @@ import { Plus, Scan } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
-import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
+import { Bill, BillCategory, CATEGORY_LABELS, BILL_LIMITS } from '@/types/bill';
 import BillCard from '@/components/BillCard';
 import QuickAddBill from '@/components/QuickAddBill';
 import BillScanModal from '@/components/BillScanModal';
@@ -14,6 +14,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import DashboardStats from '@/components/DashboardStats';
 import SpendingChart from '@/components/SpendingChart';
 import ActiveEventsWidget from '@/components/ActiveEventsWidget';
+import UpgradeModal from '@/components/UpgradeModal';
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<BillCategory | 'all'>('all');
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Initialize data on mount
   useEffect(() => {
@@ -61,11 +63,41 @@ const Dashboard = () => {
     setBills([...allBills, ...paidBills]);
   };
 
+  const canAddBill = (): boolean => {
+    const settings = UserService.getSettings();
+    const currentCount = BillService.getBillCount();
+    const limit = BILL_LIMITS[settings.userType];
+    return currentCount < limit;
+  };
+
+  const handleTryAddBill = () => {
+    if (canAddBill()) {
+      setIsAddingBill(true);
+    } else {
+      setShowUpgradeModal(true);
+    }
+    setShowFabMenu(false);
+  };
+
+  const handleTryScanBill = () => {
+    if (canAddBill()) {
+      setIsScanningBill(true);
+    } else {
+      setShowUpgradeModal(true);
+    }
+    setShowFabMenu(false);
+  };
+
   const handleAddBill = (billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
     BillService.addBill(billData);
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);
+  };
+
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
   };
 
   const handleMarkPaid = (id: string) => {
@@ -213,10 +245,7 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                onClick={() => {
-                  setShowFabMenu(false);
-                  setIsScanningBill(true);
-                }}
+                onClick={handleTryScanBill}
                 className="absolute bottom-16 right-0 w-12 h-12 rounded-full bg-secondary flex items-center justify-center shadow-lg"
               >
                 <Scan className="w-5 h-5" />
@@ -225,10 +254,7 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                 animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.05 } }}
                 exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                onClick={() => {
-                  setShowFabMenu(false);
-                  setIsAddingBill(true);
-                }}
+                onClick={handleTryAddBill}
                 className="absolute bottom-32 right-0 w-12 h-12 rounded-full bg-secondary flex items-center justify-center shadow-lg"
               >
                 <Plus className="w-5 h-5" />
@@ -280,6 +306,14 @@ const Dashboard = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="bills"
+        onUpgrade={handleUpgrade}
+      />
     </div>
   );
 };
