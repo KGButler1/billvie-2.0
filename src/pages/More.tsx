@@ -8,7 +8,9 @@ import {
   Lock,
   ChevronRight,
   Briefcase,
-  Building
+  Building,
+  Receipt,
+  Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserService } from '@/services/UserService';
@@ -54,10 +56,11 @@ const MenuItem = ({ icon: Icon, label, description, onClick, locked, badge }: Me
 const More = () => {
   const navigate = useNavigate();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<'loanready' | 'financial'>('loanready');
+  const [upgradeReason, setUpgradeReason] = useState<'loanready' | 'financial' | 'general'>('loanready');
   
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const isAccountant = settings.userType === 'accountant';
 
   const handleLockedFeature = (feature: 'loanready' | 'financial') => {
     if (isPaid) {
@@ -72,7 +75,11 @@ const More = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgradeModal(false);
     // Navigate to the feature after upgrade
-    navigate(upgradeReason === 'loanready' ? '/loanready' : '/financial');
+    if (upgradeReason === 'loanready') {
+      navigate('/loanready');
+    } else if (upgradeReason === 'financial') {
+      navigate('/financial');
+    }
   };
 
   return (
@@ -85,6 +92,21 @@ const More = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        {/* Tax & Documents */}
+        <section className="mb-8">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+            Documents
+          </h2>
+          <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
+            <MenuItem
+              icon={Receipt}
+              label="Tax Documents"
+              description="Receipts, deductions & records"
+              onClick={() => navigate('/tax-documents')}
+            />
+          </div>
+        </section>
+
         {/* Premium Features */}
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
@@ -106,6 +128,22 @@ const More = () => {
               onClick={() => handleLockedFeature('financial')}
               locked={!isPaid}
               badge={isPaid ? undefined : 'Paid'}
+            />
+          </div>
+        </section>
+
+        {/* Accountant Portal */}
+        <section className="mb-8">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+            Professional
+          </h2>
+          <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
+            <MenuItem
+              icon={Users}
+              label="Accountant Portal"
+              description={isAccountant ? 'Manage your clients' : 'For accounting professionals'}
+              onClick={() => navigate('/accountant')}
+              badge="Free"
             />
           </div>
         </section>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Share2, Lock } from 'lucide-react';
 import { Event } from '@/types/bill';
 import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
+import { UserService } from '@/services/UserService';
 import BottomNav from '@/components/BottomNav';
 import EventHeader from '@/components/events/EventHeader';
 import BudgetProgress from '@/components/events/BudgetProgress';
@@ -12,6 +13,9 @@ import EventStatsCards from '@/components/events/EventStatsCards';
 import CategoryAccordion from '@/components/events/CategoryAccordion';
 import AddExpenseModal from '@/components/events/AddExpenseModal';
 import EventAnalytics from '@/components/events/EventAnalytics';
+import ShareModal from '@/components/sharing/ShareModal';
+import UpgradeModal from '@/components/UpgradeModal';
+import { Button } from '@/components/ui/button';
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +24,11 @@ const EventDetail = () => {
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   useEffect(() => {
     loadEvent();
@@ -60,11 +69,40 @@ const EventDetail = () => {
     setIsAddingExpense(true);
   };
 
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
+    setShowShareModal(true);
+  };
+
+  const handleShare = () => {
+    if (isPaid) {
+      setShowShareModal(true);
+    } else {
+      setShowUpgradeModal(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <EventHeader event={event} onUpdate={loadEvent} />
 
       <main className="container mx-auto px-4 pt-20">
+        {/* Share Button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+          >
+            {isPaid ? (
+              <Share2 className="w-4 h-4 mr-2" />
+            ) : (
+              <Lock className="w-4 h-4 mr-2" />
+            )}
+            Share Event
+          </Button>
+        </div>
         {/* Budget Progress */}
         <BudgetProgress event={event} stats={stats} />
 
@@ -157,6 +195,28 @@ const EventDetail = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <ShareModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            type="event"
+            resourceId={event.id}
+            resourceName={event.name}
+            onRequireUpgrade={() => setShowUpgradeModal(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="general"
+        onUpgrade={handleUpgrade}
+      />
 
       <BottomNav />
     </div>
