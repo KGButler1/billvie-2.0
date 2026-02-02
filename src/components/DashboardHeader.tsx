@@ -48,7 +48,7 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills }: DashboardHeaderProp
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
@@ -80,7 +80,10 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills }: DashboardHeaderProp
                   Clear sample bills
                 </Button>
               )}
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                navigate('/settings');
+                setIsMenuOpen(false);
+              }}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
