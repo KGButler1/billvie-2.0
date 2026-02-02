@@ -345,7 +345,7 @@ const ClientTaxView = ({ client, onBack }: ClientTaxViewProps) => {
                   <div className="flex-1">
                     <h3 className="font-medium">{doc.name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {doc.year} • {doc.category}
+                      {doc.year} • {doc.categories.join(', ')}
                       {doc.amount && ` • $${doc.amount.toLocaleString()}`}
                     </p>
                     {doc.notes && (
