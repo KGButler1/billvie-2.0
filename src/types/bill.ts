@@ -29,9 +29,9 @@ export interface Bill {
   dueDate?: string; // ISO date string
   isRecurring: boolean;
   recurringInterval?: RecurringInterval;
-  paymentMethod?: PaymentMethod;
-  category?: BillCategory;
-  responsibleParty?: ResponsibleParty;
+  paymentMethod?: PaymentMethod | string; // Supports custom payment methods
+  category?: BillCategory | string; // Supports custom categories
+  responsibleParty?: ResponsibleParty | string; // Supports custom responsible parties
   isAutoDebited?: boolean;
   status: BillStatus;
   paidDate?: string;
