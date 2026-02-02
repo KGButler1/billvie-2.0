@@ -226,9 +226,12 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-20"
           >
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <button
+              onClick={handleTryAddBill}
+              className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 hover:bg-primary/20 transition-colors cursor-pointer"
+            >
               <Plus className="w-8 h-8 text-primary" />
-            </div>
+            </button>
             <h2 className="text-xl font-semibold mb-2">No bills yet</h2>
             <p className="text-muted-foreground mb-6">
               Tap the + button to add your first bill
