@@ -1,4 +1,4 @@
-import { Share, ShareType, SharePermission, ShareStatus, ActivityLogEntry } from '@/types/sharing';
+import { Share, ShareType, SharePermission, ShareStatus, ActivityLogEntry, TaxCategory } from '@/types/sharing';
 
 const SHARES_KEY = 'billvie_shares';
 const ACTIVITY_LOG_KEY = 'billvie_activity_log';
@@ -39,7 +39,9 @@ export class SharingService {
     email: string,
     permission: SharePermission,
     resourceId?: string,
-    resourceName?: string
+    resourceName?: string,
+    sharedCategories?: TaxCategory[],
+    sharedYears?: number[]
   ): Share {
     const share: Share = {
       id: generateId(),
@@ -52,6 +54,8 @@ export class SharingService {
       status: 'pending',
       shareLink: generateShareLink(),
       createdAt: new Date().toISOString(),
+      sharedCategories,
+      sharedYears,
     };
 
     const shares = this.getAllShares();
@@ -59,7 +63,14 @@ export class SharingService {
     localStorage.setItem(SHARES_KEY, JSON.stringify(shares));
 
     // Log activity
-    this.addActivityLog(share.id, `Shared ${type} with ${email}`, 'current_user', 'You');
+    let details = `Shared ${type} with ${email}`;
+    if (sharedCategories?.length) {
+      details += ` (categories: ${sharedCategories.join(', ')})`;
+    }
+    if (sharedYears?.length) {
+      details += ` (years: ${sharedYears.join(', ')})`;
+    }
+    this.addActivityLog(share.id, details, 'current_user', 'You');
 
     return share;
   }

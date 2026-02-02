@@ -3,6 +3,14 @@ export type SharePermission = 'view' | 'edit';
 export type ShareType = 'bills' | 'event' | 'tax_documents';
 export type ShareStatus = 'pending' | 'accepted' | 'declined';
 
+// File Attachment Type
+export interface FileAttachment {
+  name: string;
+  type: string; // e.g., 'application/pdf', 'image/jpeg'
+  size: number;
+  dataUrl: string; // Base64-encoded file content
+}
+
 export interface Share {
   id: string;
   type: ShareType;
@@ -16,6 +24,9 @@ export interface Share {
   shareLink?: string;
   createdAt: string;
   acceptedAt?: string;
+  // Tax document specific sharing filters
+  sharedCategories?: TaxCategory[]; // undefined = all categories
+  sharedYears?: number[]; // undefined = all years
 }
 
 export interface ActivityLogEntry {
@@ -29,16 +40,28 @@ export interface ActivityLogEntry {
 }
 
 // Tax Document Types
-export type TaxCategory = 'charity' | 'medical' | 'work_expenses' | 'education' | 'other';
+export type TaxCategory = string; // Now supports custom categories
+
+// Default tax categories
+export const DEFAULT_TAX_CATEGORIES = ['charity', 'medical', 'work_expenses', 'education', 'other'] as const;
+export type DefaultTaxCategory = typeof DEFAULT_TAX_CATEGORIES[number];
+
+// Custom category type
+export interface CustomTaxCategory {
+  id: string;
+  label: string;
+  icon: string;
+  isDefault: boolean;
+}
 
 export interface TaxDocument {
   id: string;
   name: string;
-  category: TaxCategory;
+  categories: TaxCategory[]; // Changed from single category to array for multi-tag support
   year: number;
   amount?: number;
   notes?: string;
-  fileRef?: string; // Reference to uploaded file (in a real app, this would be a URL)
+  attachment?: FileAttachment; // New: file attachment support
   isTaxRelevant: boolean;
   createdAt: string;
   updatedAt: string;
@@ -62,8 +85,8 @@ export interface AccountantProfile {
   createdAt: string;
 }
 
-// Labels
-export const TAX_CATEGORY_LABELS: Record<TaxCategory, string> = {
+// Default Labels (for built-in categories)
+export const TAX_CATEGORY_LABELS: Record<DefaultTaxCategory, string> = {
   charity: 'Charity/Donations',
   medical: 'Medical Expenses',
   work_expenses: 'Work Expenses',
@@ -71,7 +94,7 @@ export const TAX_CATEGORY_LABELS: Record<TaxCategory, string> = {
   other: 'Other',
 };
 
-export const TAX_CATEGORY_ICONS: Record<TaxCategory, string> = {
+export const TAX_CATEGORY_ICONS: Record<DefaultTaxCategory, string> = {
   charity: '❤️',
   medical: '🏥',
   work_expenses: '💼',

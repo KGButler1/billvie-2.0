@@ -5,11 +5,12 @@ import {
   Plus, 
   FileText, 
   Search, 
-  Filter,
   Trash2,
+  Settings,
+  Calendar,
+  Paperclip,
   Share2,
-  Lock,
-  Calendar
+  Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,12 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TaxDocument, TaxCategory, TAX_CATEGORY_LABELS, TAX_CATEGORY_ICONS } from '@/types/sharing';
+import { TaxDocument, TaxCategory, FileAttachment } from '@/types/sharing';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { UserService } from '@/services/UserService';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
 import ShareModal from '@/components/sharing/ShareModal';
+import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
+import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
+import { TaxSharingPanel } from '@/components/tax/TaxSharingPanel';
+import { FileAttachmentInput, AttachmentBadge } from '@/components/tax/FileAttachment';
 import { cn } from '@/lib/utils';
 
 const TaxDocuments = () => {
@@ -40,6 +45,9 @@ const TaxDocuments = () => {
   const [isAddingDocument, setIsAddingDocument] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
+  const [showManageYears, setShowManageYears] = useState(false);
+  const [categoriesVersion, setCategoriesVersion] = useState(0);
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
@@ -52,15 +60,18 @@ const TaxDocuments = () => {
     setDocuments(TaxDocumentService.getAllDocuments());
   };
 
-  const currentYear = new Date().getFullYear();
-  const availableYears = [currentYear, currentYear - 1, currentYear - 2];
+  const availableYears = TaxDocumentService.getAvailableYears();
+
+  const allCategories = TaxDocumentService.getCategories();
+  const getCategoryLabel = (id: string) => allCategories.find(c => c.id === id)?.label || id;
+  const getCategoryIcon = (id: string) => allCategories.find(c => c.id === id)?.icon || '📄';
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = searchQuery === '' || 
       doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.notes?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesYear = yearFilter === 'all' || doc.year === yearFilter;
-    const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || doc.categories.includes(categoryFilter);
     return matchesSearch && matchesYear && matchesCategory;
   });
 
@@ -131,13 +142,39 @@ const TaxDocuments = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {Object.entries(TAX_CATEGORY_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                {allCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.icon} {cat.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Manage Categories/Years buttons */}
+          <div className="flex gap-2 text-sm">
+            <button 
+              onClick={() => setShowManageCategories(true)}
+              className="text-primary hover:underline flex items-center gap-1"
+            >
+              <Settings className="w-3 h-3" />
+              Manage Categories
+            </button>
+            <span className="text-muted-foreground">•</span>
+            <button 
+              onClick={() => setShowManageYears(true)}
+              className="text-primary hover:underline flex items-center gap-1"
+            >
+              <Calendar className="w-3 h-3" />
+              Manage Years
+            </button>
+          </div>
         </div>
+
+        {/* Sharing Panel */}
+        <TaxSharingPanel
+          onAddShare={() => setShowShareModal(true)}
+          onRequireUpgrade={() => setShowUpgradeModal(true)}
+          isPaid={isPaid}
+        />
 
         {/* Year Summary */}
         {categorySummary && (
@@ -149,8 +186,8 @@ const TaxDocuments = () => {
               {Object.entries(categorySummary).map(([cat, data]) => (
                 data.count > 0 && (
                   <div key={cat} className="flex items-center gap-2 text-sm">
-                    <span>{TAX_CATEGORY_ICONS[cat as TaxCategory]}</span>
-                    <span className="text-muted-foreground flex-1">{TAX_CATEGORY_LABELS[cat as TaxCategory]}</span>
+                    <span>{getCategoryIcon(cat)}</span>
+                    <span className="text-muted-foreground flex-1">{getCategoryLabel(cat)}</span>
                     <span className="font-medium">${data.total.toLocaleString()}</span>
                   </div>
                 )
@@ -171,12 +208,18 @@ const TaxDocuments = () => {
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg">
-                  {TAX_CATEGORY_ICONS[doc.category]}
+                  {getCategoryIcon(doc.categories[0])}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium truncate">{doc.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{TAX_CATEGORY_LABELS[doc.category]}</span>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap gap-1">
+                      {doc.categories.map((catId, idx) => (
+                        <span key={catId} className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs">
+                          {getCategoryIcon(catId)} {getCategoryLabel(catId)}
+                        </span>
+                      ))}
+                    </div>
                     <span>•</span>
                     <span>{doc.year}</span>
                     {doc.amount && (
@@ -184,6 +227,14 @@ const TaxDocuments = () => {
                         <span>•</span>
                         <span className="font-medium text-foreground">${doc.amount.toLocaleString()}</span>
                       </>
+                    )}
+                    {doc.attachment && (
+                      <span className="inline-flex items-center gap-1 text-xs text-primary">
+                        <Paperclip className="w-3 h-3" />
+                        {doc.attachment.name.length > 15 
+                          ? doc.attachment.name.substring(0, 12) + '...' 
+                          : doc.attachment.name}
+                      </span>
                     )}
                   </div>
                   {doc.notes && (
@@ -269,6 +320,28 @@ const TaxDocuments = () => {
         onUpgrade={handleUpgrade}
       />
 
+      {/* Manage Categories Modal */}
+      <AnimatePresence>
+        {showManageCategories && (
+          <ManageCategoriesModal
+            isOpen={showManageCategories}
+            onClose={() => setShowManageCategories(false)}
+            onCategoriesChanged={() => setCategoriesVersion(v => v + 1)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Manage Years Modal */}
+      <AnimatePresence>
+        {showManageYears && (
+          <ManageYearsModal
+            isOpen={showManageYears}
+            onClose={() => setShowManageYears(false)}
+            onYearsChanged={loadDocuments}
+          />
+        )}
+      </AnimatePresence>
+
       <BottomNav />
     </div>
   );
@@ -282,23 +355,36 @@ interface AddTaxDocumentModalProps {
 
 const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<TaxCategory>('other');
+  const [selectedCategories, setSelectedCategories] = useState<TaxCategory[]>(['other']);
   const [year, setYear] = useState(new Date().getFullYear());
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState<FileAttachment | undefined>(undefined);
 
-  const currentYear = new Date().getFullYear();
-  const availableYears = [currentYear, currentYear - 1, currentYear - 2];
+  const allCategories = TaxDocumentService.getCategories();
+  const availableYears = TaxDocumentService.getAvailableYears();
+
+  const toggleCategory = (catId: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(catId)) {
+        // Don't allow removing the last category
+        if (prev.length === 1) return prev;
+        return prev.filter(c => c !== catId);
+      }
+      return [...prev, catId];
+    });
+  };
 
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || selectedCategories.length === 0) return;
 
     TaxDocumentService.createDocument({
       name: name.trim(),
-      category,
+      categories: selectedCategories,
       year,
       amount: amount ? parseFloat(amount) : undefined,
       notes: notes.trim() || undefined,
+      attachment,
       isTaxRelevant: true,
     });
 
@@ -319,7 +405,7 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6"
+        className="bg-card w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">Add Tax Document</h2>
@@ -339,36 +425,40 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as TaxCategory)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TAX_CATEGORY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {TAX_CATEGORY_ICONS[value as TaxCategory]} {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label>Categories (select one or more) *</Label>
+            <div className="flex flex-wrap gap-2">
+              {allCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => toggleCategory(cat.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors",
+                    selectedCategories.includes(cat.id)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Tax Year</Label>
-              <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map(y => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Tax Year</Label>
+            <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -398,11 +488,20 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label>Attach File (optional)</Label>
+            <FileAttachmentInput
+              attachment={attachment}
+              onAttach={setAttachment}
+              onRemove={() => setAttachment(undefined)}
+            />
+          </div>
+
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!name.trim()} className="flex-1">
+            <Button onClick={handleSave} disabled={!name.trim() || selectedCategories.length === 0} className="flex-1">
               Save Document
             </Button>
           </div>
