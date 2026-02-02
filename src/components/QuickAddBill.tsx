@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,11 +23,14 @@ import {
   RECURRING_LABELS,
   RESPONSIBLE_PARTY_LABELS,
 } from '@/types/bill';
+import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
 
 interface QuickAddBillProps {
   onAdd: (bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
   onClose: () => void;
 }
+
+const ADD_NEW_VALUE = '__add_new__';
 
 const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
   const [name, setName] = useState('');
@@ -35,9 +38,83 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
   const [dueDate, setDueDate] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>('monthly');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
-  const [category, setCategory] = useState<BillCategory | ''>('');
-  const [responsibleParty, setResponsibleParty] = useState<ResponsibleParty | ''>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | string>('');
+  const [category, setCategory] = useState<BillCategory | string>('');
+  const [responsibleParty, setResponsibleParty] = useState<ResponsibleParty | string>('');
+
+  // Custom options
+  const [customCategories, setCustomCategories] = useState<CustomOption[]>([]);
+  const [customPaymentMethods, setCustomPaymentMethods] = useState<CustomOption[]>([]);
+  const [customResponsibleParties, setCustomResponsibleParties] = useState<CustomOption[]>([]);
+
+  // Adding new option states
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
+  const [isAddingResponsibleParty, setIsAddingResponsibleParty] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newPaymentMethodName, setNewPaymentMethodName] = useState('');
+  const [newResponsiblePartyName, setNewResponsiblePartyName] = useState('');
+
+  // Load custom options on mount
+  useEffect(() => {
+    setCustomCategories(CustomBillOptionsService.getCustomCategories());
+    setCustomPaymentMethods(CustomBillOptionsService.getCustomPaymentMethods());
+    setCustomResponsibleParties(CustomBillOptionsService.getCustomResponsibleParties());
+  }, []);
+
+  const handleCategoryChange = (value: string) => {
+    if (value === ADD_NEW_VALUE) {
+      setIsAddingCategory(true);
+    } else {
+      setCategory(value);
+    }
+  };
+
+  const handlePaymentMethodChange = (value: string) => {
+    if (value === ADD_NEW_VALUE) {
+      setIsAddingPaymentMethod(true);
+    } else {
+      setPaymentMethod(value);
+    }
+  };
+
+  const handleResponsiblePartyChange = (value: string) => {
+    if (value === ADD_NEW_VALUE) {
+      setIsAddingResponsibleParty(true);
+    } else {
+      setResponsibleParty(value);
+    }
+  };
+
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      const newOption = CustomBillOptionsService.addCustomCategory(newCategoryName);
+      setCustomCategories(CustomBillOptionsService.getCustomCategories());
+      setCategory(newOption.id);
+      setNewCategoryName('');
+      setIsAddingCategory(false);
+    }
+  };
+
+  const handleAddPaymentMethod = () => {
+    if (newPaymentMethodName.trim()) {
+      const newOption = CustomBillOptionsService.addCustomPaymentMethod(newPaymentMethodName);
+      setCustomPaymentMethods(CustomBillOptionsService.getCustomPaymentMethods());
+      setPaymentMethod(newOption.id);
+      setNewPaymentMethodName('');
+      setIsAddingPaymentMethod(false);
+    }
+  };
+
+  const handleAddResponsibleParty = () => {
+    if (newResponsiblePartyName.trim()) {
+      const newOption = CustomBillOptionsService.addCustomResponsibleParty(newResponsiblePartyName);
+      setCustomResponsibleParties(CustomBillOptionsService.getCustomResponsibleParties());
+      setResponsibleParty(newOption.id);
+      setNewResponsiblePartyName('');
+      setIsAddingResponsibleParty(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +131,31 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
       category: category || undefined,
       responsibleParty: responsibleParty || undefined,
     });
+  };
+
+  // Helper to get display label for custom options
+  const getCategoryLabel = (value: string): string => {
+    if (CATEGORY_LABELS[value as BillCategory]) {
+      return CATEGORY_LABELS[value as BillCategory];
+    }
+    const custom = customCategories.find(c => c.id === value);
+    return custom?.label || value;
+  };
+
+  const getPaymentMethodLabel = (value: string): string => {
+    if (PAYMENT_METHOD_LABELS[value as PaymentMethod]) {
+      return PAYMENT_METHOD_LABELS[value as PaymentMethod];
+    }
+    const custom = customPaymentMethods.find(m => m.id === value);
+    return custom?.label || value;
+  };
+
+  const getResponsiblePartyLabel = (value: string): string => {
+    if (RESPONSIBLE_PARTY_LABELS[value as ResponsibleParty]) {
+      return RESPONSIBLE_PARTY_LABELS[value as ResponsibleParty];
+    }
+    const custom = customResponsibleParties.find(p => p.id === value);
+    return custom?.label || value;
   };
 
   return (
@@ -133,52 +235,217 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
           {/* Category */}
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as BillCategory)}>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="Auto-detect or select" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+            {isAddingCategory ? (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter category name"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="h-12 flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCategory();
+                    } else if (e.key === 'Escape') {
+                      setIsAddingCategory(false);
+                      setNewCategoryName('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={handleAddCategory}
+                  disabled={!newCategoryName.trim()}
+                  className="h-12 w-12"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsAddingCategory(false);
+                    setNewCategoryName('');
+                  }}
+                  className="h-12 w-12"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <Select value={category} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Auto-detect or select">
+                    {category ? getCategoryLabel(category) : 'Auto-detect or select'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                  {customCategories.map((custom) => (
+                    <SelectItem key={custom.id} value={custom.id}>
+                      {custom.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={ADD_NEW_VALUE} className="text-primary font-medium">
+                    <span className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Add new category...
+                    </span>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Payment Method */}
           <div className="space-y-2">
             <Label>Payment Method</Label>
-            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="Select payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+            {isAddingPaymentMethod ? (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter payment method"
+                  value={newPaymentMethodName}
+                  onChange={(e) => setNewPaymentMethodName(e.target.value)}
+                  className="h-12 flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddPaymentMethod();
+                    } else if (e.key === 'Escape') {
+                      setIsAddingPaymentMethod(false);
+                      setNewPaymentMethodName('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={handleAddPaymentMethod}
+                  disabled={!newPaymentMethodName.trim()}
+                  className="h-12 w-12"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsAddingPaymentMethod(false);
+                    setNewPaymentMethodName('');
+                  }}
+                  className="h-12 w-12"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <Select value={paymentMethod} onValueChange={handlePaymentMethodChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select payment method">
+                    {paymentMethod ? getPaymentMethodLabel(paymentMethod) : 'Select payment method'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                  {customPaymentMethods.map((custom) => (
+                    <SelectItem key={custom.id} value={custom.id}>
+                      {custom.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={ADD_NEW_VALUE} className="text-primary font-medium">
+                    <span className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Add new payment method...
+                    </span>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Responsible Party */}
           <div className="space-y-2">
             <Label>Who's Responsible?</Label>
-            <Select value={responsibleParty} onValueChange={(v) => setResponsibleParty(v as ResponsibleParty)}>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="Optional - assign responsibility" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(RESPONSIBLE_PARTY_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+            {isAddingResponsibleParty ? (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter name"
+                  value={newResponsiblePartyName}
+                  onChange={(e) => setNewResponsiblePartyName(e.target.value)}
+                  className="h-12 flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddResponsibleParty();
+                    } else if (e.key === 'Escape') {
+                      setIsAddingResponsibleParty(false);
+                      setNewResponsiblePartyName('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={handleAddResponsibleParty}
+                  disabled={!newResponsiblePartyName.trim()}
+                  className="h-12 w-12"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsAddingResponsibleParty(false);
+                    setNewResponsiblePartyName('');
+                  }}
+                  className="h-12 w-12"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <Select value={responsibleParty} onValueChange={handleResponsiblePartyChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Optional - assign responsibility">
+                    {responsibleParty ? getResponsiblePartyLabel(responsibleParty) : 'Optional - assign responsibility'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(RESPONSIBLE_PARTY_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                  {customResponsibleParties.map((custom) => (
+                    <SelectItem key={custom.id} value={custom.id}>
+                      {custom.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={ADD_NEW_VALUE} className="text-primary font-medium">
+                    <span className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Add new person...
+                    </span>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Recurring Toggle */}

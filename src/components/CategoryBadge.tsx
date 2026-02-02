@@ -1,13 +1,29 @@
 import { BillCategory, CATEGORY_LABELS, CATEGORY_COLORS } from '@/types/bill';
 import { cn } from '@/lib/utils';
+import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 
 interface CategoryBadgeProps {
-  category: BillCategory;
+  category: BillCategory | string;
   className?: string;
 }
 
 const CategoryBadge = ({ category, className }: CategoryBadgeProps) => {
-  const color = CATEGORY_COLORS[category];
+  // Check if it's a built-in category
+  const isBuiltIn = category in CATEGORY_LABELS;
+  
+  let label: string;
+  let color: string;
+  
+  if (isBuiltIn) {
+    label = CATEGORY_LABELS[category as BillCategory];
+    color = CATEGORY_COLORS[category as BillCategory];
+  } else {
+    // Custom category - look up the label
+    const customCategories = CustomBillOptionsService.getCustomCategories();
+    const custom = customCategories.find(c => c.id === category);
+    label = custom?.label || category;
+    color = 'hsl(var(--primary))'; // Use primary color for custom categories
+  }
   
   return (
     <span 
@@ -20,7 +36,7 @@ const CategoryBadge = ({ category, className }: CategoryBadgeProps) => {
         color: color,
       }}
     >
-      {CATEGORY_LABELS[category]}
+      {label}
     </span>
   );
 };

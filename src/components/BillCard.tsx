@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
 import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, User } from 'lucide-react';
-import { Bill, PAYMENT_METHOD_LABELS, RECURRING_LABELS, RESPONSIBLE_PARTY_LABELS } from '@/types/bill';
+import { Bill, PaymentMethod, ResponsibleParty, PAYMENT_METHOD_LABELS, RECURRING_LABELS, RESPONSIBLE_PARTY_LABELS } from '@/types/bill';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import CategoryBadge from './CategoryBadge';
+import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 
 interface BillCardProps {
   bill: Bill;
@@ -12,6 +13,26 @@ interface BillCardProps {
   onMarkUnpaid: (id: string) => void;
   onDelete: (id: string) => void;
 }
+
+// Helper to get payment method label (built-in or custom)
+const getPaymentMethodLabel = (method: PaymentMethod | string): string => {
+  if (method in PAYMENT_METHOD_LABELS) {
+    return PAYMENT_METHOD_LABELS[method as PaymentMethod];
+  }
+  const customMethods = CustomBillOptionsService.getCustomPaymentMethods();
+  const custom = customMethods.find(m => m.id === method);
+  return custom?.label || method;
+};
+
+// Helper to get responsible party label (built-in or custom)
+const getResponsiblePartyLabel = (party: ResponsibleParty | string): string => {
+  if (party in RESPONSIBLE_PARTY_LABELS) {
+    return RESPONSIBLE_PARTY_LABELS[party as ResponsibleParty];
+  }
+  const customParties = CustomBillOptionsService.getCustomResponsibleParties();
+  const custom = customParties.find(p => p.id === party);
+  return custom?.label || party;
+};
 
 const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) => {
   const isPaid = bill.status === 'paid';
@@ -87,7 +108,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             {bill.paymentMethod && (
               <span className="flex items-center gap-1">
                 <CreditCard className="w-3 h-3" />
-                {PAYMENT_METHOD_LABELS[bill.paymentMethod]}
+                {getPaymentMethodLabel(bill.paymentMethod)}
               </span>
             )}
             {bill.isRecurring && bill.recurringInterval && (
@@ -101,7 +122,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
           {bill.responsibleParty && (
             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
               <User className="w-3 h-3" />
-              <span>{RESPONSIBLE_PARTY_LABELS[bill.responsibleParty]}</span>
+              <span>{getResponsiblePartyLabel(bill.responsibleParty)}</span>
             </div>
           )}
         </div>
