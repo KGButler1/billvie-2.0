@@ -197,6 +197,7 @@ const More = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
         onUpgrade={handleUpgrade}
+        onPreviewAnyway={handlePreviewAnyway}
       />
     </div>
   );
