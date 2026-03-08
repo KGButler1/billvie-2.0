@@ -86,12 +86,13 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
           />
 
-          {/* Modal */}
+          {/* Modal wrapper for centering */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto bg-card border border-border rounded-2xl overflow-hidden shadow-xl"
+            className="pointer-events-auto w-full max-w-md bg-card border border-border rounded-2xl overflow-hidden shadow-xl max-h-[90vh] overflow-y-auto"
           >
             {/* Close button */}
             <button
