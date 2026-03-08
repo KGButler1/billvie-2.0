@@ -141,6 +141,12 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
                 Upgrade Now
               </Button>
 
+              {onPreviewAnyway && (
+                <Button onClick={handlePreviewAnyway} variant="outline" className="w-full py-5 mt-2">
+                  Preview Anyway
+                </Button>
+              )}
+
               <p className="text-xs text-center text-muted-foreground mt-4">
                 14-day money back guarantee. Cancel anytime.
               </p>
