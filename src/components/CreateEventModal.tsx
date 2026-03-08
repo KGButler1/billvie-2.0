@@ -142,6 +142,7 @@ const CreateEventModal = ({ onAdd, onClose }: CreateEventModalProps) => {
           </Button>
         </form>
       </motion.div>
+      </div>
     </>
   );
 };

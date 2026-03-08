@@ -490,6 +490,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
           </Button>
         </form>
       </motion.div>
+      </div>
     </>
   );
 };

@@ -350,6 +350,7 @@ const BillScanModal = ({ onAdd, onClose }: BillScanModalProps) => {
           )}
         </AnimatePresence>
       </motion.div>
+      </div>
     </>
   );
 };
