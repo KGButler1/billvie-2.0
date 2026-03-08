@@ -7,6 +7,7 @@ interface UpgradeModalProps {
   onClose: () => void;
   reason?: 'bills' | 'events' | 'loanready' | 'financial' | 'share' | 'export' | 'general';
   onUpgrade?: () => void;
+  onPreviewAnyway?: () => void;
 }
 
 const UPGRADE_REASONS = {
@@ -58,13 +59,17 @@ const FEATURES = [
   "Priority support",
 ];
 
-const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade }: UpgradeModalProps) => {
+const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPreviewAnyway }: UpgradeModalProps) => {
   const config = UPGRADE_REASONS[reason];
   const Icon = config.icon;
 
   const handleUpgrade = () => {
-    // Mock upgrade - in production this would go to Stripe
     onUpgrade?.();
+    onClose();
+  };
+
+  const handlePreviewAnyway = () => {
+    onPreviewAnyway?.();
     onClose();
   };
 
@@ -135,6 +140,12 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade }: Upgrad
                 <Sparkles className="w-4 h-4 mr-2" />
                 Upgrade Now
               </Button>
+
+              {onPreviewAnyway && (
+                <Button onClick={handlePreviewAnyway} variant="outline" className="w-full py-5 mt-2">
+                  Preview Anyway
+                </Button>
+              )}
 
               <p className="text-xs text-center text-muted-foreground mt-4">
                 14-day money back guarantee. Cancel anytime.

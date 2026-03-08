@@ -285,6 +285,7 @@ const Settings = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason="general"
         onUpgrade={handleUpgrade}
+        onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
     </div>
   );
