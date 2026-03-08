@@ -74,12 +74,13 @@ const More = () => {
   const handleUpgrade = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgradeModal(false);
-    // Navigate to the feature after upgrade
-    if (upgradeReason === 'loanready') {
-      navigate('/loanready');
-    } else if (upgradeReason === 'financial') {
-      navigate('/financial');
-    }
+    if (upgradeReason === 'loanready') navigate('/loanready');
+    else if (upgradeReason === 'financial') navigate('/financial');
+  };
+
+  const handlePreviewAnyway = () => {
+    if (upgradeReason === 'loanready') navigate('/loanready');
+    else if (upgradeReason === 'financial') navigate('/financial');
   };
 
   return (
