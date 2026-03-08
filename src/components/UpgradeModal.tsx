@@ -59,13 +59,17 @@ const FEATURES = [
   "Priority support",
 ];
 
-const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade }: UpgradeModalProps) => {
+const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPreviewAnyway }: UpgradeModalProps) => {
   const config = UPGRADE_REASONS[reason];
   const Icon = config.icon;
 
   const handleUpgrade = () => {
-    // Mock upgrade - in production this would go to Stripe
     onUpgrade?.();
+    onClose();
+  };
+
+  const handlePreviewAnyway = () => {
+    onPreviewAnyway?.();
     onClose();
   };
 
