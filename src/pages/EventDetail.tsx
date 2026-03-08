@@ -216,6 +216,7 @@ const EventDetail = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason="general"
         onUpgrade={handleUpgrade}
+        onPreviewAnyway={() => { setShowUpgradeModal(false); setShowShareModal(true); }}
       />
 
       <BottomNav />

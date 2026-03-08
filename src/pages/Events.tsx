@@ -273,6 +273,7 @@ const Events = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
         onUpgrade={handleUpgrade}
+        onPreviewAnyway={() => { setShowUpgradeModal(false); setIsCreating(true); }}
       />
 
       <BottomNav />

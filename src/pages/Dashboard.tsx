@@ -317,6 +317,7 @@ const Dashboard = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason="bills"
         onUpgrade={handleUpgrade}
+        onPreviewAnyway={() => { setShowUpgradeModal(false); setIsAddingBill(true); }}
       />
 
       {/* Progressive Hints */}
