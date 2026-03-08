@@ -120,11 +120,12 @@ const BillScanModal = ({ onAdd, onClose }: BillScanModalProps) => {
         className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
       />
 
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none sm:p-4">
       <motion.div
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 100 }}
-        className="fixed bottom-0 left-0 right-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-lg sm:rounded-2xl z-50 bg-card rounded-t-3xl shadow-dramatic p-6 pb-8 max-h-[90vh] overflow-y-auto"
+        className="pointer-events-auto w-full sm:max-w-lg sm:rounded-2xl bg-card rounded-t-3xl shadow-dramatic p-6 pb-8 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">
@@ -349,6 +350,7 @@ const BillScanModal = ({ onAdd, onClose }: BillScanModalProps) => {
           )}
         </AnimatePresence>
       </motion.div>
+      </div>
     </>
   );
 };
