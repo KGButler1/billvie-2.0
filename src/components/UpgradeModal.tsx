@@ -153,6 +153,7 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
               </p>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
