@@ -7,6 +7,7 @@ interface UpgradeModalProps {
   onClose: () => void;
   reason?: 'bills' | 'events' | 'loanready' | 'financial' | 'share' | 'export' | 'general';
   onUpgrade?: () => void;
+  onPreviewAnyway?: () => void;
 }
 
 const UPGRADE_REASONS = {
