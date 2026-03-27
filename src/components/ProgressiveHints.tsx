@@ -32,8 +32,8 @@ const ProgressiveHints = () => {
     {
       id: 'events',
       icon: Calendar,
-      title: 'Planning a trip?',
-      message: 'Track your travel expenses in Events! Perfect for trips, weddings, or any special occasion.',
+      title: 'Planning something big?',
+      message: 'Plan and organise big moments together — trips, weddings, or any special occasion.',
       action: 'Explore Events',
       condition: () => {
         const billCount = BillService.getBillCount();
@@ -66,8 +66,8 @@ const ProgressiveHints = () => {
     {
       id: 'sharing',
       icon: Users,
-      title: 'Share with your partner?',
-      message: 'Bills are easier to manage together! Upgrade to share bills with family or roommates.',
+      title: 'Share visibility with family?',
+      message: 'Make sure you\'re not the only one who knows. Share household visibility with your partner or family.',
       action: 'Learn About Sharing',
       condition: () => {
         const bills = BillService.getAllBills();

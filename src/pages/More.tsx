@@ -111,13 +111,13 @@ const More = () => {
         {/* Premium Features */}
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Premium Features
+            Premium Tools
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
             <MenuItem
               icon={Briefcase}
               label="LoanReady"
-              description="Employment, rental history & assets"
+              description="Your records, ready when you need them"
               onClick={() => handleLockedFeature('loanready')}
               locked={!isPaid}
               badge={isPaid ? undefined : 'Paid'}
@@ -125,7 +125,7 @@ const More = () => {
             <MenuItem
               icon={Building}
               label="Financial Info"
-              description="Insurance, super & documents"
+              description="Important details in one place"
               onClick={() => handleLockedFeature('financial')}
               locked={!isPaid}
               badge={isPaid ? undefined : 'Paid'}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Scan } from 'lucide-react';
+import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState<BillCategory | 'all'>('all');
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isFamilyView, setIsFamilyView] = useState(false);
 
   // Initialize data on mount
   useEffect(() => {
@@ -116,6 +117,26 @@ const Dashboard = () => {
     loadBills();
   };
 
+  // Section title helpers based on Family View
+  const getSectionTitle = (section: 'overdue' | 'due_soon' | 'upcoming' | 'paid') => {
+    if (isFamilyView) {
+      const familyLabels = {
+        overdue: 'Urgent — handle these first',
+        due_soon: 'Due soon — don\'t miss these',
+        upcoming: 'What needs to be handled',
+        paid: 'Already taken care of',
+      };
+      return familyLabels[section];
+    }
+    const defaultLabels = {
+      overdue: 'Needs Attention',
+      due_soon: 'Due Soon',
+      upcoming: 'Coming Up',
+      paid: 'Handled',
+    };
+    return defaultLabels[section];
+  };
+
   // Dashboard stats - calculate these first so they're available below
   const upcomingTotal = BillService.getUpcomingTotal();
   const spending = BillService.getSpendingByCategory();
@@ -141,15 +162,38 @@ const Dashboard = () => {
           loadBills();
         }}
         hasSampleBills={hasSampleBills}
+        isFamilyView={isFamilyView}
+        onToggleFamilyView={() => setIsFamilyView(!isFamilyView)}
       />
 
       <main className="container mx-auto px-4 pt-20">
+        {/* Family View Banner */}
+        {isFamilyView && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2"
+          >
+            <Shield className="w-4 h-4 text-primary flex-shrink-0" />
+            <p className="text-sm text-foreground">
+              <strong>Family View</strong> — Here's what needs to be handled if you're stepping in
+            </p>
+          </motion.div>
+        )}
+
         {/* Dashboard Stats */}
         <DashboardStats 
           upcomingTotal={upcomingTotal}
           dueSoonCount={dueSoonBills.length}
           overdueCount={overdueBills.length}
+          isFamilyView={isFamilyView}
         />
+
+        {/* Trust signal */}
+        <p className="text-xs text-muted-foreground text-center mb-4 flex items-center justify-center gap-1.5">
+          <Shield className="w-3 h-3" />
+          Only you and people you invite can see this
+        </p>
 
         {/* Spending Chart */}
         <SpendingChart spending={spending} />
@@ -162,10 +206,10 @@ const Dashboard = () => {
           <div className="mb-4">
             <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as BillCategory | 'all')}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by category" />
+                <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
@@ -177,7 +221,7 @@ const Dashboard = () => {
         {/* Overdue Bills */}
         {overdueBills.length > 0 && (
           <BillSection 
-            title="Overdue" 
+            title={getSectionTitle('overdue')} 
             bills={overdueBills}
             onMarkPaid={handleMarkPaid}
             onMarkUnpaid={handleMarkUnpaid}
@@ -188,7 +232,7 @@ const Dashboard = () => {
         {/* Due Soon */}
         {dueSoonBills.length > 0 && (
           <BillSection 
-            title="Due Soon" 
+            title={getSectionTitle('due_soon')} 
             bills={dueSoonBills}
             onMarkPaid={handleMarkPaid}
             onMarkUnpaid={handleMarkUnpaid}
@@ -199,7 +243,7 @@ const Dashboard = () => {
         {/* Upcoming */}
         {upcomingBills.length > 0 && (
           <BillSection 
-            title="Upcoming" 
+            title={getSectionTitle('upcoming')} 
             bills={upcomingBills}
             onMarkPaid={handleMarkPaid}
             onMarkUnpaid={handleMarkUnpaid}
@@ -210,7 +254,7 @@ const Dashboard = () => {
         {/* Paid */}
         {paidBills.length > 0 && (
           <BillSection 
-            title="Paid" 
+            title={getSectionTitle('paid')} 
             bills={paidBills}
             onMarkPaid={handleMarkPaid}
             onMarkUnpaid={handleMarkUnpaid}
@@ -232,9 +276,9 @@ const Dashboard = () => {
             >
               <Plus className="w-8 h-8 text-primary" />
             </button>
-            <h2 className="text-xl font-semibold mb-2">No bills yet</h2>
+            <h2 className="text-xl font-semibold mb-2">Nothing tracked yet</h2>
             <p className="text-muted-foreground mb-6">
-              Tap the + button to add your first bill
+              Add your first household bill or commitment — so your family always knows what's running
             </p>
           </motion.div>
         )}

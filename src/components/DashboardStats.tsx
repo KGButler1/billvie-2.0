@@ -1,15 +1,15 @@
 import { DollarSign, AlertTriangle, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bill } from '@/types/bill';
 import { cn } from '@/lib/utils';
 
 interface DashboardStatsProps {
   upcomingTotal: number;
   dueSoonCount: number;
   overdueCount: number;
+  isFamilyView?: boolean;
 }
 
-const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount }: DashboardStatsProps) => {
+const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount, isFamilyView = false }: DashboardStatsProps) => {
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
       <Card className="bg-card">
@@ -18,7 +18,7 @@ const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount }: Dashboard
           <p className="text-lg font-bold text-foreground">
             ${upcomingTotal.toLocaleString()}
           </p>
-          <p className="text-xs text-muted-foreground">Coming Up</p>
+          <p className="text-xs text-muted-foreground">{isFamilyView ? 'To handle' : 'Coming Up'}</p>
         </CardContent>
       </Card>
 
@@ -38,7 +38,7 @@ const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount }: Dashboard
           <p className={cn('text-lg font-bold', overdueCount > 0 ? 'text-destructive' : 'text-foreground')}>
             {overdueCount}
           </p>
-          <p className="text-xs text-muted-foreground">Needs Attention</p>
+          <p className="text-xs text-muted-foreground">{isFamilyView ? 'Urgent' : 'Needs Attention'}</p>
         </CardContent>
       </Card>
     </div>

@@ -46,9 +46,9 @@ export const TaxSharingPanel = ({ onAddShare, onRequireUpgrade, isPaid }: TaxSha
             <Share2 className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-medium">Share with Your Accountant</h3>
+            <h3 className="font-medium">Give someone else access</h3>
             <p className="text-sm text-muted-foreground">
-              Give your tax professional secure access to documents
+              Let a trusted person or professional see what they need
             </p>
           </div>
         </div>
@@ -58,7 +58,7 @@ export const TaxSharingPanel = ({ onAddShare, onRequireUpgrade, isPaid }: TaxSha
           onClick={isPaid ? onAddShare : onRequireUpgrade}
         >
           <UserPlus className="w-4 h-4 mr-2" />
-          {isPaid ? 'Add Accountant Access' : 'Upgrade to Share'}
+          {isPaid ? 'Invite someone' : 'Upgrade to Share'}
         </Button>
       </div>
     );
