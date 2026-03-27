@@ -178,7 +178,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
         className="pointer-events-auto w-full sm:max-w-lg sm:rounded-2xl bg-card rounded-t-3xl shadow-dramatic p-6 pb-8 max-h-[85vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Add Bill</h2>
+          <h2 className="text-xl font-semibold">Add Household Bill</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -190,10 +190,10 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name - Required */}
           <div className="space-y-2">
-            <Label htmlFor="name">Bill Name *</Label>
+            <Label htmlFor="name">What is it? *</Label>
             <Input
               id="name"
-              placeholder="e.g., Electric Bill"
+              placeholder="e.g., Electricity, Internet, Council rates"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
@@ -452,7 +452,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between py-2">
             <Label htmlFor="recurring" className="cursor-pointer">
-              Recurring bill
+              This repeats regularly
             </Label>
             <Switch
               id="recurring"
@@ -479,6 +479,11 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
               </Select>
             </div>
           )}
+
+          {/* Trust signal */}
+          <p className="text-xs text-muted-foreground text-center">
+            We never store your login credentials or bank details
+          </p>
 
           {/* Submit */}
           <Button

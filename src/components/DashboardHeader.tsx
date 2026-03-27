@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Receipt, Menu, X, Settings, Info } from 'lucide-react';
+import { Receipt, Menu, X, Settings, Info, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,9 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface DashboardHeaderProps {
   onClearSamples: () => void;
   hasSampleBills: boolean;
+  isFamilyView?: boolean;
+  onToggleFamilyView?: () => void;
 }
 
-const DashboardHeader = ({ onClearSamples, hasSampleBills }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false, onToggleFamilyView }: DashboardHeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -28,6 +30,19 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills }: DashboardHeaderProp
           </button>
 
           <div className="flex items-center gap-2">
+            {/* Family View Toggle */}
+            {onToggleFamilyView && (
+              <Button
+                variant={isFamilyView ? "default" : "ghost"}
+                size="sm"
+                onClick={onToggleFamilyView}
+                className="text-sm gap-1.5"
+              >
+                {isFamilyView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <span className="hidden sm:inline">Family View</span>
+              </Button>
+            )}
+
             {hasSampleBills && (
               <Button
                 variant="ghost"

@@ -274,6 +274,11 @@ const Settings = () => {
               <span className="text-muted-foreground">Version</span>
               <span className="font-mono text-sm">1.0.0</span>
             </div>
+            <div className="p-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                Your data stays private. We don't sell or share it.
+              </p>
+            </div>
           </div>
         </section>
       </main>

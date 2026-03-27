@@ -111,7 +111,7 @@ const ShareModal = ({
             <div>
               <h2 className="text-lg font-semibold">Share {resourceName || typeLabels[type]}</h2>
               <p className="text-sm text-muted-foreground">
-                Invite someone to collaborate
+                Give someone you trust visibility
               </p>
             </div>
           </div>
@@ -131,7 +131,7 @@ const ShareModal = ({
             </div>
             <h3 className="font-semibold mb-2">Upgrade to Share</h3>
             <p className="text-sm text-muted-foreground mb-6">
-              Sharing is a premium feature. Upgrade to collaborate with others.
+              Sharing is available on the Pro plan. Upgrade so your family can see what matters.
             </p>
             <Button onClick={onRequireUpgrade} className="w-full">
               Upgrade to Premium
