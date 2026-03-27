@@ -20,7 +20,7 @@ const ActiveEventsWidget = ({ events }: ActiveEventsWidgetProps) => {
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Calendar className="w-4 h-4" />
-          Active Events
+          Upcoming Life Events
         </CardTitle>
         <Link to="/events" className="text-sm text-primary flex items-center gap-1 hover:underline">
           View all <ChevronRight className="w-4 h-4" />

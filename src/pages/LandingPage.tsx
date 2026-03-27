@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Bell, Users, Calendar, Receipt, Check } from 'lucide-react';
+import { ArrowRight, Zap, Bell, Users, Calendar, Receipt, Check, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,28 +9,28 @@ const LandingPage = () => {
   const features = [
     {
       icon: Zap,
-      title: 'Ultra-Fast Entry',
-      description: 'Add a bill in under 3 seconds. Just name, save, done.',
+      title: 'Quick Capture',
+      description: 'Add a bill or commitment in seconds. Name it, save it, done.',
     },
     {
       icon: Bell,
-      title: 'Smart Reminders',
-      description: 'Never miss a payment with intelligent due date alerts.',
+      title: 'Nothing Falls Through',
+      description: 'Get alerted before anything is missed — even if you\'re not around.',
     },
     {
       icon: Users,
-      title: 'Couples Sharing',
-      description: 'Split and track bills together, seamlessly.',
+      title: 'Shared Visibility',
+      description: 'Make sure you\'re not the only one who knows what\'s due.',
     },
     {
       icon: Calendar,
-      title: 'Event Planning',
-      description: 'Budget for weddings, trips, and big moments.',
+      title: 'Life\'s Big Moments',
+      description: 'Budget for weddings, moves, and milestones together.',
     },
     {
       icon: Receipt,
-      title: 'Tax-Ready',
-      description: 'Export organized records when tax season arrives.',
+      title: 'Always Organised',
+      description: 'Export tidy records whenever you need them.',
     },
   ];
 
@@ -39,26 +39,26 @@ const LandingPage = () => {
       name: 'Free',
       price: '$0',
       period: 'forever',
-      description: 'Perfect for getting started',
+      description: 'Perfect for getting your household organised',
       features: [
         'Up to 25 bills',
         'Up to 3 events',
         'Basic reminders',
         'Mobile access',
       ],
-      cta: 'Start Free',
+      cta: 'Get Started',
       featured: false,
     },
     {
       name: 'Pro',
       price: '$5',
       period: '/month',
-      description: 'For power users & couples',
+      description: 'For families who want full peace of mind',
       features: [
         'Unlimited bills',
         'Unlimited events',
         'Smart reminders',
-        'Couples sharing',
+        'Shared household visibility',
         'Tax export',
         'Priority support',
       ],
@@ -82,7 +82,7 @@ const LandingPage = () => {
             onClick={() => navigate('/dashboard')}
             className="btn-hero text-sm py-2 px-4"
           >
-            Start Free
+            Set Up Your Household
           </Button>
         </div>
       </header>
@@ -96,17 +96,17 @@ const LandingPage = () => {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 text-balance max-w-4xl mx-auto leading-tight">
-              Stop using spreadsheets to track bills and plan events
+              Everything your household runs on — in one place, ready for anyone to step in
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              The fastest way to track bills, stay on top of payments, and plan life's big moments—all in one beautiful app.
+              The private control centre that gives your family clarity, continuity, and peace of mind — so you're never the only one who knows.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 onClick={() => navigate('/dashboard')}
                 className="btn-hero text-lg"
               >
-                Start Tracking Free
+                Set Up Your Household
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
               <Button 
@@ -117,7 +117,7 @@ const LandingPage = () => {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
-              No signup required to start tracking
+              Free to start. No financial credentials stored.
             </p>
           </motion.div>
         </div>
@@ -236,6 +236,10 @@ const LandingPage = () => {
               <span className="font-semibold">Billvie</span>
             </div>
             <nav className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5" />
+                Your data is private by default
+              </span>
               <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
               <a href="/cookies" className="hover:text-foreground transition-colors">Cookies</a>
               <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>

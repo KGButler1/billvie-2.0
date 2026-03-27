@@ -26,7 +26,7 @@ const SpendingChart = ({ spending }: SpendingChartProps) => {
   return (
     <Card className="mb-6">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Spending by Category</CardTitle>
+        <CardTitle className="text-base font-semibold">Household Overview</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-48">

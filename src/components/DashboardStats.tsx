@@ -18,7 +18,7 @@ const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount }: Dashboard
           <p className="text-lg font-bold text-foreground">
             ${upcomingTotal.toLocaleString()}
           </p>
-          <p className="text-xs text-muted-foreground">Upcoming</p>
+          <p className="text-xs text-muted-foreground">Coming Up</p>
         </CardContent>
       </Card>
 
@@ -38,7 +38,7 @@ const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount }: Dashboard
           <p className={cn('text-lg font-bold', overdueCount > 0 ? 'text-destructive' : 'text-foreground')}>
             {overdueCount}
           </p>
-          <p className="text-xs text-muted-foreground">Overdue</p>
+          <p className="text-xs text-muted-foreground">Needs Attention</p>
         </CardContent>
       </Card>
     </div>
