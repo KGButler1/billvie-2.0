@@ -156,7 +156,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             className="flex-1 text-status-paid hover:bg-status-paid/10"
           >
             <Check className="w-4 h-4 mr-2" />
-            Mark as Paid
+            Mark as Handled
           </Button>
         )}
         <Button
