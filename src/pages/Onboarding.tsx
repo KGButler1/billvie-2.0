@@ -36,6 +36,7 @@ const Onboarding = () => {
       name: billName.trim(),
       amount: billAmount ? parseFloat(billAmount) : undefined,
       dueDate: billDueDate || undefined,
+      isRecurring: false,
     });
     setAddedItemName(billName.trim());
     OnboardingService.setState({ firstItemAdded: true });
