@@ -19,7 +19,6 @@ import ProgressiveHints from '@/components/ProgressiveHints';
 import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
-import FirstWeekNudges from '@/components/FirstWeekNudges';
 import {
   Select,
   SelectContent,
