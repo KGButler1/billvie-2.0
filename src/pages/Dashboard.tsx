@@ -17,6 +17,9 @@ import ActiveEventsWidget from '@/components/ActiveEventsWidget';
 import UpgradeModal from '@/components/UpgradeModal';
 import ProgressiveHints from '@/components/ProgressiveHints';
 import FirstWeekNudges from '@/components/FirstWeekNudges';
+import DocumentsWidget from '@/components/DocumentsWidget';
+import AdvisorWidget from '@/components/AdvisorWidget';
+import FirstWeekNudges from '@/components/FirstWeekNudges';
 import {
   Select,
   SelectContent,
@@ -201,6 +204,12 @@ const Dashboard = () => {
 
         {/* Active Events Widget */}
         <ActiveEventsWidget events={activeEvents} />
+
+        {/* Important Documents Widget */}
+        <DocumentsWidget />
+
+        {/* Advisor Widget */}
+        <AdvisorWidget />
 
         {/* Category Filter */}
         {bills.length > 0 && (
