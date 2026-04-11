@@ -10,7 +10,9 @@ import {
   Briefcase,
   Building,
   Receipt,
-  Users
+  Users,
+  FolderOpen,
+  UserCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserService } from '@/services/UserService';
@@ -93,12 +95,18 @@ const More = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
-        {/* Tax & Documents */}
+        {/* Household Records */}
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Documents
+            Household Records
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
+            <MenuItem
+              icon={FolderOpen}
+              label="Important Documents"
+              description="Insurance, accounts & what your household depends on"
+              onClick={() => navigate('/documents')}
+            />
             <MenuItem
               icon={Receipt}
               label="Tax Documents"
@@ -133,12 +141,18 @@ const More = () => {
           </div>
         </section>
 
-        {/* Accountant Portal */}
+        {/* Advisor & Professional */}
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Professional
+            Trusted People
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
+            <MenuItem
+              icon={UserCheck}
+              label="Advisor Portal"
+              description="Share what your accountant or advisor needs"
+              onClick={() => navigate('/advisor')}
+            />
             <MenuItem
               icon={Users}
               label="Accountant Portal"

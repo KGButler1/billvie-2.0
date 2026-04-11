@@ -14,6 +14,8 @@ import LoanReady from "./pages/LoanReady";
 import FinancialInfo from "./pages/FinancialInfo";
 import TaxDocuments from "./pages/TaxDocuments";
 import AccountantPortal from "./pages/AccountantPortal";
+import Documents from "./pages/Documents";
+import AdvisorPortal from "./pages/AdvisorPortal";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
@@ -47,6 +49,8 @@ const App = () => {
             <Route path="/financial" element={<FinancialInfo />} />
             <Route path="/tax-documents" element={<TaxDocuments />} />
             <Route path="/accountant" element={<AccountantPortal />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/advisor" element={<AdvisorPortal />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
