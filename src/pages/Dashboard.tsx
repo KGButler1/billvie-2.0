@@ -367,6 +367,7 @@ const Dashboard = () => {
 
       {/* Progressive Hints */}
       <ProgressiveHints />
+      <FirstWeekNudges />
     </div>
   );
 };
