@@ -6,7 +6,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   userType: 'anonymous',
   hasSeenOnboarding: false,
   hasEventsAccess: false,
-  theme: 'dark', // Dark mode default as requested
+  theme: 'light',
 };
 
 export class UserService {
