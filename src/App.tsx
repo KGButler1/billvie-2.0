@@ -14,6 +14,7 @@ import LoanReady from "./pages/LoanReady";
 import FinancialInfo from "./pages/FinancialInfo";
 import TaxDocuments from "./pages/TaxDocuments";
 import AccountantPortal from "./pages/AccountantPortal";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
