@@ -79,7 +79,7 @@ const LandingPage = () => {
             <span className="font-semibold text-lg">Billvie</span>
           </div>
           <Button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/onboarding')}
             className="btn-hero text-sm py-2 px-4"
           >
             Set Up Your Household
@@ -103,7 +103,7 @@ const LandingPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/onboarding')}
                 className="btn-hero text-lg"
               >
                 Set Up Your Household
