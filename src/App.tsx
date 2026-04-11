@@ -14,6 +14,7 @@ import LoanReady from "./pages/LoanReady";
 import FinancialInfo from "./pages/FinancialInfo";
 import TaxDocuments from "./pages/TaxDocuments";
 import AccountantPortal from "./pages/AccountantPortal";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
@@ -34,6 +35,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/bills" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />

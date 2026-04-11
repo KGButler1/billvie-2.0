@@ -16,6 +16,7 @@ import SpendingChart from '@/components/SpendingChart';
 import ActiveEventsWidget from '@/components/ActiveEventsWidget';
 import UpgradeModal from '@/components/UpgradeModal';
 import ProgressiveHints from '@/components/ProgressiveHints';
+import FirstWeekNudges from '@/components/FirstWeekNudges';
 import {
   Select,
   SelectContent,
@@ -366,6 +367,7 @@ const Dashboard = () => {
 
       {/* Progressive Hints */}
       <ProgressiveHints />
+      <FirstWeekNudges />
     </div>
   );
 };
