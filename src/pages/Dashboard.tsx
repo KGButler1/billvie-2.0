@@ -170,6 +170,31 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 pt-20">
+        {/* Desktop-only toolbar for dashboard-specific controls */}
+        <div className="hidden lg:flex items-center justify-end gap-2 mb-4">
+          {hasSampleBills && (
+            <button
+              onClick={() => {
+                BillService.clearSampleBills();
+                loadBills();
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear samples
+            </button>
+          )}
+          <button
+            onClick={() => setIsFamilyView(!isFamilyView)}
+            className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+              isFamilyView
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border hover:bg-muted'
+            }`}
+          >
+            {isFamilyView ? 'Exit Family View' : 'Family View'}
+          </button>
+        </div>
+
         {/* Family View Banner */}
         {isFamilyView && (
           <motion.div
