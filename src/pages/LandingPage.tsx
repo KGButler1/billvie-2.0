@@ -307,12 +307,7 @@ const LandingPage = () => {
       <footer className="border-t border-border py-12 px-4">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Receipt className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold">Billvie</span>
-            </div>
+            <BillvieLogo size="sm" />
             <nav className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5" />
