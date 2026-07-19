@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Bell, Users, Calendar, Receipt, Check, Shield, Lock, Eye } from 'lucide-react';
+import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
