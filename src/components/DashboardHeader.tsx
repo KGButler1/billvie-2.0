@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Receipt, Menu, X, Settings, Info, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, Settings, Info, Eye, EyeOff } from 'lucide-react';
+import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
