@@ -9,9 +9,9 @@ interface BillvieLogoProps {
 }
 
 const sizeMap = {
-  sm: { icon: 'h-6', word: 'h-4' },
-  md: { icon: 'h-8', word: 'h-5' },
-  lg: { icon: 'h-12', word: 'h-8' },
+  sm: { icon: 'h-6', word: 'h-8' },
+  md: { icon: 'h-8', word: 'h-10' },
+  lg: { icon: 'h-12', word: 'h-16' },
 };
 
 export const BillvieLogo = ({ className, size = 'md', variant = 'full' }: BillvieLogoProps) => {
