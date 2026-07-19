@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import BillvieLogo from '@/components/BillvieLogo';
 
 const primaryNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
