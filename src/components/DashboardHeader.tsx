@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Receipt, Menu, X, Settings, Info, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, Settings, Info, Eye, EyeOff } from 'lucide-react';
+import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,10 +24,7 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
             onClick={() => navigate('/')}
             className="flex items-center gap-2"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg">Billvie</span>
+            <BillvieLogo size="md" />
           </button>
 
           <div className="flex items-center gap-2">

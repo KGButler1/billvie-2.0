@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Bell, Users, Calendar, Receipt, Check, Shield, Lock, Eye } from 'lucide-react';
+import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -78,12 +79,7 @@ const LandingPage = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg">Billvie</span>
-          </div>
+          <BillvieLogo size="md" />
           <Button 
             onClick={() => navigate('/onboarding')}
             className="btn-hero text-sm py-2 px-4"
@@ -311,12 +307,7 @@ const LandingPage = () => {
       <footer className="border-t border-border py-12 px-4">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Receipt className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold">Billvie</span>
-            </div>
+            <BillvieLogo size="sm" />
             <nav className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5" />
