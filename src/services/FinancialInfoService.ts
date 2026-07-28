@@ -204,6 +204,63 @@ export class FinancialInfoService {
     this.saveData(data);
   }
 
+  // Income Sources CRUD
+  static getIncome(): IncomeSourceEntry[] {
+    return this.getData().income || [];
+  }
+
+  static addIncome(entry: Omit<IncomeSourceEntry, 'id'>): IncomeSourceEntry {
+    const data = this.getData();
+    const newEntry: IncomeSourceEntry = { ...entry, id: crypto.randomUUID() };
+    data.income = [...(data.income || []), newEntry];
+    this.saveData(data);
+    return newEntry;
+  }
+
+  static updateIncome(id: string, updates: Partial<IncomeSourceEntry>): void {
+    const data = this.getData();
+    const index = (data.income || []).findIndex(i => i.id === id);
+    if (index !== -1) {
+      data.income[index] = { ...data.income[index], ...updates };
+      this.saveData(data);
+    }
+  }
+
+  static deleteIncome(id: string): void {
+    const data = this.getData();
+    data.income = (data.income || []).filter(i => i.id !== id);
+    this.saveData(data);
+  }
+
+  // Debts & Loans CRUD
+  static getDebts(): DebtEntry[] {
+    return this.getData().debts || [];
+  }
+
+  static addDebt(entry: Omit<DebtEntry, 'id'>): DebtEntry {
+    const data = this.getData();
+    const newEntry: DebtEntry = { ...entry, id: crypto.randomUUID() };
+    data.debts = [...(data.debts || []), newEntry];
+    this.saveData(data);
+    return newEntry;
+  }
+
+  static updateDebt(id: string, updates: Partial<DebtEntry>): void {
+    const data = this.getData();
+    const index = (data.debts || []).findIndex(d => d.id === id);
+    if (index !== -1) {
+      data.debts[index] = { ...data.debts[index], ...updates };
+      this.saveData(data);
+    }
+  }
+
+  static deleteDebt(id: string): void {
+    const data = this.getData();
+    data.debts = (data.debts || []).filter(d => d.id !== id);
+    this.saveData(data);
+  }
+
+
   // Clear all data
   static clearAll(): void {
     localStorage.removeItem(FINANCIAL_KEY);
