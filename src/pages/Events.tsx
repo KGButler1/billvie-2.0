@@ -9,7 +9,6 @@ import BottomNav from '@/components/BottomNav';
 import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
-import EventTemplateModal from '@/components/events/EventTemplateModal';
 import ShareModal from '@/components/sharing/ShareModal';
 import { Button } from '@/components/ui/button';
 
@@ -19,7 +18,6 @@ const Events = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
-  const [templateEvent, setTemplateEvent] = useState<Event | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareEventId, setShareEventId] = useState<string | undefined>();
 
@@ -253,19 +251,6 @@ const Events = () => {
         )}
       </AnimatePresence>
 
-      {/* Template Modal */}
-      <AnimatePresence>
-        {templateEvent && (
-          <EventTemplateModal
-            templateEvent={templateEvent}
-            onClose={() => setTemplateEvent(null)}
-            onCreate={(newEvent) => {
-              loadEvents();
-              navigate(`/events/${newEvent.id}`);
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Upgrade Modal */}
       <UpgradeModal

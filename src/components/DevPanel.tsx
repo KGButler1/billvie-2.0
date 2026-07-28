@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { UserService } from '@/services/UserService';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
-import { LoanReadyService } from '@/services/LoanReadyService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserSettings } from '@/types/bill';
 import {
@@ -41,7 +40,6 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
   const handleClearData = () => {
     UserService.clearAllData();
     EventService.clearAllEvents();
-    LoanReadyService.clearAll();
     FinancialInfoService.clearAll();
     setSettings(UserService.getSettings());
     onDataChange();
@@ -55,10 +53,6 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
   const handleInjectEvents = () => {
     EventService.injectTestEvents(2);
     onDataChange();
-  };
-
-  const handleInjectLoanReady = () => {
-    LoanReadyService.injectTestData();
   };
 
   const handleInjectFinancial = () => {
@@ -141,16 +135,6 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
           Inject 2 Test Events
         </Button>
 
-        {/* Inject LoanReady Data */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleInjectLoanReady}
-          className="w-full"
-        >
-          <Briefcase className="w-4 h-4 mr-2" />
-          Inject LoanReady Data
-        </Button>
 
         {/* Inject Financial Data */}
         <Button

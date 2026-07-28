@@ -297,6 +297,23 @@ export class FinancialInfoService {
           estimatedBalance: 85000,
         },
       ],
+      income: [
+        {
+          id: crypto.randomUUID(),
+          sourceName: 'Primary salary',
+          approximateAmount: 8200,
+          notes: 'Monthly, direct deposit to joint account',
+        },
+      ],
+      debts: [
+        {
+          id: crypto.randomUUID(),
+          lenderName: 'Commonwealth Bank',
+          type: 'mortgage',
+          approximateBalance: 415000,
+          notes: 'Refinanced 2024, autopay from checking',
+        },
+      ],
       misc: [
         {
           id: crypto.randomUUID(),

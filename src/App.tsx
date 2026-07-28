@@ -10,7 +10,6 @@ import EventDetail from "./pages/EventDetail";
 import EventComparison from "./pages/EventComparison";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
-import LoanReady from "./pages/LoanReady";
 import FinancialInfo from "./pages/FinancialInfo";
 import TaxDocuments from "./pages/TaxDocuments";
 import AccountantPortal from "./pages/AccountantPortal";
@@ -45,7 +44,6 @@ const App = () => {
             <Route path="/events/compare" element={<EventComparison />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/more" element={<More />} />
-            <Route path="/loanready" element={<LoanReady />} />
             <Route path="/financial" element={<FinancialInfo />} />
             <Route path="/tax-documents" element={<TaxDocuments />} />
             <Route path="/accountant" element={<AccountantPortal />} />
