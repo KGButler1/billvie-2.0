@@ -8,7 +8,6 @@ import {
   Settings,
   UserCheck,
   Users,
-  Briefcase,
   Building,
   HelpCircle,
   FileText,
@@ -110,11 +109,8 @@ const BottomNav = () => {
                 <DropdownMenuItem onClick={() => navigate('/tax-documents')}>
                   <Receipt className="w-4 h-4 mr-2" /> Tax Documents
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/loanready')}>
-                  <Briefcase className="w-4 h-4 mr-2" /> LoanReady
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/financial')}>
-                  <Building className="w-4 h-4 mr-2" /> Financial Info
+                  <Building className="w-4 h-4 mr-2" /> Financial Snapshot
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>App</DropdownMenuLabel>

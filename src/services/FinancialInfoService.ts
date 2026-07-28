@@ -32,9 +32,28 @@ export interface MiscFinancialEntry {
   notes?: string;
 }
 
+export interface IncomeSourceEntry {
+  id: string;
+  sourceName: string;
+  approximateAmount: number;
+  notes?: string;
+}
+
+export type DebtType = 'mortgage' | 'car' | 'personal' | 'other';
+
+export interface DebtEntry {
+  id: string;
+  lenderName: string;
+  type: DebtType;
+  approximateBalance: number;
+  notes?: string;
+}
+
 export interface FinancialData {
   insurance: InsuranceEntry[];
   superannuation: SuperannuationEntry[];
+  income: IncomeSourceEntry[];
+  debts: DebtEntry[];
   misc: MiscFinancialEntry[];
   createdAt: string;
   updatedAt: string;
@@ -43,6 +62,8 @@ export interface FinancialData {
 const DEFAULT_DATA: FinancialData = {
   insurance: [],
   superannuation: [],
+  income: [],
+  debts: [],
   misc: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -54,6 +75,13 @@ export const INSURANCE_TYPE_LABELS: Record<InsuranceType, string> = {
   life: 'Life Insurance',
   health: 'Health Insurance',
   travel: 'Travel Insurance',
+  other: 'Other',
+};
+
+export const DEBT_TYPE_LABELS: Record<DebtType, string> = {
+  mortgage: 'Mortgage',
+  car: 'Car Loan',
+  personal: 'Personal Loan',
   other: 'Other',
 };
 
@@ -176,6 +204,63 @@ export class FinancialInfoService {
     this.saveData(data);
   }
 
+  // Income Sources CRUD
+  static getIncome(): IncomeSourceEntry[] {
+    return this.getData().income || [];
+  }
+
+  static addIncome(entry: Omit<IncomeSourceEntry, 'id'>): IncomeSourceEntry {
+    const data = this.getData();
+    const newEntry: IncomeSourceEntry = { ...entry, id: crypto.randomUUID() };
+    data.income = [...(data.income || []), newEntry];
+    this.saveData(data);
+    return newEntry;
+  }
+
+  static updateIncome(id: string, updates: Partial<IncomeSourceEntry>): void {
+    const data = this.getData();
+    const index = (data.income || []).findIndex(i => i.id === id);
+    if (index !== -1) {
+      data.income[index] = { ...data.income[index], ...updates };
+      this.saveData(data);
+    }
+  }
+
+  static deleteIncome(id: string): void {
+    const data = this.getData();
+    data.income = (data.income || []).filter(i => i.id !== id);
+    this.saveData(data);
+  }
+
+  // Debts & Loans CRUD
+  static getDebts(): DebtEntry[] {
+    return this.getData().debts || [];
+  }
+
+  static addDebt(entry: Omit<DebtEntry, 'id'>): DebtEntry {
+    const data = this.getData();
+    const newEntry: DebtEntry = { ...entry, id: crypto.randomUUID() };
+    data.debts = [...(data.debts || []), newEntry];
+    this.saveData(data);
+    return newEntry;
+  }
+
+  static updateDebt(id: string, updates: Partial<DebtEntry>): void {
+    const data = this.getData();
+    const index = (data.debts || []).findIndex(d => d.id === id);
+    if (index !== -1) {
+      data.debts[index] = { ...data.debts[index], ...updates };
+      this.saveData(data);
+    }
+  }
+
+  static deleteDebt(id: string): void {
+    const data = this.getData();
+    data.debts = (data.debts || []).filter(d => d.id !== id);
+    this.saveData(data);
+  }
+
+
   // Clear all data
   static clearAll(): void {
     localStorage.removeItem(FINANCIAL_KEY);
@@ -210,6 +295,23 @@ export class FinancialInfoService {
           fundName: 'Australian Super',
           accountNumber: '12345678',
           estimatedBalance: 85000,
+        },
+      ],
+      income: [
+        {
+          id: crypto.randomUUID(),
+          sourceName: 'Primary salary',
+          approximateAmount: 8200,
+          notes: 'Monthly, direct deposit to joint account',
+        },
+      ],
+      debts: [
+        {
+          id: crypto.randomUUID(),
+          lenderName: 'Commonwealth Bank',
+          type: 'mortgage',
+          approximateBalance: 415000,
+          notes: 'Refinanced 2024, autopay from checking',
         },
       ],
       misc: [

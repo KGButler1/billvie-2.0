@@ -22,7 +22,6 @@ import { Label } from '@/components/ui/label';
 import { UserService } from '@/services/UserService';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
-import { LoanReadyService } from '@/services/LoanReadyService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserSettings } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
@@ -56,7 +55,6 @@ const Settings = () => {
     if (confirm('This will delete ALL your data including bills, events, and financial info. Are you sure?')) {
       UserService.clearAllData();
       EventService.clearAllEvents();
-      LoanReadyService.clearAll();
       FinancialInfoService.clearAll();
       window.location.href = '/';
     }
@@ -121,7 +119,7 @@ const Settings = () => {
                 <div>
                   <p className="font-medium">Current Plan</p>
                   <p className="text-sm text-muted-foreground">
-                    {isPaid ? 'Paid - $5/month' : 'Free'}
+                    {isPaid ? 'Paid - $60/year' : 'Free'}
                   </p>
                 </div>
               </div>

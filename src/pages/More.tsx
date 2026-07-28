@@ -7,7 +7,6 @@ import {
   HelpCircle, 
   Lock,
   ChevronRight,
-  Briefcase,
   Building,
   Receipt,
   Users,
@@ -58,15 +57,15 @@ const MenuItem = ({ icon: Icon, label, description, onClick, locked, badge }: Me
 const More = () => {
   const navigate = useNavigate();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<'loanready' | 'financial' | 'general'>('loanready');
+  const [upgradeReason, setUpgradeReason] = useState<'financial' | 'general'>('financial');
   
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
   const isAccountant = settings.userType === 'accountant';
 
-  const handleLockedFeature = (feature: 'loanready' | 'financial') => {
+  const handleLockedFeature = (feature: 'financial') => {
     if (isPaid) {
-      navigate(feature === 'loanready' ? '/loanready' : '/financial');
+      navigate('/financial');
     } else {
       setUpgradeReason(feature);
       setShowUpgradeModal(true);
@@ -76,13 +75,11 @@ const More = () => {
   const handleUpgrade = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgradeModal(false);
-    if (upgradeReason === 'loanready') navigate('/loanready');
-    else if (upgradeReason === 'financial') navigate('/financial');
+    navigate('/financial');
   };
 
   const handlePreviewAnyway = () => {
-    if (upgradeReason === 'loanready') navigate('/loanready');
-    else if (upgradeReason === 'financial') navigate('/financial');
+    navigate('/financial');
   };
 
   return (
@@ -123,17 +120,9 @@ const More = () => {
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
             <MenuItem
-              icon={Briefcase}
-              label="LoanReady"
-              description="Your records, ready when you need them"
-              onClick={() => handleLockedFeature('loanready')}
-              locked={!isPaid}
-              badge={isPaid ? undefined : 'Paid'}
-            />
-            <MenuItem
               icon={Building}
-              label="Financial Info"
-              description="Important details in one place"
+              label="Financial Snapshot"
+              description="Insurance, super, income & debts in one place"
               onClick={() => handleLockedFeature('financial')}
               locked={!isPaid}
               badge={isPaid ? undefined : 'Paid'}

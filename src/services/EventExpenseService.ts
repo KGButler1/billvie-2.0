@@ -199,13 +199,6 @@ export class EventExpenseService {
       }
     });
 
-    // Calculate avg per unit for each category
-    summaryMap.forEach(summary => {
-      if (summary.totalQuantity && summary.totalQuantity > 0) {
-        summary.avgPerUnit = summary.totalAmount / summary.totalQuantity;
-      }
-    });
-
     // Return only categories with expenses, sorted by amount
     return Array.from(summaryMap.values())
       .filter(s => s.itemCount > 0)
@@ -233,11 +226,6 @@ export class EventExpenseService {
       totalDuration = differenceInDays(parseISO(event.endDate), parseISO(event.startDate)) + 1;
     }
 
-    // Budget calculations
-    const budgetPercentage = event.budget ? (totalPlanned / event.budget) * 100 : 0;
-    const isOverBudget = event.budget ? totalPlanned > event.budget : false;
-    const budgetRemaining = event.budget ? event.budget - totalPlanned : undefined;
-
     return {
       totalPlanned,
       totalPaid,
@@ -249,9 +237,6 @@ export class EventExpenseService {
       nonRefundableCount,
       tbdCount,
       totalDuration,
-      budgetRemaining,
-      budgetPercentage,
-      isOverBudget,
     };
   }
 

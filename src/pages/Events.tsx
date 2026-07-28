@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, BarChart3, Copy, Share2, Lock } from 'lucide-react';
+import { Plus, Calendar, BarChart3, Share2, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
@@ -9,7 +9,6 @@ import BottomNav from '@/components/BottomNav';
 import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
-import EventTemplateModal from '@/components/events/EventTemplateModal';
 import ShareModal from '@/components/sharing/ShareModal';
 import { Button } from '@/components/ui/button';
 
@@ -19,7 +18,6 @@ const Events = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
-  const [templateEvent, setTemplateEvent] = useState<Event | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareEventId, setShareEventId] = useState<string | undefined>();
 
@@ -65,15 +63,6 @@ const Events = () => {
   const handleUpgrade = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgradeModal(false);
-  };
-
-  const handleCreateFromTemplate = (event: Event) => {
-    if (!isPaid) {
-      setUpgradeReason('general');
-      setShowUpgradeModal(true);
-      return;
-    }
-    setTemplateEvent(event);
   };
 
   const handleCompare = () => {
@@ -136,18 +125,6 @@ const Events = () => {
               Compare Events
               {!isPaid && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
             </Button>
-            {completedEvents.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleCreateFromTemplate(completedEvents[0])}
-                className="whitespace-nowrap"
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Create from Template
-                {!isPaid && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
-              </Button>
-            )}
           </div>
         )}
 
@@ -174,11 +151,6 @@ const Events = () => {
           <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-muted-foreground">Completed</h2>
-              {isPaid && (
-                <span className="text-xs text-muted-foreground">
-                  Click any event to use as template
-                </span>
-              )}
             </div>
             <div className="space-y-4 opacity-60">
               {completedEvents.map((event, index) => (
@@ -189,20 +161,6 @@ const Events = () => {
                     onDelete={handleDeleteEvent}
                     onClick={() => navigate(`/events/${event.id}`)}
                   />
-                  {isPaid && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="absolute top-2 right-12"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTemplateEvent(event);
-                      }}
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Template
-                    </Button>
-                  )}
                 </div>
               ))}
             </div>
@@ -253,19 +211,6 @@ const Events = () => {
         )}
       </AnimatePresence>
 
-      {/* Template Modal */}
-      <AnimatePresence>
-        {templateEvent && (
-          <EventTemplateModal
-            templateEvent={templateEvent}
-            onClose={() => setTemplateEvent(null)}
-            onCreate={(newEvent) => {
-              loadEvents();
-              navigate(`/events/${newEvent.id}`);
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Upgrade Modal */}
       <UpgradeModal

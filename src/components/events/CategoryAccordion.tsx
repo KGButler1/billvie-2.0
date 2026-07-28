@@ -32,10 +32,6 @@ const CategoryAccordion = ({
     ? `${summary.totalQuantity} ${EXPENSE_UNIT_LABELS[summary.quantityUnit].toLowerCase()}`
     : null;
 
-  const avgDisplay = summary.avgPerUnit
-    ? `$${summary.avgPerUnit.toFixed(0)} avg/${summary.quantityUnit ? EXPENSE_UNIT_LABELS[summary.quantityUnit].toLowerCase().slice(0, -1) : 'unit'}`
-    : null;
-
   return (
     <div className="border border-border rounded-xl overflow-hidden mb-3">
       {/* Header */}
@@ -52,11 +48,9 @@ const CategoryAccordion = ({
               ({summary.itemCount} {summary.itemCount === 1 ? 'item' : 'items'})
             </span>
           </div>
-          {(quantityDisplay || avgDisplay) && (
+          {quantityDisplay && (
             <div className="text-sm text-muted-foreground">
               {quantityDisplay}
-              {quantityDisplay && avgDisplay && ' • '}
-              {avgDisplay}
             </div>
           )}
         </div>

@@ -111,7 +111,6 @@ export interface CategorySummary {
   tbdCount: number;
   totalQuantity?: number;
   quantityUnit?: ExpenseUnit;
-  avgPerUnit?: number;
   expenses: EventExpenseExtended[];
 }
 
@@ -126,7 +125,4 @@ export interface EventStats {
   nonRefundableCount: number;
   tbdCount: number;
   totalDuration?: number; // in days
-  budgetRemaining?: number;
-  budgetPercentage: number;
-  isOverBudget: boolean;
 }
