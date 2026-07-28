@@ -32,9 +32,28 @@ export interface MiscFinancialEntry {
   notes?: string;
 }
 
+export interface IncomeSourceEntry {
+  id: string;
+  sourceName: string;
+  approximateAmount: number;
+  notes?: string;
+}
+
+export type DebtType = 'mortgage' | 'car' | 'personal' | 'other';
+
+export interface DebtEntry {
+  id: string;
+  lenderName: string;
+  type: DebtType;
+  approximateBalance: number;
+  notes?: string;
+}
+
 export interface FinancialData {
   insurance: InsuranceEntry[];
   superannuation: SuperannuationEntry[];
+  income: IncomeSourceEntry[];
+  debts: DebtEntry[];
   misc: MiscFinancialEntry[];
   createdAt: string;
   updatedAt: string;
@@ -43,6 +62,8 @@ export interface FinancialData {
 const DEFAULT_DATA: FinancialData = {
   insurance: [],
   superannuation: [],
+  income: [],
+  debts: [],
   misc: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -54,6 +75,13 @@ export const INSURANCE_TYPE_LABELS: Record<InsuranceType, string> = {
   life: 'Life Insurance',
   health: 'Health Insurance',
   travel: 'Travel Insurance',
+  other: 'Other',
+};
+
+export const DEBT_TYPE_LABELS: Record<DebtType, string> = {
+  mortgage: 'Mortgage',
+  car: 'Car Loan',
+  personal: 'Personal Loan',
   other: 'Other',
 };
 
