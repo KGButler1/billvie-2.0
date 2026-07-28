@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reason?: 'bills' | 'events' | 'loanready' | 'financial' | 'share' | 'export' | 'general';
+  reason?: 'bills' | 'events' | 'financial' | 'share' | 'export' | 'general';
   onUpgrade?: () => void;
   onPreviewAnyway?: () => void;
 }
@@ -21,14 +21,9 @@ const UPGRADE_REASONS = {
     description: "Free accounts are limited to 3 events. Upgrade to create unlimited events.",
     icon: Calendar,
   },
-  loanready: {
-    title: "Unlock LoanReady",
-    description: "Track employment history, rental history, income, and assets for loan applications.",
-    icon: FileText,
-  },
   financial: {
-    title: "Unlock Financial Info",
-    description: "Track insurance policies, superannuation, and other financial details in one place.",
+    title: "Unlock Financial Snapshot",
+    description: "Keep insurance, superannuation, income and debts in one place — what a spouse, advisor or bank would need to know.",
     icon: BarChart3,
   },
   share: {
@@ -42,7 +37,7 @@ const UPGRADE_REASONS = {
     icon: FileText,
   },
   general: {
-    title: "Upgrade to Billvie Paid",
+    title: "Billvie Annual",
     description: "Unlock all premium features and take control of your finances.",
     icon: Sparkles,
   },
@@ -51,8 +46,7 @@ const UPGRADE_REASONS = {
 const FEATURES = [
   "Unlimited bills",
   "Unlimited events",
-  "LoanReady - Employment & rental history",
-  "Financial Info - Insurance & super tracking",
+  "Financial Snapshot - Insurance, super, income & debts",
   "Share with partners & accountants",
   "Export as PDF, CSV, JSON",
   "Advanced analytics",
@@ -116,11 +110,11 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
               {/* Pricing */}
               <div className="text-center mb-6">
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold">$5</span>
-                  <span className="text-muted-foreground">/month</span>
+                  <span className="text-4xl font-bold">$60</span>
+                  <span className="text-muted-foreground">/year</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  or $50/year (save $10)
+                  One plan, billed yearly
                 </p>
               </div>
 
@@ -149,7 +143,7 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
               )}
 
               <p className="text-xs text-center text-muted-foreground mt-4">
-                14-day money back guarantee. Cancel anytime.
+                Renews annually. Cancel anytime before renewal.
               </p>
             </div>
           </motion.div>
