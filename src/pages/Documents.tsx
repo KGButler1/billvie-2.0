@@ -49,7 +49,7 @@ const Documents = () => {
             </div>
             <h2 className="text-xl font-semibold mb-2">Start with one thing your family shouldn't have to search for</h2>
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Add important documents so they're easy to find when needed — insurance, super, accounts, or anything your household depends on.
+              Add important documents so they're easy to find when needed — insurance, super, accounts and investments, or anything your household depends on.
             </p>
             <Button onClick={() => setIsAdding(true)} className="gap-2">
               <Plus className="w-4 h-4" /> Add something important
