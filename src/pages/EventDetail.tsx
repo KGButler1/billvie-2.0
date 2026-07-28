@@ -132,7 +132,7 @@ const EventDetail = () => {
 
         {/* Category Breakdown */}
         <section>
-          <h2 className="text-lg font-semibold mb-4">Expenses by Category</h2>
+          <h2 className="text-lg font-semibold mb-4">What's committed</h2>
           
           {filteredSummaries.length > 0 ? (
             filteredSummaries.map(summary => (
@@ -153,9 +153,9 @@ const EventDetail = () => {
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Plus className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-1">No expenses yet</h3>
+              <h3 className="font-semibold mb-1">Nothing committed yet</h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Start tracking by adding your first expense
+                Add what's committed for this — so someone else could pick it up if needed.
               </p>
               <button
                 onClick={() => setIsAddingExpense(true)}
