@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Database, User, Trash2, Plus, Eye, Briefcase, Building } from 'lucide-react';
+import { X, Database, User, Trash2, Plus, Eye, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserService } from '@/services/UserService';
 import { BillService } from '@/services/BillService';
