@@ -1,3 +1,5 @@
+import { FileAttachment } from '@/types/sharing';
+
 export type DocumentType = 'insurance' | 'investment' | 'account' | 'superannuation' | 'will' | 'other';
 
 export type DocumentVisibility = 'private' | 'shared';
@@ -11,11 +13,14 @@ export interface HouseholdDocument {
   notes?: string;
   visibility: DocumentVisibility;
   markedForAdvisor: boolean;
-  fileName?: string;
+  attachment?: FileAttachment;
+  externalLink?: string;
+  physicalLocation?: string;
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }
+
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   insurance: 'Insurance',
