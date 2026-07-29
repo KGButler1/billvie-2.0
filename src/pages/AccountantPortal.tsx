@@ -112,7 +112,7 @@ const AccountantPortal = () => {
               <p className="text-sm text-muted-foreground mb-1">Your Accountant ID</p>
               <p className="font-mono font-bold text-lg">{profile?.accountantId}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Share this with clients so they can connect
+                This is how client connections will work once accounts sync online. For now, here's a preview with sample clients.
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleCopyId}>
@@ -206,7 +206,7 @@ const AccountantPortal = () => {
               </div>
               <h3 className="font-semibold mb-2">No clients yet</h3>
               <p className="text-sm text-muted-foreground">
-                Share your Accountant ID with clients to connect
+                Real client connections arrive when accounts sync online. Load sample clients to see how this will look.
               </p>
             </motion.div>
           )}
