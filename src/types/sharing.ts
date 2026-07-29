@@ -63,6 +63,7 @@ export interface TaxDocument {
   notes?: string;
   attachment?: FileAttachment; // New: file attachment support
   isTaxRelevant: boolean;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }

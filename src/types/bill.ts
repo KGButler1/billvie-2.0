@@ -36,6 +36,7 @@ export interface Bill {
   status: BillStatus;
   paidDate?: string;
   isSample?: boolean;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }
@@ -72,6 +73,7 @@ export interface Event {
   status: EventStatus;
   expenses: EventExpense[];
   isSample?: boolean;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }

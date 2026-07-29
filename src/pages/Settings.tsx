@@ -15,7 +15,8 @@ import {
   FileSpreadsheet,
   ChevronRight,
   Check,
-  Lock
+  Lock,
+  Undo2
 } from 'lucide-react';
 import { downloadBackup } from '@/utils/dataBackup';
 import { useNavigate } from 'react-router-dom';
@@ -271,6 +272,21 @@ const Settings = () => {
               )}
             </button>
 
+
+            {/* Recently Deleted — never paywalled */}
+            <button
+              onClick={() => navigate('/recently-deleted')}
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Undo2 className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Recently Deleted</p>
+                <p className="text-sm text-muted-foreground">Restore anything deleted in the last 30 days</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
 
             {/* Clear Sample Data */}
             {hasSampleData && (

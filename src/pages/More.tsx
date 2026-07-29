@@ -105,6 +105,12 @@ const More = () => {
               onClick={() => navigate('/documents')}
             />
             <MenuItem
+              icon={Users}
+              label="Key People"
+              description="Who to call, and why"
+              onClick={() => navigate('/key-people')}
+            />
+            <MenuItem
               icon={Receipt}
               label="Tax Documents"
               description="Receipts, deductions & records"
