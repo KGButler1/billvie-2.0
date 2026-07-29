@@ -10,7 +10,7 @@ const AdvisorWidget = () => {
 
   return (
     <button
-      onClick={() => navigate('/advisor')}
+      onClick={() => navigate('/people')}
       className="w-full mb-6 p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors text-left"
     >
       <div className="flex items-center gap-3">

@@ -30,7 +30,6 @@ import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserSettings } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
-import ActiveSharesSection from '@/components/sharing/ActiveSharesSection';
 import { cn } from '@/lib/utils';
 
 const Settings = () => {
@@ -108,7 +107,6 @@ const Settings = () => {
 
         {/* Active Shares Section - Only for paid users */}
         {isPaid && (
-          <ActiveSharesSection />
         )}
 
         {/* Subscription Section */}

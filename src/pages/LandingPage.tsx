@@ -46,7 +46,7 @@ const LandingPage = () => {
         'Up to 3 events',
         'Basic reminders',
         'Mobile access',
-        'Share 1 person per category (Bills, Events, Tax Documents) — free',
+        'One trusted person — free',
         'Advisor & accountant sharing — always free',
       ],
       cta: 'Get Started Free',
