@@ -30,7 +30,6 @@ import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { UserService } from '@/services/UserService';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
-import ShareModal from '@/components/sharing/ShareModal';
 import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
 import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
 import { TaxSharingPanel } from '@/components/tax/TaxSharingPanel';
@@ -46,7 +45,6 @@ const TaxDocuments = () => {
   const [categoryFilter, setCategoryFilter] = useState<TaxCategory | 'all'>('all');
   const [isAddingDocument, setIsAddingDocument] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [showManageYears, setShowManageYears] = useState(false);
   const [categoriesVersion, setCategoriesVersion] = useState(0);
@@ -128,9 +126,9 @@ const TaxDocuments = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => isPaid ? setShowShareModal(true) : setShowUpgradeModal(true)}
+            onClick={() => navigate('/people')}
           >
-            {isPaid ? <Share2 className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+            <Users className="w-5 h-5" />
           </Button>
         </div>
       </header>
@@ -204,11 +202,7 @@ const TaxDocuments = () => {
         </div>
 
         {/* Sharing Panel */}
-        <TaxSharingPanel
-          onAddShare={() => setShowShareModal(true)}
-          onRequireUpgrade={() => setShowUpgradeModal(true)}
-          isPaid={isPaid}
-        />
+        <TaxSharingPanel />
 
         {/* Year Summary */}
         {categorySummary && (
@@ -329,19 +323,6 @@ const TaxDocuments = () => {
           <AddTaxDocumentModal
             onClose={() => setIsAddingDocument(false)}
             onSave={loadDocuments}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Share Modal */}
-      <AnimatePresence>
-        {showShareModal && (
-          <ShareModal
-            isOpen={showShareModal}
-            onClose={() => setShowShareModal(false)}
-            type="tax_documents"
-            resourceName="Tax Documents"
-            onRequireUpgrade={() => setShowUpgradeModal(true)}
           />
         )}
       </AnimatePresence>

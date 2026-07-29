@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, BarChart3, Share2, Lock } from 'lucide-react';
+import { Plus, Calendar, BarChart3, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
@@ -9,7 +9,6 @@ import BottomNav from '@/components/BottomNav';
 import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
-import ShareModal from '@/components/sharing/ShareModal';
 import { Button } from '@/components/ui/button';
 
 const Events = () => {
@@ -18,8 +17,6 @@ const Events = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareEventId, setShareEventId] = useState<string | undefined>();
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
