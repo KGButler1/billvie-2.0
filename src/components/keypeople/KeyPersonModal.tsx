@@ -112,6 +112,43 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
             <p className="text-xs text-muted-foreground mt-1">The reason someone would need to call them</p>
           </div>
 
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Email <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Input
+              placeholder="e.g. sarah@example.com"
+              value={email}
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailWarning(!!email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim()))}
+            />
+            {emailWarning && (
+              <p className="text-xs text-muted-foreground mt-1">That doesn't look like an email address.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Address <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Input placeholder="e.g. 12 Grove St, Melbourne" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Notes <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Textarea
+              rows={2}
+              placeholder="Anything someone would want to know about them"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+
+
           <div className="flex items-center justify-between py-2">
             <div>
               <p className="text-sm font-medium">Visible to shared members</p>
