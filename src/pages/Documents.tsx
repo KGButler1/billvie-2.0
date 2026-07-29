@@ -13,14 +13,19 @@ const Documents = () => {
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
   const [searchParams] = useSearchParams();
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
+  const [attachingId, setAttachingId] = useState<string | null>(null);
 
   const reload = () => setDocuments(DocumentService.getAll());
 
   const handleAdd = (doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>) => {
-    DocumentService.add(doc);
+    const created = DocumentService.add(doc);
     reload();
     setIsAdding(false);
+    setAttachingId(created.id);
   };
+
+  const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
+
 
   return (
     <div className="min-h-screen bg-background pb-24">
