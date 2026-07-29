@@ -36,7 +36,45 @@ const DocumentCard = ({ document, onToggleAdvisor, onDelete, onAttach }: Documen
               {document.provider && (
                 <p className="text-xs text-muted-foreground truncate">{document.provider}</p>
               )}
+              <div className="mt-1 space-y-0.5">
+                {document.attachment && (
+                  <a
+                    href={document.attachment.dataUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
+                  >
+                    <Paperclip className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{document.attachment.name}</span>
+                  </a>
+                )}
+                {document.externalLink && (
+                  <a
+                    href={document.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  >
+                    <Link2 className="w-3 h-3 flex-shrink-0" /> Opens at provider
+                  </a>
+                )}
+                {document.physicalLocation && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{document.physicalLocation}</span>
+                  </p>
+                )}
+                {!hasAttachment && (
+                  <button
+                    onClick={() => onAttach(document.id)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Add the document itself
+                  </button>
+                )}
+              </div>
             </div>
+
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {document.visibility === 'shared' ? (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
