@@ -7,6 +7,8 @@ import { DocumentService } from '@/services/DocumentService';
 import { HouseholdDocument } from '@/types/document';
 import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
+import AttachDocumentSheet from '@/components/documents/AttachDocumentSheet';
+
 import BottomNav from '@/components/BottomNav';
 
 const Documents = () => {
