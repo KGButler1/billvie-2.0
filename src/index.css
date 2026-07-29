@@ -253,6 +253,13 @@
   }
 }
 
+@media print {
+  body * { visibility: hidden; }
+  .print-summary, .print-summary * { visibility: visible; }
+  .print-summary { position: absolute; left: 0; top: 0; width: 100%; }
+  .no-print { display: none !important; }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

@@ -15,6 +15,7 @@ import TaxDocuments from "./pages/TaxDocuments";
 import AccountantPortal from "./pages/AccountantPortal";
 import Documents from "./pages/Documents";
 import AdvisorPortal from "./pages/AdvisorPortal";
+import HouseholdSummary from "./pages/HouseholdSummary";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
@@ -49,6 +50,7 @@ const App = () => {
             <Route path="/accountant" element={<AccountantPortal />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/advisor" element={<AdvisorPortal />} />
+            <Route path="/export/summary" element={<HouseholdSummary />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
