@@ -10,8 +10,7 @@ import {
   Building,
   Receipt,
   Users,
-  FolderOpen,
-  UserCheck
+  Calendar
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserService } from '@/services/UserService';
