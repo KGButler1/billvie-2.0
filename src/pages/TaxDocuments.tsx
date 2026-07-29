@@ -10,6 +10,7 @@ import {
   Calendar,
   Paperclip,
   Share2,
+  Download,
   Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
 import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
 import { TaxSharingPanel } from '@/components/tax/TaxSharingPanel';
 import { FileAttachmentInput, AttachmentBadge } from '@/components/tax/FileAttachment';
+import { arrayToCSV, downloadCSV } from '@/utils/csvExport';
 import { cn } from '@/lib/utils';
 
 const TaxDocuments = () => {
@@ -85,6 +87,29 @@ const TaxDocuments = () => {
   const handleUpgrade = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgradeModal(false);
+  };
+
+  const handleExportCSV = () => {
+    const csv = arrayToCSV(
+      filteredDocuments.map((doc) => ({
+        name: doc.name,
+        categories: doc.categories.map((c) => getCategoryLabel(c)).join('; '),
+        year: doc.year,
+        amount: doc.amount ?? '',
+        notes: doc.notes ?? '',
+        taxRelevant: doc.isTaxRelevant ? 'Yes' : 'No',
+      })),
+      [
+        { key: 'name', label: 'Document' },
+        { key: 'categories', label: 'Categories' },
+        { key: 'year', label: 'Year' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'notes', label: 'Notes' },
+        { key: 'taxRelevant', label: 'Tax Relevant' },
+      ]
+    );
+    const yearLabel = yearFilter === 'all' ? 'all-years' : String(yearFilter);
+    downloadCSV(csv, `billvie-tax-export-${yearLabel}.csv`);
   };
 
   const categorySummary = yearFilter !== 'all' 
@@ -148,6 +173,15 @@ const TaxDocuments = () => {
               </SelectContent>
             </Select>
           </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => (isPaid ? handleExportCSV() : setShowUpgradeModal(true))}
+          >
+            {isPaid ? <Download className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+            Export for Accountant
+          </Button>
 
           {/* Manage Categories/Years buttons */}
           <div className="flex gap-2 text-sm">

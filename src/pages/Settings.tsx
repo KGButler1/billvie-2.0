@@ -11,10 +11,13 @@ import {
   LogOut,
   Bell,
   Download,
+  FileText,
+  FileSpreadsheet,
   ChevronRight,
   Check,
   Lock
 } from 'lucide-react';
+import { downloadBackup } from '@/utils/dataBackup';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -211,17 +214,17 @@ const Settings = () => {
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Data</h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden">
-            {/* Export */}
-            <button 
-              onClick={() => isPaid ? null : setShowUpgradeModal(true)}
+            {/* Household Summary */}
+            <button
+              onClick={() => (isPaid ? navigate('/export/summary') : setShowUpgradeModal(true))}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Download className="w-5 h-5 text-primary" />
+                <FileText className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium">Export All Data</p>
-                <p className="text-sm text-muted-foreground">Download as JSON or CSV</p>
+                <p className="font-medium">Household Summary</p>
+                <p className="text-sm text-muted-foreground">A printable report for family or an executor</p>
               </div>
               {!isPaid ? (
                 <Lock className="w-5 h-5 text-muted-foreground" />
@@ -229,6 +232,45 @@ const Settings = () => {
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
               )}
             </button>
+
+            {/* Tax Export */}
+            <button
+              onClick={() => (isPaid ? navigate('/tax-documents') : setShowUpgradeModal(true))}
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileSpreadsheet className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Tax Export</p>
+                <p className="text-sm text-muted-foreground">A spreadsheet-ready file for your accountant</p>
+              </div>
+              {!isPaid ? (
+                <Lock className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              )}
+            </button>
+
+            {/* Backup */}
+            <button
+              onClick={() => (isPaid ? downloadBackup() : setShowUpgradeModal(true))}
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Download className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Backup Your Data</p>
+                <p className="text-sm text-muted-foreground">A full copy for your own records</p>
+              </div>
+              {!isPaid ? (
+                <Lock className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              )}
+            </button>
+
 
             {/* Clear Sample Data */}
             {hasSampleData && (
