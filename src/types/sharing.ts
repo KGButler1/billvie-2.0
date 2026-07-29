@@ -70,8 +70,3 @@ export const TAX_CATEGORY_ICONS: Record<DefaultTaxCategory, string> = {
   education: '📚',
   other: '📄',
 };
-
-export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = {
-  view: 'View Only',
-  edit: 'Full Access',
-};

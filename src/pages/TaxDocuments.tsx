@@ -9,7 +9,7 @@ import {
   Settings,
   Calendar,
   Paperclip,
-  Share2,
+  Users,
   Download,
   Lock
 } from 'lucide-react';
