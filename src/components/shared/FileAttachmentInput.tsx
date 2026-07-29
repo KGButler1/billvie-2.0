@@ -17,7 +17,7 @@ export const FileAttachmentInput = ({
   attachment, 
   onAttach, 
   onRemove,
-  maxSizeMB = 2 
+  maxSizeMB = 0.5 
 }: FileAttachmentProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState('');
