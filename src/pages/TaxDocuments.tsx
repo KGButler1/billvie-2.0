@@ -10,6 +10,7 @@ import {
   Calendar,
   Paperclip,
   Share2,
+  Download,
   Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -172,6 +173,15 @@ const TaxDocuments = () => {
               </SelectContent>
             </Select>
           </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => (isPaid ? handleExportCSV() : setShowUpgradeModal(true))}
+          >
+            {isPaid ? <Download className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+            Export for Accountant
+          </Button>
 
           {/* Manage Categories/Years buttons */}
           <div className="flex gap-2 text-sm">
