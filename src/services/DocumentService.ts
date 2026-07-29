@@ -26,8 +26,13 @@ export const DocumentService = {
   },
 
   save(docs: HouseholdDocument[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+    } catch {
+      throw new Error('STORAGE_FULL');
+    }
   },
+
 
   add(doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>): HouseholdDocument {
     const docs = this.getRaw();
