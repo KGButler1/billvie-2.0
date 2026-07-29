@@ -61,6 +61,15 @@ export class TaxDocumentService {
     return this.getAllDocuments().filter(d => d.isTaxRelevant);
   }
 
+  // Persist documents, surfacing browser storage limits as STORAGE_FULL
+  private static save(documents: TaxDocument[]): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    } catch {
+      throw new Error('STORAGE_FULL');
+    }
+  }
+
   // Create a new document
   static createDocument(
     data: Omit<TaxDocument, 'id' | 'createdAt' | 'updatedAt'>
@@ -75,7 +84,7 @@ export class TaxDocumentService {
 
     const documents = this.getRawDocuments();
     documents.push(document);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    this.save(documents);
 
     return document;
   }
@@ -92,7 +101,7 @@ export class TaxDocumentService {
       updatedAt: new Date().toISOString(),
     };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    this.save(documents);
     return documents[index];
   }
 
