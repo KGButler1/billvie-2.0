@@ -209,7 +209,7 @@ const People = () => {
               className="overflow-hidden border-t border-border bg-muted/20"
             >
               <div className="p-4 space-y-4">
-                {entry.hasAccess && entry.trustedPersonId ? (
+                {entry.trustedPersonId ? (
                   <>
                     <div>
                       <p className="text-sm font-medium mb-2">What {firstName(entry.name)} can see</p>

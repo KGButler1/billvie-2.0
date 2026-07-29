@@ -203,7 +203,7 @@ export const PeopleService = {
             String(kp.relationship)
           : undefined,
         role: p.role,
-        hasAccess: true,
+        hasAccess: scopes.length > 0,
         trustedPersonId: p.id,
         keyPersonId: p.keyPersonId,
         scopes: Array.from(new Set(scopes)),
