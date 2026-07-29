@@ -6,7 +6,8 @@ import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { DocumentService } from '@/services/DocumentService';
-import { SharingService } from '@/services/SharingService';
+import { AccessService } from '@/services/AccessService';
+import { ACCESS_SCOPE_LABELS } from '@/types/people';
 import {
   FinancialInfoService,
   INSURANCE_TYPE_LABELS,
@@ -24,12 +25,6 @@ const titleCase = (s?: string) =>
 
 const formatDate = (d?: string) =>
   d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
-
-const SHARE_TYPE_LABELS: Record<string, string> = {
-  bills: 'Bills',
-  event: 'Events',
-  tax_documents: 'Tax Documents',
-};
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-8">
@@ -74,11 +69,10 @@ const HouseholdSummary = () => {
 
   const documents = DocumentService.getAll().filter((d) => d.visibility !== 'private');
 
-  const acceptedShares = SharingService.getAllShares().filter((s) => s.status === 'accepted');
-  const sharesByType = acceptedShares.reduce<Record<string, typeof acceptedShares>>((acc, s) => {
-    (acc[s.type] = acc[s.type] || []).push(s);
-    return acc;
-  }, {});
+  const peopleWithAccess = AccessService.getActivePeople().map((p) => ({
+    name: p.name,
+    scopes: AccessService.getGrantsForPerson(p.id).map((g) => ACCESS_SCOPE_LABELS[g.scope].toLowerCase()),
+  }));
 
   if (!isPaid && !bypassGate) {
     return (
@@ -329,17 +323,13 @@ const HouseholdSummary = () => {
         </Section>
 
         <Section title="Who already has access">
-          {acceptedShares.length === 0 ? (
+          {peopleWithAccess.length === 0 ? (
             <Empty text="No one else has access yet." />
           ) : (
             <ul className="text-sm space-y-1">
-              {Object.entries(sharesByType).map(([type, shares]) => (
-                <li key={type}>
-                  <span className="font-medium">{SHARE_TYPE_LABELS[type] || titleCase(type)}</span>{' '}
-                  shared with:{' '}
-                  {shares
-                    .map((s) => s.sharedWithName || s.sharedWithEmail)
-                    .join(', ')}
+              {peopleWithAccess.map((p) => (
+                <li key={p.name}>
+                  <span className="font-medium">{p.name}</span> — {p.scopes.join(', ')}
                 </li>
               ))}
             </ul>
