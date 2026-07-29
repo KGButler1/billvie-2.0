@@ -34,7 +34,7 @@ import ShareModal from '@/components/sharing/ShareModal';
 import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
 import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
 import { TaxSharingPanel } from '@/components/tax/TaxSharingPanel';
-import { FileAttachmentInput, AttachmentBadge } from '@/components/tax/FileAttachment';
+import { FileAttachmentInput, AttachmentBadge } from '@/components/shared/FileAttachmentInput';
 import { arrayToCSV, downloadCSV } from '@/utils/csvExport';
 import { cn } from '@/lib/utils';
 

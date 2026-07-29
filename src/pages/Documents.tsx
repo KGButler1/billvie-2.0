@@ -7,20 +7,27 @@ import { DocumentService } from '@/services/DocumentService';
 import { HouseholdDocument } from '@/types/document';
 import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
+import AttachDocumentSheet from '@/components/documents/AttachDocumentSheet';
+
 import BottomNav from '@/components/BottomNav';
 
 const Documents = () => {
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
   const [searchParams] = useSearchParams();
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
+  const [attachingId, setAttachingId] = useState<string | null>(null);
 
   const reload = () => setDocuments(DocumentService.getAll());
 
   const handleAdd = (doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>) => {
-    DocumentService.add(doc);
+    const created = DocumentService.add(doc);
     reload();
     setIsAdding(false);
+    setAttachingId(created.id);
   };
+
+  const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
+
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -69,6 +76,7 @@ const Documents = () => {
                 <DocumentCard
                   document={doc}
                   onToggleAdvisor={(id) => { DocumentService.toggleAdvisor(id); reload(); }}
+                  onAttach={(id) => setAttachingId(id)}
                   onDelete={(id) => {
                     if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
                     DocumentService.delete(id);
@@ -85,7 +93,14 @@ const Documents = () => {
         {isAdding && (
           <AddDocumentModal onAdd={handleAdd} onClose={() => setIsAdding(false)} />
         )}
+        {attachingDoc && (
+          <AttachDocumentSheet
+            document={attachingDoc}
+            onClose={() => { setAttachingId(null); reload(); }}
+          />
+        )}
       </AnimatePresence>
+
 
       <BottomNav />
     </div>

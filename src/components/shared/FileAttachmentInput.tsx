@@ -17,19 +17,20 @@ export const FileAttachmentInput = ({
   attachment, 
   onAttach, 
   onRemove,
-  maxSizeMB = 2 
+  maxSizeMB = 0.5 
 }: FileAttachmentProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const maxSize = maxSizeMB * 1024 * 1024;
+  const maxLabel = maxSizeMB < 1 ? `${Math.round(maxSizeMB * 1024)}KB` : `${maxSizeMB}MB`;
 
   const handleFile = async (file: File) => {
     setError('');
 
     if (file.size > maxSize) {
-      setError(`File too large. Maximum size is ${maxSizeMB}MB.`);
+      setError(`File too large. Maximum size is ${maxLabel}.`);
       return;
     }
 
@@ -155,7 +156,7 @@ export const FileAttachmentInput = ({
         <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
         <p className="text-sm font-medium">Drop file here or click to browse</p>
         <p className="text-xs text-muted-foreground mt-1">
-          PDF, JPG, PNG up to {maxSizeMB}MB
+          PDF, JPG, PNG up to {maxLabel}
         </p>
       </div>
       <input
