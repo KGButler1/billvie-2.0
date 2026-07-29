@@ -17,6 +17,9 @@ import Documents from "./pages/Documents";
 import AdvisorPortal from "./pages/AdvisorPortal";
 import HouseholdSummary from "./pages/HouseholdSummary";
 import SharedView from "./pages/SharedView";
+import RecentlyDeleted from "./pages/RecentlyDeleted";
+import KeyPeople from "./pages/KeyPeople";
+import Readiness from "./pages/Readiness";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
@@ -53,6 +56,9 @@ const App = () => {
             <Route path="/advisor" element={<AdvisorPortal />} />
             <Route path="/export/summary" element={<HouseholdSummary />} />
             <Route path="/shared/:token" element={<SharedView />} />
+            <Route path="/recently-deleted" element={<RecentlyDeleted />} />
+            <Route path="/key-people" element={<KeyPeople />} />
+            <Route path="/readiness" element={<Readiness />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

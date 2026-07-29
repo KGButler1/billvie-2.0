@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { UserCheck, Shield, Mail, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,8 @@ import BottomNav from '@/components/BottomNav';
 
 const AdvisorPortal = () => {
   const [inviteEmail, setInviteEmail] = useState('');
-  const [showInvite, setShowInvite] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showInvite, setShowInvite] = useState(() => searchParams.get('invite') === '1');
   const [inviteLink, setInviteLink] = useState('');
   const [invitedEmail, setInvitedEmail] = useState('');
   const [copied, setCopied] = useState(false);

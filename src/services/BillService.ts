@@ -152,17 +152,32 @@ export class BillService {
     }
   }
 
-  // Get all bills
-  static getAllBills(): Bill[] {
+  // Raw getter — includes soft-deleted bills. Every read-modify-write cycle
+  // in this service MUST use this, never getAllBills(), or soft-deleted bills
+  // would be silently erased on the next write.
+  private static getRawBills(): Bill[] {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) return [];
-    
+
     const bills: Bill[] = JSON.parse(data);
+
+    // Self-cleaning: purge anything deleted more than 30 days ago
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const kept = bills.filter(b => !b.deletedAt || new Date(b.deletedAt).getTime() > cutoff);
+    if (kept.length !== bills.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
+    }
+
     // Recalculate status for each bill
-    return bills.map(bill => ({
+    return kept.map(bill => ({
       ...bill,
       status: calculateBillStatus(bill),
     }));
+  }
+
+  // Get all bills (excludes soft-deleted)
+  static getAllBills(): Bill[] {
+    return this.getRawBills().filter(b => !b.deletedAt);
   }
 
   // Get bill by ID
@@ -190,7 +205,7 @@ export class BillService {
     // Calculate actual status
     newBill.status = calculateBillStatus(newBill);
     
-    const bills = this.getAllBills();
+    const bills = this.getRawBills();
     bills.push(newBill);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
     
@@ -199,7 +214,7 @@ export class BillService {
 
   // Update bill
   static updateBill(id: string, updates: Partial<Bill>): Bill | undefined {
-    const bills = this.getAllBills();
+    const bills = this.getRawBills();
     const index = bills.findIndex(bill => bill.id === id);
     
     if (index === -1) return undefined;
@@ -320,20 +335,44 @@ export class BillService {
     return this.getAllBills().filter(b => b.status === 'due_soon');
   }
 
-  // Delete bill
+  // Soft-delete bill (recoverable from Recently Deleted for 30 days)
   static deleteBill(id: string): boolean {
-    const bills = this.getAllBills();
-    const filteredBills = bills.filter(bill => bill.id !== id);
-    
-    if (filteredBills.length === bills.length) return false;
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredBills));
+    const bills = this.getRawBills();
+    const index = bills.findIndex(bill => bill.id === id);
+
+    if (index === -1) return false;
+
+    bills[index] = { ...bills[index], deletedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
     return true;
+  }
+
+  // Get soft-deleted bills
+  static getDeletedBills(): Bill[] {
+    return this.getRawBills().filter(b => !!b.deletedAt);
+  }
+
+  // Restore a soft-deleted bill
+  static restoreBill(id: string): boolean {
+    const bills = this.getRawBills();
+    const index = bills.findIndex(bill => bill.id === id);
+
+    if (index === -1) return false;
+
+    bills[index] = { ...bills[index], deletedAt: undefined };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
+    return true;
+  }
+
+  // Permanently remove a bill
+  static permanentlyDeleteBill(id: string): void {
+    const bills = this.getRawBills().filter(bill => bill.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
   }
 
   // Clear sample bills
   static clearSampleBills(): void {
-    const bills = this.getAllBills().filter(bill => !bill.isSample);
+    const bills = this.getRawBills().filter(bill => !bill.isSample);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
   }
 
@@ -395,7 +434,7 @@ export class BillService {
       });
     }
     
-    const existingBills = this.getAllBills();
+    const existingBills = this.getRawBills();
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingBills, ...testBills]));
   }
 }

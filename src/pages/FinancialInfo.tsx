@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -49,6 +50,7 @@ import { cn } from '@/lib/utils';
 
 const FinancialInfo = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('insurance');
   
   // Data states
@@ -59,7 +61,7 @@ const FinancialInfo = () => {
   const [debts, setDebts] = useState<DebtEntry[]>([]);
   
   // Modal states
-  const [showInsuranceModal, setShowInsuranceModal] = useState(false);
+  const [showInsuranceModal, setShowInsuranceModal] = useState(() => searchParams.get('add') === 'insurance');
   const [showSuperModal, setShowSuperModal] = useState(false);
   const [showMiscModal, setShowMiscModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);

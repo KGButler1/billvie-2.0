@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, FolderOpen, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,8 @@ import BottomNav from '@/components/BottomNav';
 
 const Documents = () => {
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
-  const [isAdding, setIsAdding] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
 
   const reload = () => setDocuments(DocumentService.getAll());
 
@@ -67,7 +69,11 @@ const Documents = () => {
                 <DocumentCard
                   document={doc}
                   onToggleAdvisor={(id) => { DocumentService.toggleAdvisor(id); reload(); }}
-                  onDelete={(id) => { DocumentService.delete(id); reload(); }}
+                  onDelete={(id) => {
+                    if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
+                    DocumentService.delete(id);
+                    reload();
+                  }}
                 />
               </motion.div>
             ))}

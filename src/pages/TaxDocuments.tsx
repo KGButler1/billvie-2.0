@@ -78,7 +78,7 @@ const TaxDocuments = () => {
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this document?')) {
+    if (confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) {
       TaxDocumentService.deleteDocument(id);
       loadDocuments();
     }

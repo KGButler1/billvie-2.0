@@ -58,7 +58,7 @@ const EventHeader = ({ event, onUpdate }: EventHeaderProps) => {
   };
 
   const handleDelete = () => {
-    if (confirm('Delete this event? This cannot be undone.')) {
+    if (confirm('Delete this event? You can restore it from Recently Deleted within 30 days.')) {
       EventService.deleteEvent(event.id);
       navigate('/events');
     }

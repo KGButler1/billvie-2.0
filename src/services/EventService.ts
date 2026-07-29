@@ -82,10 +82,23 @@ export class EventService {
     }
   }
 
-  static getAllEvents(): Event[] {
+  // Raw getter — includes soft-deleted events. All read-modify-write cycles
+  // must use this, never getAllEvents().
+  private static getRawEvents(): Event[] {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) return [];
-    return JSON.parse(data);
+    const events: Event[] = JSON.parse(data);
+
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const kept = events.filter(e => !e.deletedAt || new Date(e.deletedAt).getTime() > cutoff);
+    if (kept.length !== events.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
+    }
+    return kept;
+  }
+
+  static getAllEvents(): Event[] {
+    return this.getRawEvents().filter(e => !e.deletedAt);
   }
 
   static getEventById(id: string): Event | undefined {
@@ -111,7 +124,7 @@ export class EventService {
       updatedAt: now,
     };
     
-    const events = this.getAllEvents();
+    const events = this.getRawEvents();
     events.push(newEvent);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
     
@@ -119,7 +132,7 @@ export class EventService {
   }
 
   static updateEvent(id: string, updates: Partial<Event>): Event | undefined {
-    const events = this.getAllEvents();
+    const events = this.getRawEvents();
     const index = events.findIndex(event => event.id === id);
     
     if (index === -1) return undefined;
@@ -136,14 +149,36 @@ export class EventService {
     return updatedEvent;
   }
 
+  // Soft-delete (recoverable for 30 days)
   static deleteEvent(id: string): boolean {
-    const events = this.getAllEvents();
-    const filteredEvents = events.filter(event => event.id !== id);
-    
-    if (filteredEvents.length === events.length) return false;
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredEvents));
+    const events = this.getRawEvents();
+    const index = events.findIndex(event => event.id === id);
+
+    if (index === -1) return false;
+
+    events[index] = { ...events[index], deletedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
     return true;
+  }
+
+  static getDeletedEvents(): Event[] {
+    return this.getRawEvents().filter(e => !!e.deletedAt);
+  }
+
+  static restoreEvent(id: string): boolean {
+    const events = this.getRawEvents();
+    const index = events.findIndex(event => event.id === id);
+
+    if (index === -1) return false;
+
+    events[index] = { ...events[index], deletedAt: undefined };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    return true;
+  }
+
+  static permanentlyDeleteEvent(id: string): void {
+    const events = this.getRawEvents().filter(event => event.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   }
 
   static addExpense(eventId: string, expenseData: Omit<EventExpense, 'id' | 'eventId' | 'createdAt'>): EventExpense | undefined {
@@ -183,7 +218,7 @@ export class EventService {
   }
 
   static clearSampleEvents(): void {
-    const events = this.getAllEvents().filter(event => !event.isSample);
+    const events = this.getRawEvents().filter(event => !event.isSample);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   }
 
@@ -215,7 +250,7 @@ export class EventService {
       });
     }
     
-    const existingEvents = this.getAllEvents();
+    const existingEvents = this.getRawEvents();
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingEvents, ...testEvents]));
   }
 }

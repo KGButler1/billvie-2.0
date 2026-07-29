@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
@@ -19,6 +20,7 @@ import ProgressiveHints from '@/components/ProgressiveHints';
 import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
+import ReadinessCard from '@/components/ReadinessCard';
 import {
   Select,
   SelectContent,
@@ -29,7 +31,8 @@ import {
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
-  const [isAddingBill, setIsAddingBill] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<BillCategory | 'all'>('all');
@@ -116,6 +119,7 @@ const Dashboard = () => {
   };
 
   const handleDeleteBill = (id: string) => {
+    if (!confirm('Delete this bill? You can restore it from Recently Deleted within 30 days.')) return;
     BillService.deleteBill(id);
     loadBills();
   };
@@ -228,6 +232,9 @@ const Dashboard = () => {
 
         {/* Active Events Widget */}
         <ActiveEventsWidget events={activeEvents} />
+
+        {/* Household readiness summary */}
+        <ReadinessCard />
 
         {/* Important Documents Widget */}
         <DocumentsWidget />

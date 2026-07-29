@@ -11,8 +11,9 @@ const generateId = (): string => {
 export class TaxDocumentService {
   // ============ DOCUMENT METHODS ============
 
-  // Get all tax documents (with migration for old single-category format)
-  static getAllDocuments(): TaxDocument[] {
+  // Raw getter — includes soft-deleted documents. All read-modify-write cycles
+  // must use this, never getAllDocuments().
+  private static getRawDocuments(): TaxDocument[] {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) return [];
     
@@ -29,11 +30,20 @@ export class TaxDocumentService {
       return doc;
     });
     
-    if (needsMigration) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    // Self-cleaning: purge anything deleted more than 30 days ago
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const kept = migrated.filter(d => !d.deletedAt || new Date(d.deletedAt).getTime() > cutoff);
+
+    if (needsMigration || kept.length !== migrated.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
     }
-    
-    return migrated;
+
+    return kept;
+  }
+
+  // Get all tax documents (excludes soft-deleted)
+  static getAllDocuments(): TaxDocument[] {
+    return this.getRawDocuments().filter(d => !d.deletedAt);
   }
 
   // Get documents by year
@@ -63,7 +73,7 @@ export class TaxDocumentService {
       updatedAt: now,
     };
 
-    const documents = this.getAllDocuments();
+    const documents = this.getRawDocuments();
     documents.push(document);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
 
@@ -72,7 +82,7 @@ export class TaxDocumentService {
 
   // Update a document
   static updateDocument(id: string, updates: Partial<TaxDocument>): TaxDocument | undefined {
-    const documents = this.getAllDocuments();
+    const documents = this.getRawDocuments();
     const index = documents.findIndex(d => d.id === id);
     if (index === -1) return undefined;
 
@@ -86,15 +96,36 @@ export class TaxDocumentService {
     return documents[index];
   }
 
-  // Delete a document
+  // Soft-delete a document (recoverable for 30 days)
   static deleteDocument(id: string): boolean {
-    const documents = this.getAllDocuments();
-    const filtered = documents.filter(d => d.id !== id);
-    
-    if (filtered.length === documents.length) return false;
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    const documents = this.getRawDocuments();
+    const index = documents.findIndex(d => d.id === id);
+
+    if (index === -1) return false;
+
+    documents[index] = { ...documents[index], deletedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
     return true;
+  }
+
+  static getDeletedDocuments(): TaxDocument[] {
+    return this.getRawDocuments().filter(d => !!d.deletedAt);
+  }
+
+  static restoreDocument(id: string): boolean {
+    const documents = this.getRawDocuments();
+    const index = documents.findIndex(d => d.id === id);
+
+    if (index === -1) return false;
+
+    documents[index] = { ...documents[index], deletedAt: undefined };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    return true;
+  }
+
+  static permanentlyDeleteDocument(id: string): void {
+    const documents = this.getRawDocuments().filter(d => d.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
   }
 
   // Get available years from documents + custom years

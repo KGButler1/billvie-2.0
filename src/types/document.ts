@@ -12,6 +12,7 @@ export interface HouseholdDocument {
   visibility: DocumentVisibility;
   markedForAdvisor: boolean;
   fileName?: string;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }
