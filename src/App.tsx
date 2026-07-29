@@ -16,6 +16,7 @@ import AccountantPortal from "./pages/AccountantPortal";
 import Documents from "./pages/Documents";
 import AdvisorPortal from "./pages/AdvisorPortal";
 import HouseholdSummary from "./pages/HouseholdSummary";
+import SharedView from "./pages/SharedView";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/documents" element={<Documents />} />
             <Route path="/advisor" element={<AdvisorPortal />} />
             <Route path="/export/summary" element={<HouseholdSummary />} />
+            <Route path="/shared/:token" element={<SharedView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

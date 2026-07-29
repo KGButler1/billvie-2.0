@@ -111,6 +111,11 @@ export class SharingService {
     return this.getAllShares().find(s => s.shareLink === link);
   }
 
+  // Get share by token (last segment of the share link)
+  static getShareByToken(token: string): Share | undefined {
+    return this.getAllShares().find(s => s.shareLink?.split('/').pop() === token);
+  }
+
   // Activity Log
   static getActivityLog(shareId?: string): ActivityLogEntry[] {
     const data = localStorage.getItem(ACTIVITY_LOG_KEY);
