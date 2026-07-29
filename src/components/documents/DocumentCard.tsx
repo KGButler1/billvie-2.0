@@ -1,4 +1,4 @@
-import { Shield, TrendingUp, Building, Landmark, FileText, File, Eye, Lock, UserCheck, Trash2 } from 'lucide-react';
+import { Shield, TrendingUp, Building, Landmark, FileText, File, Eye, Lock, UserCheck, Trash2, Paperclip, Link2, MapPin } from 'lucide-react';
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { Badge } from '@/components/ui/badge';
 
@@ -15,10 +15,13 @@ interface DocumentCardProps {
   document: HouseholdDocument;
   onToggleAdvisor: (id: string) => void;
   onDelete: (id: string) => void;
+  onAttach: (id: string) => void;
 }
 
-const DocumentCard = ({ document, onToggleAdvisor, onDelete }: DocumentCardProps) => {
+const DocumentCard = ({ document, onToggleAdvisor, onDelete, onAttach }: DocumentCardProps) => {
   const Icon = typeIcons[document.type] || File;
+  const hasAttachment = !!(document.attachment || document.externalLink || document.physicalLocation);
+
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow">
