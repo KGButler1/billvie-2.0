@@ -1,27 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { UserCheck, Shield, FileText, Receipt, Mail } from 'lucide-react';
+import { UserCheck, Shield, Mail, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DocumentService } from '@/services/DocumentService';
-import { BillService } from '@/services/BillService';
-import { HouseholdDocument } from '@/types/document';
-import { Bill } from '@/types/bill';
+import { Label } from '@/components/ui/label';
+import { SharingService } from '@/services/SharingService';
+import ShareContentPreview from '@/components/sharing/ShareContentPreview';
 import BottomNav from '@/components/BottomNav';
 
 const AdvisorPortal = () => {
-  const [advisorDocs, setAdvisorDocs] = useState<HouseholdDocument[]>([]);
-  const [advisorBills, setAdvisorBills] = useState<Bill[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [invitedEmail, setInvitedEmail] = useState('');
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    setAdvisorDocs(DocumentService.getAdvisorItems());
-    // Bills don't have markedForAdvisor yet — show none for now
-    setAdvisorBills([]);
-  }, []);
+  const handleInvite = () => {
+    const email = inviteEmail.trim();
+    if (!email.includes('@')) return;
+    const share = SharingService.createAdvisorShare(email);
+    setInviteLink(share.shareLink || '');
+    setInvitedEmail(email);
+    setInviteEmail('');
+  };
 
-  const totalItems = advisorDocs.length + advisorBills.length;
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -42,8 +49,14 @@ const AdvisorPortal = () => {
           </p>
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
             <Shield className="w-3 h-3" />
-            Your advisor only sees items you've specifically marked
+            Your advisor sees your bills and any documents you've marked
           </p>
+        </div>
+
+        <div className="hidden lg:flex justify-end mb-4">
+          <Button variant="outline" size="sm" onClick={() => setShowInvite(!showInvite)} className="gap-1.5">
+            <Mail className="w-4 h-4" /> Invite
+          </Button>
         </div>
 
         {/* Invite section */}
@@ -54,7 +67,9 @@ const AdvisorPortal = () => {
             className="mb-6 p-4 rounded-xl bg-card border border-border"
           >
             <h3 className="text-sm font-medium mb-2">Invite your advisor</h3>
-            <p className="text-xs text-muted-foreground mb-3">They'll receive a link to view only the items you've marked</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              They'll receive a link to view your bills and the documents you've marked. Always free.
+            </p>
             <div className="flex gap-2">
               <Input
                 placeholder="advisor@email.com"
@@ -62,8 +77,24 @@ const AdvisorPortal = () => {
                 onChange={(e) => setInviteEmail(e.target.value)}
                 type="email"
               />
-              <Button size="sm" disabled={!inviteEmail.includes('@')}>Send</Button>
+              <Button size="sm" disabled={!inviteEmail.includes('@')} onClick={handleInvite}>
+                Send
+              </Button>
             </div>
+
+            {inviteLink && (
+              <div className="bg-muted/50 rounded-lg p-3 mt-4">
+                <Label className="text-xs text-muted-foreground mb-2 block">
+                  Invite sent to {invitedEmail}. Or share this link:
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input value={inviteLink} readOnly className="text-xs font-mono" />
+                  <Button size="sm" variant="outline" onClick={handleCopyLink}>
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -72,66 +103,12 @@ const AdvisorPortal = () => {
           This is what your advisor can see
         </h2>
 
-        {totalItems === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <UserCheck className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-lg font-semibold mb-2">Nothing shared yet</h2>
-            <p className="text-muted-foreground text-sm mb-2 max-w-sm mx-auto">
-              Mark bills or documents as "Share with advisor" and they'll appear here — no back-and-forth emails.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Go to <strong>Important Documents</strong> or any bill to mark items
-            </p>
-          </motion.div>
-        ) : (
-          <div className="space-y-6">
-            {/* Documents section */}
-            {advisorDocs.length > 0 && (
-              <section>
-                <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  Documents ({advisorDocs.length})
-                </h3>
-                <div className="space-y-2">
-                  {advisorDocs.map((doc) => (
-                    <div key={doc.id} className="bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{doc.title}</p>
-                        {doc.provider && <p className="text-xs text-muted-foreground">{doc.provider}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+        <ShareContentPreview type="advisor" />
 
-            {/* Bills section — future */}
-            {advisorBills.length > 0 && (
-              <section>
-                <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-primary" />
-                  Bills ({advisorBills.length})
-                </h3>
-                <div className="space-y-2">
-                  {advisorBills.map((bill) => (
-                    <div key={bill.id} className="bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{bill.name}</p>
-                        {bill.amount && <p className="text-xs text-muted-foreground">${bill.amount}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-        )}
+        <div className="mt-8 flex items-start gap-2 text-xs text-muted-foreground">
+          <UserCheck className="w-4 h-4 shrink-0" />
+          <p>Mark documents as "Share with advisor" in Important Documents to include them here.</p>
+        </div>
       </main>
 
       <BottomNav />

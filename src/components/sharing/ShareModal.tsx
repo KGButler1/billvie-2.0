@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ShareType, SharePermission, SHARE_PERMISSION_LABELS } from '@/types/sharing';
 import { SharingService } from '@/services/SharingService';
 import { UserService } from '@/services/UserService';
+import ShareContentPreview from '@/components/sharing/ShareContentPreview';
 import { cn } from '@/lib/utils';
 
 interface ShareModalProps {
