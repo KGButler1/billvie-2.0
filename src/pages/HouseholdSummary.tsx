@@ -319,8 +319,11 @@ const HouseholdSummary = () => {
                   {DOCUMENT_TYPE_LABELS[d.type]}
                   {d.keyDetail ? ` · ${d.keyDetail}` : ''}
                   {d.notes ? ` · ${d.notes}` : ''}
+                  {d.physicalLocation ? ` · Original in ${d.physicalLocation}` : ''}
+                  {d.externalLink ? ` · ${d.externalLink}` : ''}
                 </li>
               ))}
+
             </ul>
           )}
         </Section>
