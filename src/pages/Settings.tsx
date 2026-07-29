@@ -105,9 +105,8 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* Active Shares Section - Only for paid users */}
-        {isPaid && (
-        )}
+
+
 
         {/* Subscription Section */}
         <section className="mb-8">
