@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Link2, Mail, Copy, Check, Lock, Users } from 'lucide-react';
+import { X, Link2, Mail, Copy, Check, Lock, Users, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ShareType, SharePermission, SHARE_PERMISSION_LABELS } from '@/types/sharing';
 import { SharingService } from '@/services/SharingService';
 import { UserService } from '@/services/UserService';
+import ShareContentPreview from '@/components/sharing/ShareContentPreview';
 import { cn } from '@/lib/utils';
 
 interface ShareModalProps {
@@ -30,6 +31,7 @@ const ShareModal = ({
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<SharePermission>('view');
   const [showLink, setShowLink] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -85,6 +87,7 @@ const ShareModal = ({
     bills: 'Bills',
     event: 'Event',
     tax_documents: 'Tax Documents',
+    advisor: 'Advisor Access',
   };
 
   return (
@@ -216,6 +219,22 @@ const ShareModal = ({
                   </Label>
                 </div>
               </RadioGroup>
+            </div>
+
+            {/* Preview what they'll see */}
+            <div>
+              <button
+                onClick={() => setShowPreview(!showPreview)}
+                className="flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <Eye className="w-4 h-4" />
+                {showPreview ? 'Hide preview' : "Preview what they'll see"}
+              </button>
+              {showPreview && (
+                <div className="mt-3 max-h-64 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3">
+                  <ShareContentPreview type={type} resourceId={resourceId} />
+                </div>
+              )}
             </div>
 
             {/* Toggle link option */}

@@ -1,6 +1,6 @@
 // Sharing Types
 export type SharePermission = 'view' | 'edit';
-export type ShareType = 'bills' | 'event' | 'tax_documents';
+export type ShareType = 'bills' | 'event' | 'tax_documents' | 'advisor';
 export type ShareStatus = 'pending' | 'accepted' | 'declined';
 
 // File Attachment Type
