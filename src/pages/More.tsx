@@ -92,23 +92,17 @@ const More = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
-        {/* Household Records */}
+        {/* Records & Tools */}
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Household Records
+            Records &amp; Tools
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
             <MenuItem
-              icon={FolderOpen}
-              label="Important Documents"
-              description="Insurance, accounts & what your household depends on"
-              onClick={() => navigate('/documents')}
-            />
-            <MenuItem
-              icon={Users}
-              label="Key People"
-              description="Who to call, and why"
-              onClick={() => navigate('/key-people')}
+              icon={Calendar}
+              label="Events"
+              description="One-off plans and what they cost"
+              onClick={() => navigate('/events')}
             />
             <MenuItem
               icon={Receipt}
@@ -116,15 +110,6 @@ const More = () => {
               description="Receipts, deductions & records"
               onClick={() => navigate('/tax-documents')}
             />
-          </div>
-        </section>
-
-        {/* Premium Features */}
-        <section className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Premium Tools
-          </h2>
-          <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
             <MenuItem
               icon={Building}
               label="Financial Snapshot"
@@ -133,30 +118,23 @@ const More = () => {
               locked={!isPaid}
               badge={isPaid ? undefined : 'Paid'}
             />
+            <MenuItem
+              icon={Users}
+              label="Key People"
+              description="Who to call, and why"
+              onClick={() => navigate('/key-people')}
+            />
+            {isAccountant && (
+              <MenuItem
+                icon={Users}
+                label="Accountant Portal"
+                description="Manage your clients"
+                onClick={() => navigate('/accountant')}
+              />
+            )}
           </div>
         </section>
 
-        {/* Advisor & Professional */}
-        <section className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Trusted People
-          </h2>
-          <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
-            <MenuItem
-              icon={UserCheck}
-              label="Advisor Portal"
-              description="Share what your accountant or advisor needs"
-              onClick={() => navigate('/advisor')}
-            />
-            <MenuItem
-              icon={Users}
-              label="Accountant Portal"
-              description={isAccountant ? 'Manage your clients' : 'For accounting professionals'}
-              onClick={() => navigate('/accountant')}
-              badge="Free"
-            />
-          </div>
-        </section>
 
         {/* App Settings */}
         <section className="mb-8">
