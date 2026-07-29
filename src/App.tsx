@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
@@ -14,7 +14,7 @@ import FinancialInfo from "./pages/FinancialInfo";
 import TaxDocuments from "./pages/TaxDocuments";
 import AccountantPortal from "./pages/AccountantPortal";
 import Documents from "./pages/Documents";
-import AdvisorPortal from "./pages/AdvisorPortal";
+import People from "./pages/People";
 import HouseholdSummary from "./pages/HouseholdSummary";
 import SharedView from "./pages/SharedView";
 import RecentlyDeleted from "./pages/RecentlyDeleted";
@@ -53,7 +53,8 @@ const App = () => {
             <Route path="/tax-documents" element={<TaxDocuments />} />
             <Route path="/accountant" element={<AccountantPortal />} />
             <Route path="/documents" element={<Documents />} />
-            <Route path="/advisor" element={<AdvisorPortal />} />
+            <Route path="/people" element={<People />} />
+            <Route path="/advisor" element={<Navigate to="/people" replace />} />
             <Route path="/export/summary" element={<HouseholdSummary />} />
             <Route path="/shared/:token" element={<SharedView />} />
             <Route path="/recently-deleted" element={<RecentlyDeleted />} />

@@ -3,21 +3,27 @@ import { motion } from 'framer-motion';
 import { X, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 
 interface KeyPersonModalProps {
   person?: KeyPerson;
+  defaults?: Partial<Pick<KeyPerson, 'name' | 'email'>>;
   onSave: (person: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onClose: () => void;
 }
 
-const KeyPersonModal = ({ person, onSave, onClose }: KeyPersonModalProps) => {
-  const [name, setName] = useState(person?.name ?? '');
+const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalProps) => {
+  const [name, setName] = useState(person?.name ?? defaults?.name ?? '');
   const [relationship, setRelationship] = useState<string>(person?.relationship ?? 'spouse');
   const [phone, setPhone] = useState(person?.phone ?? '');
   const [role, setRole] = useState(person?.role ?? '');
+  const [email, setEmail] = useState(person?.email ?? defaults?.email ?? '');
+  const [address, setAddress] = useState(person?.address ?? '');
+  const [notes, setNotes] = useState(person?.notes ?? '');
+  const [emailWarning, setEmailWarning] = useState(false);
   const [visibility, setVisibility] = useState<'private' | 'shared'>(person?.visibility ?? 'private');
 
   const handleSubmit = () => {
@@ -26,6 +32,9 @@ const KeyPersonModal = ({ person, onSave, onClose }: KeyPersonModalProps) => {
       name: name.trim(),
       relationship,
       phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+      address: address.trim() || undefined,
+      notes: notes.trim() || undefined,
       role: role.trim(),
       visibility,
     });
@@ -102,6 +111,43 @@ const KeyPersonModal = ({ person, onSave, onClose }: KeyPersonModalProps) => {
             />
             <p className="text-xs text-muted-foreground mt-1">The reason someone would need to call them</p>
           </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Email <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Input
+              placeholder="e.g. sarah@example.com"
+              value={email}
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailWarning(!!email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim()))}
+            />
+            {emailWarning && (
+              <p className="text-xs text-muted-foreground mt-1">That doesn't look like an email address.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Address <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Input placeholder="e.g. 12 Grove St, Melbourne" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Notes <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Textarea
+              rows={2}
+              placeholder="Anything someone would want to know about them"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+
 
           <div className="flex items-center justify-between py-2">
             <div>

@@ -14,7 +14,10 @@ export interface KeyPerson {
   name: string;
   relationship: KeyPersonRelationship | string;
   phone?: string;
+  email?: string;
+  address?: string;
   role: string; // e.g. "Has power of attorney", "Holds a spare key", "Knows the alarm code"
+  notes?: string;
   visibility: 'private' | 'shared'; // same pattern as HouseholdDocument
   createdAt: string;
   updatedAt: string;

@@ -6,7 +6,6 @@ import {
   MoreHorizontal,
   FolderOpen,
   Settings,
-  UserCheck,
   Users,
   Building,
   HelpCircle,
@@ -24,21 +23,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
+import { UserService } from '@/services/UserService';
 
 const primaryNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/bills', icon: Receipt, label: 'Bills' },
-  { path: '/events', icon: Calendar, label: 'Events' },
+  { path: '/documents', icon: FolderOpen, label: 'Documents' },
+  { path: '/people', icon: Users, label: 'People' },
 ];
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isActive = (path: string) =>
-    location.pathname === path ||
-    (path === '/dashboard' && location.pathname === '/bills') ||
-    (path === '/bills' && location.pathname === '/bills');
+  const settings = UserService.getSettings();
+  const isAccountant = settings.userType === 'accountant';
+
+  const currentPath = location.pathname === '/bills' ? '/dashboard' : location.pathname;
+  const isActive = (path: string) => currentPath === path;
 
   return (
     <>
@@ -54,10 +55,7 @@ const BottomNav = () => {
 
           <nav className="flex items-center gap-1">
             {primaryNav.map(({ path, icon: Icon, label }) => {
-              const active =
-                location.pathname === path ||
-                (path === '/dashboard' &&
-                  (location.pathname === '/dashboard' || location.pathname === '/bills'));
+              const active = isActive(path);
               return (
                 <Link
                   key={path}
@@ -74,18 +72,6 @@ const BottomNav = () => {
                 </Link>
               );
             })}
-            <Link
-              to="/documents"
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                location.pathname === '/documents'
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-              )}
-            >
-              <FolderOpen className="w-4 h-4" />
-              Documents
-            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -97,21 +83,21 @@ const BottomNav = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-background z-50">
-                <DropdownMenuLabel>Trusted People</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigate('/advisor')}>
-                  <UserCheck className="w-4 h-4 mr-2" /> Advisor Portal
+                <DropdownMenuLabel>Records &amp; Tools</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate('/events')}>
+                  <Calendar className="w-4 h-4 mr-2" /> Events
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/accountant')}>
-                  <Users className="w-4 h-4 mr-2" /> Accountant Portal
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Records & Tools</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => navigate('/tax-documents')}>
                   <Receipt className="w-4 h-4 mr-2" /> Tax Documents
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/financial')}>
                   <Building className="w-4 h-4 mr-2" /> Financial Snapshot
                 </DropdownMenuItem>
+                {isAccountant && (
+                  <DropdownMenuItem onClick={() => navigate('/accountant')}>
+                    <Users className="w-4 h-4 mr-2" /> Accountant Portal
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>App</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => navigate('/settings')}>

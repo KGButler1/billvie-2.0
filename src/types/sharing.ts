@@ -1,8 +1,3 @@
-// Sharing Types
-export type SharePermission = 'view' | 'edit';
-export type ShareType = 'bills' | 'event' | 'tax_documents' | 'advisor';
-export type ShareStatus = 'pending' | 'accepted' | 'declined';
-
 // File Attachment Type
 export interface FileAttachment {
   name: string;
@@ -11,33 +6,6 @@ export interface FileAttachment {
   dataUrl: string; // Base64-encoded file content
 }
 
-export interface Share {
-  id: string;
-  type: ShareType;
-  resourceId?: string; // For specific event, undefined for all bills
-  resourceName?: string; // Event name or "All Bills"
-  ownerId: string;
-  sharedWithEmail: string;
-  sharedWithName?: string;
-  permission: SharePermission;
-  status: ShareStatus;
-  shareLink?: string;
-  createdAt: string;
-  acceptedAt?: string;
-  // Tax document specific sharing filters
-  sharedCategories?: TaxCategory[]; // undefined = all categories
-  sharedYears?: number[]; // undefined = all years
-}
-
-export interface ActivityLogEntry {
-  id: string;
-  shareId: string;
-  action: string;
-  performedBy: string;
-  performedByName?: string;
-  details?: string;
-  timestamp: string;
-}
 
 // Tax Document Types
 export type TaxCategory = string; // Now supports custom categories
@@ -101,9 +69,4 @@ export const TAX_CATEGORY_ICONS: Record<DefaultTaxCategory, string> = {
   work_expenses: '💼',
   education: '📚',
   other: '📄',
-};
-
-export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = {
-  view: 'View Only',
-  edit: 'Full Access',
 };

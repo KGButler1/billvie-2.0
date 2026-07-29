@@ -5,7 +5,8 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { DocumentService } from '@/services/DocumentService';
-import { ShareType, TaxCategory } from '@/types/sharing';
+import { TaxCategory } from '@/types/sharing';
+import { AccessScope } from '@/types/people';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
 import {
   Bill,
@@ -183,42 +184,61 @@ const TaxContent = ({
   );
 };
 
-const AdvisorContent = () => {
+const DocumentsContent = () => {
   const docs = useMemo(() => DocumentService.getAdvisorItems(), []);
+
+  if (docs.length === 0) {
+    return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
+  }
+
+  return (
+    <SectionCard title="Important documents">
+      {docs.map((doc) => (
+        <div key={doc.id} className="p-4">
+          <p className="font-medium">{doc.title}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {[doc.provider, DOCUMENT_TYPE_LABELS[doc.type]].filter(Boolean).join(' · ')}
+          </p>
+          {doc.keyDetail && <p className="text-sm text-muted-foreground mt-1">{doc.keyDetail}</p>}
+          {doc.notes && <p className="text-sm text-muted-foreground mt-1">{doc.notes}</p>}
+        </div>
+      ))}
+    </SectionCard>
+  );
+};
+
+const EventsContent = ({ eventId }: { eventId?: string }) => {
+  const events = useMemo(
+    () => (eventId ? [] : EventService.getAllEvents()),
+    [eventId]
+  );
+
+  if (eventId) return <EventContent eventId={eventId} />;
+  if (events.length === 0) {
+    return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
+  }
 
   return (
     <>
-      <BillsContent />
-      {docs.length > 0 && (
-        <SectionCard title="Documents shared with your advisor">
-          {docs.map((doc) => (
-            <div key={doc.id} className="p-4">
-              <p className="font-medium">{doc.title}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {[doc.provider, DOCUMENT_TYPE_LABELS[doc.type]].filter(Boolean).join(' · ')}
-              </p>
-              {doc.keyDetail && <p className="text-sm text-muted-foreground mt-1">{doc.keyDetail}</p>}
-              {doc.notes && <p className="text-sm text-muted-foreground mt-1">{doc.notes}</p>}
-            </div>
-          ))}
-        </SectionCard>
-      )}
+      {events.map((event) => (
+        <EventContent key={event.id} eventId={event.id} />
+      ))}
     </>
   );
 };
 
 interface ShareContentPreviewProps {
-  type: ShareType;
+  scope: AccessScope;
   resourceId?: string;
   sharedCategories?: TaxCategory[];
   sharedYears?: number[];
 }
 
-const ShareContentPreview = ({ type, resourceId, sharedCategories, sharedYears }: ShareContentPreviewProps) => {
-  if (type === 'bills') return <BillsContent />;
-  if (type === 'event') return <EventContent eventId={resourceId} />;
-  if (type === 'tax_documents') return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} />;
-  if (type === 'advisor') return <AdvisorContent />;
+const ShareContentPreview = ({ scope, resourceId, sharedCategories, sharedYears }: ShareContentPreviewProps) => {
+  if (scope === 'bills') return <BillsContent />;
+  if (scope === 'events') return <EventsContent eventId={resourceId} />;
+  if (scope === 'tax_documents') return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} />;
+  if (scope === 'documents') return <DocumentsContent />;
   return null;
 };
 

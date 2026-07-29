@@ -1,5 +1,5 @@
 import { BillService } from '@/services/BillService';
-import { SharingService } from '@/services/SharingService';
+import { AccessService } from '@/services/AccessService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { DocumentService } from '@/services/DocumentService';
@@ -26,10 +26,10 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
   {
     id: 'access',
     label: 'Someone has access',
-    covered: SharingService.getActiveShares().length > 0,
-    nudge: 'No one has access yet — consider sharing with someone you trust.',
+    covered: AccessService.getActivePeople().length > 0,
+    nudge: 'No one else can see any of this yet.',
     actionLabel: 'Share with someone',
-    actionPath: '/advisor?invite=1',
+    actionPath: '/people?invite=1',
   },
   {
     id: 'financial',
