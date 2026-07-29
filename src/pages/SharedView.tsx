@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Info, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
-import { SharingService } from '@/services/SharingService';
+import { PeopleService } from '@/services/PeopleService';
+import { AccessService } from '@/services/AccessService';
 import ShareContentPreview from '@/components/sharing/ShareContentPreview';
-import { Share } from '@/types/sharing';
+import { ACCESS_SCOPE_LABELS, TrustedPerson } from '@/types/people';
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-background">
@@ -21,19 +22,21 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 
 const SharedView = () => {
   const { token } = useParams<{ token: string }>();
-  const [share, setShare] = useState<Share | undefined>(() =>
-    token ? SharingService.getShareByToken(token) : undefined
+  const [person, setPerson] = useState<TrustedPerson | undefined>(() =>
+    token ? PeopleService.getByToken(token) : undefined
   );
-  const [accepted, setAccepted] = useState(share?.status === 'accepted');
+  const [accepted, setAccepted] = useState(person?.status === 'active');
+
+  const grants = useMemo(
+    () => (person && accepted ? AccessService.getGrantsForPerson(person.id) : []),
+    [person, accepted]
+  );
 
   useEffect(() => {
-    if (share && share.status === 'accepted') {
-      SharingService.addActivityLog(share.id, 'Viewed', share.sharedWithEmail, share.sharedWithName);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [share?.id]);
+    if (person && person.status === 'active') setAccepted(true);
+  }, [person]);
 
-  if (!share) {
+  if (!person || person.status === 'removed') {
     return (
       <Shell>
         <div className="text-center py-16">
@@ -47,12 +50,9 @@ const SharedView = () => {
     );
   }
 
-  const sharerName = share.sharedWithName && share.ownerId !== 'current_user' ? share.ownerId : 'Someone';
-  const resourceName = share.resourceName || 'their household';
-
   const handleAccept = () => {
-    const updated = SharingService.acceptShare(share.id);
-    if (updated) setShare(updated);
+    const updated = PeopleService.activate(person.id);
+    if (updated) setPerson(updated);
     setAccepted(true);
   };
 
@@ -60,9 +60,7 @@ const SharedView = () => {
     return (
       <Shell>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10">
-          <h1 className="text-2xl md:text-3xl font-semibold mb-3">
-            {sharerName} shared {resourceName} with you
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-semibold mb-3">Someone shared their household with you</h1>
           <p className="text-muted-foreground max-w-md mx-auto mb-8">
             Billvie is where families keep track of what's owed and what's coming up, together.
           </p>
@@ -77,23 +75,17 @@ const SharedView = () => {
   return (
     <Shell>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">{resourceName}</h1>
-        <p className="text-sm text-muted-foreground mt-1">Shared with you by {sharerName}</p>
+        <h1 className="text-2xl font-semibold">Shared with you</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {grants.length === 0
+            ? "Nothing has been shared with you yet."
+            : `You can see ${grants.map((g) => ACCESS_SCOPE_LABELS[g.scope].toLowerCase()).join(', ')}.`}
+        </p>
       </div>
 
-      {share.permission === 'edit' && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
-          <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <p>Full editing is coming soon — for now this is a read-only view.</p>
-        </div>
-      )}
-
-      <ShareContentPreview
-        type={share.type}
-        resourceId={share.resourceId}
-        sharedCategories={share.sharedCategories}
-        sharedYears={share.sharedYears}
-      />
+      {grants.map((grant) => (
+        <ShareContentPreview key={grant.id} scope={grant.scope} resourceId={grant.itemId} />
+      ))}
 
       <footer className="mt-12 pt-8 border-t border-border text-center">
         <p className="text-muted-foreground mb-3">Want this kind of visibility into your own household?</p>
