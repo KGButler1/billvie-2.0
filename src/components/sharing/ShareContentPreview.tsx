@@ -5,7 +5,8 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { DocumentService } from '@/services/DocumentService';
-import { ShareType, TaxCategory } from '@/types/sharing';
+import { TaxCategory } from '@/types/sharing';
+import { AccessScope } from '@/types/people';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
 import {
   Bill,
