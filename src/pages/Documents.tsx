@@ -74,6 +74,7 @@ const Documents = () => {
                 <DocumentCard
                   document={doc}
                   onToggleAdvisor={(id) => { DocumentService.toggleAdvisor(id); reload(); }}
+                  onAttach={(id) => setAttachingId(id)}
                   onDelete={(id) => {
                     if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
                     DocumentService.delete(id);
@@ -90,7 +91,14 @@ const Documents = () => {
         {isAdding && (
           <AddDocumentModal onAdd={handleAdd} onClose={() => setIsAdding(false)} />
         )}
+        {attachingDoc && (
+          <AttachDocumentSheet
+            document={attachingDoc}
+            onClose={() => { setAttachingId(null); reload(); }}
+          />
+        )}
       </AnimatePresence>
+
 
       <BottomNav />
     </div>
