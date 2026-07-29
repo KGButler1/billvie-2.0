@@ -75,6 +75,12 @@ export class SharingService {
     return share;
   }
 
+  // Share with an advisor — always free, never gated.
+  static createAdvisorShare(email: string): Share {
+    // Advisor sharing is always free — do not add an isPaid or free-share-quota check here.
+    return this.createShare('advisor', email, 'view', undefined, 'Advisor Access');
+  }
+
   // Accept a share
   static acceptShare(shareId: string): Share | undefined {
     const shares = this.getAllShares();
