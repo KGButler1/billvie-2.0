@@ -242,7 +242,7 @@ const People = () => {
                         {previewOpen === entry.key && (
                           <div className="mt-2 rounded-lg border border-border bg-background p-4 max-h-80 overflow-y-auto">
                             {entry.scopes.map((scope) => (
-                              <ShareContentPreview key={scope} scope={scope} />
+                              <ShareContentPreview key={scope} scope={scope} personId={person.id} />
                             ))}
                           </div>
                         )}

@@ -3,6 +3,8 @@ import { EventService } from '@/services/EventService';
 import { DocumentService } from '@/services/DocumentService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
+import { PeopleService } from '@/services/PeopleService';
+import { AccessService } from '@/services/AccessService';
 
 export function downloadBackup() {
   const backup = {
@@ -16,6 +18,9 @@ export function downloadBackup() {
     debts: FinancialInfoService.getDebts(),
     financialMisc: FinancialInfoService.getMisc(),
     taxDocuments: TaxDocumentService.getAllDocuments(),
+    // Raw getters: removed people and revoked grants are part of the record.
+    trustedPeople: PeopleService.getRaw(),
+    accessGrants: AccessService.getRawGrants(),
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

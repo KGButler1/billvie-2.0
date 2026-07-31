@@ -84,7 +84,7 @@ const SharedView = () => {
       </div>
 
       {grants.map((grant) => (
-        <ShareContentPreview key={grant.id} scope={grant.scope} resourceId={grant.itemId} />
+        <ShareContentPreview key={grant.id} scope={grant.scope} personId={person.id} resourceId={grant.itemId} />
       ))}
 
       <footer className="mt-12 pt-8 border-t border-border text-center">
