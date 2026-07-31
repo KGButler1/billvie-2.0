@@ -158,16 +158,17 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
 
 
 
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-sm font-medium">Visible to shared members</p>
-              <p className="text-xs text-muted-foreground">People you've invited can see this</p>
-            </div>
-            <Switch
-              checked={visibility === 'shared'}
-              onCheckedChange={(checked) => setVisibility(checked ? 'shared' : 'private')}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
+            <AccessPicker
+              scope="key_people"
+              itemId={person?.id}
+              roleFilter="household"
+              selectedPersonIds={householdIds}
+              onChange={setHouseholdIds}
             />
           </div>
+
 
           <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
             <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
