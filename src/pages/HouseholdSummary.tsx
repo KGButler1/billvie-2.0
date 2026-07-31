@@ -308,7 +308,7 @@ const HouseholdSummary = () => {
 
         <Section title="Important Documents">
           {documents.length === 0 ? (
-            <Empty text="No shared documents recorded." />
+            <Empty text="No documents recorded." />
           ) : (
             <ul className="text-sm space-y-1">
               {documents.map((d) => (
@@ -319,8 +319,10 @@ const HouseholdSummary = () => {
                   {d.notes ? ` · ${d.notes}` : ''}
                   {d.physicalLocation ? ` · Original in ${d.physicalLocation}` : ''}
                   {d.externalLink ? ` · ${d.externalLink}` : ''}
+                  <div className="text-xs text-muted-foreground">{documentViewers(d.id)}</div>
                 </li>
               ))}
+
 
             </ul>
           )}
