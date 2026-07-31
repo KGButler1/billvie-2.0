@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Users, Phone, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Users, Phone, Pencil, Trash2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
+import { PeopleService } from '@/services/PeopleService';
+import { AccessService } from '@/services/AccessService';
 import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
 import BottomNav from '@/components/BottomNav';
@@ -19,12 +21,14 @@ const KeyPeople = () => {
 
   const reload = () => setPeople(KeyPeopleService.getAllKeyPeople());
 
-  const handleSave = (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (editing) {
-      KeyPeopleService.updateKeyPerson(editing.id, data);
-    } else {
-      KeyPeopleService.addKeyPerson(data);
-    }
+  const handleSave = (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>, personIds: string[]) => {
+    const id = editing ? (KeyPeopleService.updateKeyPerson(editing.id, data), editing.id)
+                       : KeyPeopleService.addKeyPerson(data).id;
+    const household = PeopleService.getAll().filter((p) => p.role === 'household');
+    household.forEach((p) => {
+      if (personIds.includes(p.id)) AccessService.grantItem(p.id, 'key_people', id);
+      else AccessService.revokeScopeForPerson(p.id, 'key_people', id);
+    });
     reload();
     setIsAdding(false);
     setEditing(null);
@@ -37,12 +41,9 @@ const KeyPeople = () => {
     }
   };
 
-  const toggleVisibility = (person: KeyPerson) => {
-    KeyPeopleService.updateKeyPerson(person.id, {
-      visibility: person.visibility === 'shared' ? 'private' : 'shared',
-    });
-    reload();
-  };
+  const viewersFor = (person: KeyPerson) =>
+    AccessService.getPeopleFor('key_people', person.id).map((p) => p.name.trim().split(' ')[0]);
+
 
   return (
     <div className="min-h-screen bg-background pb-24">
