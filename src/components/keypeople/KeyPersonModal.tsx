@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
+import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS } from '@/types/keyPerson';
+import AccessPicker from '@/components/people/AccessPicker';
+import { PeopleService } from '@/services/PeopleService';
+import { AccessService } from '@/services/AccessService';
 
 interface KeyPersonModalProps {
   person?: KeyPerson;
   defaults?: Partial<Pick<KeyPerson, 'name' | 'email'>>;
-  onSave: (person: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave: (person: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>, personIds: string[]) => void;
   onClose: () => void;
 }
 
@@ -24,21 +26,28 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
   const [address, setAddress] = useState(person?.address ?? '');
   const [notes, setNotes] = useState(person?.notes ?? '');
   const [emailWarning, setEmailWarning] = useState(false);
-  const [visibility, setVisibility] = useState<'private' | 'shared'>(person?.visibility ?? 'private');
+  const [householdIds, setHouseholdIds] = useState<string[]>(() => {
+    const household = PeopleService.getAll().filter((p) => p.role === 'household');
+    if (!person) return household.map((p) => p.id);
+    return household.filter((p) => AccessService.canSee(p.id, 'key_people', person.id)).map((p) => p.id);
+  });
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    onSave({
-      name: name.trim(),
-      relationship,
-      phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
-      address: address.trim() || undefined,
-      notes: notes.trim() || undefined,
-      role: role.trim(),
-      visibility,
-    });
+    onSave(
+      {
+        name: name.trim(),
+        relationship,
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        address: address.trim() || undefined,
+        notes: notes.trim() || undefined,
+        role: role.trim(),
+      },
+      householdIds
+    );
   };
+
 
   return (
     <motion.div
