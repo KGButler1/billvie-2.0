@@ -16,13 +16,13 @@ export interface TrustedPerson {
   updatedAt: string;
 }
 
-export type AccessScope = 'bills' | 'documents' | 'events' | 'tax_documents';
+export type AccessScope = 'bills' | 'documents' | 'events' | 'tax_documents' | 'key_people';
 
 export interface AccessGrant {
   id: string;
   personId: string;
   scope: AccessScope;
-  itemId?: string; // reserved for Stage C; undefined = the whole scope
+  itemId?: string; // undefined = the whole scope
   grantedAt: string;
   revokedAt?: string; // NEVER delete a grant — this is the history
 }
@@ -32,9 +32,16 @@ export const ACCESS_SCOPE_LABELS: Record<AccessScope, string> = {
   documents: 'Important documents',
   events: 'Events',
   tax_documents: 'Tax documents',
+  key_people: 'Key contacts',
 };
 
-export const ACCESS_SCOPES: AccessScope[] = ['bills', 'documents', 'events', 'tax_documents'];
+export const ACCESS_SCOPES: AccessScope[] = [
+  'bills',
+  'documents',
+  'events',
+  'tax_documents',
+  'key_people',
+];
 
 export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {
   household: 'Household',
