@@ -67,7 +67,11 @@ const HouseholdSummary = () => {
   const debts = FinancialInfoService.getDebts();
   const misc = FinancialInfoService.getMisc();
 
-  const documents = DocumentService.getAll().filter((d) => d.visibility !== 'private');
+  const documents = DocumentService.getAll();
+  const documentViewers = (id: string) => {
+    const names = AccessService.getPeopleFor('documents', id).map((p) => p.name);
+    return names.length > 0 ? `Visible to: ${names.join(', ')}` : 'Visible to: no one yet';
+  };
 
   const peopleWithAccess = AccessService.getActivePeople().map((p) => ({
     name: p.name,
