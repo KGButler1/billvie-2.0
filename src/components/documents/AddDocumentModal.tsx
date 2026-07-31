@@ -5,11 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { DocumentType, DocumentVisibility, DOCUMENT_TYPE_LABELS, HouseholdDocument } from '@/types/document';
+import { DocumentType, DOCUMENT_TYPE_LABELS, HouseholdDocument } from '@/types/document';
+import AccessPicker from '@/components/people/AccessPicker';
+import { PeopleService } from '@/services/PeopleService';
 
 interface AddDocumentModalProps {
-  onAdd: (doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onAdd: (
+    doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
+    personIds: string[]
+  ) => void;
   onClose: () => void;
 }
 
@@ -19,20 +23,25 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
   const [type, setType] = useState<DocumentType>('insurance');
   const [keyDetail, setKeyDetail] = useState('');
   const [notes, setNotes] = useState('');
-  const [visibility, setVisibility] = useState<DocumentVisibility>('private');
-  const [markedForAdvisor, setMarkedForAdvisor] = useState(false);
+  // Sharing with family is the product's purpose; sending something to your
+  // accountant is a decision.
+  const [householdIds, setHouseholdIds] = useState<string[]>(() =>
+    PeopleService.getAll().filter((p) => p.role === 'household').map((p) => p.id)
+  );
+  const [professionalIds, setProfessionalIds] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    onAdd({
-      title: title.trim(),
-      provider: provider.trim(),
-      type,
-      keyDetail: keyDetail.trim() || undefined,
-      notes: notes.trim() || undefined,
-      visibility,
-      markedForAdvisor,
-    });
+    onAdd(
+      {
+        title: title.trim(),
+        provider: provider.trim(),
+        type,
+        keyDetail: keyDetail.trim() || undefined,
+        notes: notes.trim() || undefined,
+      },
+      [...householdIds, ...professionalIds]
+    );
   };
 
   return (
@@ -119,25 +128,23 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
             <p className="text-xs text-muted-foreground mt-1">This helps someone step in if needed</p>
           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-sm font-medium">Visible to shared members</p>
-              <p className="text-xs text-muted-foreground">People you've invited can see this</p>
-            </div>
-            <Switch
-              checked={visibility === 'shared'}
-              onCheckedChange={(checked) => setVisibility(checked ? 'shared' : 'private')}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
+            <AccessPicker
+              scope="documents"
+              roleFilter="household"
+              selectedPersonIds={householdIds}
+              onChange={setHouseholdIds}
             />
           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-sm font-medium">Share with advisor</p>
-              <p className="text-xs text-muted-foreground">Your accountant or advisor can access this</p>
-            </div>
-            <Switch
-              checked={markedForAdvisor}
-              onCheckedChange={setMarkedForAdvisor}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
+            <AccessPicker
+              scope="documents"
+              roleFilter="professional"
+              selectedPersonIds={professionalIds}
+              onChange={setProfessionalIds}
             />
           </div>
 
