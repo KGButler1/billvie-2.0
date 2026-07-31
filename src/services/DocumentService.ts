@@ -81,21 +81,8 @@ export const DocumentService = {
     this.save(this.getRaw().filter(d => d.id !== id));
   },
 
-  toggleAdvisor(id: string) {
-    const docs = this.getRaw();
-    const idx = docs.findIndex(d => d.id === id);
-    if (idx !== -1) {
-      docs[idx].markedForAdvisor = !docs[idx].markedForAdvisor;
-      docs[idx].updatedAt = new Date().toISOString();
-      this.save(docs);
-    }
-  },
-
-  getAdvisorItems(): HouseholdDocument[] {
-    return this.getAll().filter(d => d.markedForAdvisor);
-  },
-
   getRecent(count = 3): HouseholdDocument[] {
+
     return this.getAll()
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, count);

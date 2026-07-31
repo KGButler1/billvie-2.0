@@ -2,12 +2,18 @@ import { TrustedPerson, PersonRole, AccessScope, TrustedPersonStatus } from '@/t
 import { AccessService } from './AccessService';
 import { KeyPeopleService } from './KeyPeopleService';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
+import { EventService } from './EventService';
+import { TaxDocumentService } from './TaxDocumentService';
 
 const PEOPLE_KEY = 'billvie_trusted_people';
 const MIGRATED_KEY = 'billvie_people_migrated_v1';
+const MIGRATED_V2_KEY = 'billvie_grants_migrated_v2';
 const LEGACY_SHARES_KEY = 'billvie_shares';
+const LEGACY_DOCUMENTS_KEY = 'billvie_documents';
+const LEGACY_KEY_PEOPLE_KEY = 'billvie_key_people';
 
 const now = () => new Date().toISOString();
+
 
 const makeToken = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -103,11 +109,102 @@ const runMigration = () => {
   localStorage.setItem(MIGRATED_KEY, 'true');
 };
 
+type LegacyDocument = { id: string; visibility?: string; markedForAdvisor?: boolean };
+
+// Stage C migration. Fails closed: when the original intent can't be resolved,
+// nothing is granted. Idempotent — clearing the guard and re-running produces
+// the same grants, never duplicates.
+const runMigrationV2 = () => {
+  if (localStorage.getItem(MIGRATED_V2_KEY) === 'true') return;
+
+  const people = readPeople();
+  const findPerson = (email?: string) =>
+    email ? people.find((p) => p.email.toLowerCase() === email.toLowerCase()) : undefined;
+
+  // 1. Narrow the over-wide grants Stage B created from filtered legacy shares.
+  try {
+    const raw = localStorage.getItem(LEGACY_SHARES_KEY);
+    const shares: any[] = raw ? JSON.parse(raw) : [];
+
+    shares.forEach((share) => {
+      const person = findPerson(share?.sharedWithEmail);
+      if (!person) return;
+
+      if (share.type === 'event' && share.resourceId) {
+        AccessService.revokeScopeForPerson(person.id, 'events');
+        const stillExists = !!EventService.getEventById(share.resourceId);
+        if (stillExists) AccessService.grant(person.id, 'events', share.resourceId);
+        return;
+      }
+
+      if (
+        share.type === 'tax_documents' &&
+        ((Array.isArray(share.sharedCategories) && share.sharedCategories.length) ||
+          (Array.isArray(share.sharedYears) && share.sharedYears.length))
+      ) {
+        let list = TaxDocumentService.getAllDocuments();
+        if (share.sharedCategories?.length) {
+          list = list.filter((d) => d.categories?.some((c) => share.sharedCategories.includes(c)));
+        }
+        if (share.sharedYears?.length) {
+          list = list.filter((d) => share.sharedYears.includes(d.year));
+        }
+        AccessService.revokeScopeForPerson(person.id, 'tax_documents');
+        list.forEach((d) => AccessService.grant(person.id, 'tax_documents', d.id));
+      }
+    });
+  } catch {
+    // A broken legacy payload must never block the app.
+  }
+
+  // 2 & 3. Retire the boolean flags on documents and key people.
+  try {
+    const rawDocs = localStorage.getItem(LEGACY_DOCUMENTS_KEY);
+    const docs: LegacyDocument[] = rawDocs ? JSON.parse(rawDocs) : [];
+    const professionals = people.filter((p) => p.role === 'advisor' || p.role === 'accountant');
+    const household = people.filter(
+      (p) => p.role === 'household' && (p.status === 'active' || p.status === 'invited')
+    );
+
+    docs.forEach((doc) => {
+      if (doc.markedForAdvisor === true) {
+        professionals.forEach((p) => AccessService.grantItem(p.id, 'documents', doc.id));
+      }
+      if (doc.visibility === 'shared') {
+        household.forEach((p) => AccessService.grantItem(p.id, 'documents', doc.id));
+      }
+    });
+
+    const rawKp = localStorage.getItem(LEGACY_KEY_PEOPLE_KEY);
+    const keyPeople: LegacyDocument[] = rawKp ? JSON.parse(rawKp) : [];
+    keyPeople.forEach((kp) => {
+      if (kp.visibility === 'shared') {
+        household.forEach((p) => AccessService.grantItem(p.id, 'key_people', kp.id));
+      }
+    });
+  } catch {
+    // Same rule — never block the app on legacy data.
+  }
+
+  localStorage.setItem(MIGRATED_V2_KEY, 'true');
+};
+
+let migrating = false;
+
 export const PeopleService = {
   getRaw(): TrustedPerson[] {
-    runMigration();
+    if (!migrating) {
+      migrating = true;
+      try {
+        runMigration();
+        runMigrationV2();
+      } finally {
+        migrating = false;
+      }
+    }
     return readPeople();
   },
+
 
   getAll(): TrustedPerson[] {
     return this.getRaw().filter((p) => p.status !== 'removed');

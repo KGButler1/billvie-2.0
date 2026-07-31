@@ -147,6 +147,24 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
           Inject Financial Data
         </Button>
 
+        {/* Re-run access migration */}
+        <div className="space-y-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              localStorage.removeItem('billvie_grants_migrated_v2');
+              window.location.reload();
+            }}
+            className="w-full"
+          >
+            Re-run access migration
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Reads billvie_shares and rebuilds grants. Legacy data is never deleted.
+          </p>
+        </div>
+
         {/* View Storage State */}
         <Button
           variant="outline"
@@ -157,6 +175,7 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
           <Eye className="w-4 h-4 mr-2" />
           {showStorage ? 'Hide' : 'View'} localStorage
         </Button>
+
 
         {showStorage && (
           <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">

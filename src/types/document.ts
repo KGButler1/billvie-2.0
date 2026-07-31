@@ -2,8 +2,6 @@ import { FileAttachment } from '@/types/sharing';
 
 export type DocumentType = 'insurance' | 'investment' | 'account' | 'superannuation' | 'will' | 'other';
 
-export type DocumentVisibility = 'private' | 'shared';
-
 export interface HouseholdDocument {
   id: string;
   title: string;
@@ -11,8 +9,6 @@ export interface HouseholdDocument {
   type: DocumentType;
   keyDetail?: string;
   notes?: string;
-  visibility: DocumentVisibility;
-  markedForAdvisor: boolean;
   attachment?: FileAttachment;
   externalLink?: string;
   physicalLocation?: string;

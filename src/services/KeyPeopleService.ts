@@ -38,9 +38,11 @@ export const KeyPeopleService = {
     this.save(this.getAllKeyPeople().filter(p => p.id !== id));
   },
 
-  getSharedKeyPeople(): KeyPerson[] {
-    return this.getAllKeyPeople().filter(p => p.visibility === 'shared');
+  getById(id: string): KeyPerson | undefined {
+    return this.getAllKeyPeople().find(p => p.id === id);
   },
+
+
 
   getCount(): number {
     return this.getAllKeyPeople().length;

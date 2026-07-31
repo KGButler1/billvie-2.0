@@ -1,12 +1,20 @@
 import { useNavigate } from 'react-router-dom';
 import { UserCheck, ChevronRight } from 'lucide-react';
 import { DocumentService } from '@/services/DocumentService';
+import { AccessService } from '@/services/AccessService';
+import { PeopleService } from '@/services/PeopleService';
 
 const AdvisorWidget = () => {
   const navigate = useNavigate();
-  const advisorCount = DocumentService.getAdvisorItems().length;
+  const professionals = PeopleService.getAll().filter(
+    (p) => p.role === 'advisor' || p.role === 'accountant'
+  );
+  const advisorCount = DocumentService.getAll().filter((doc) =>
+    professionals.some((p) => AccessService.canSee(p.id, 'documents', doc.id))
+  ).length;
 
   if (advisorCount === 0) return null;
+
 
   return (
     <button

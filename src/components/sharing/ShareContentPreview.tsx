@@ -5,6 +5,9 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { DocumentService } from '@/services/DocumentService';
+import { AccessService } from '@/services/AccessService';
+import { KeyPeopleService } from '@/services/KeyPeopleService';
+import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 import { TaxCategory } from '@/types/sharing';
 import { AccessScope } from '@/types/people';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
@@ -147,12 +150,15 @@ const EventContent = ({ eventId }: { eventId?: string }) => {
 const TaxContent = ({
   sharedCategories,
   sharedYears,
+  documentId,
 }: {
   sharedCategories?: TaxCategory[];
   sharedYears?: number[];
+  documentId?: string;
 }) => {
   const docs = useMemo(() => {
     let list = TaxDocumentService.getAllDocuments();
+    if (documentId) return list.filter((d) => d.id === documentId);
     if (sharedCategories?.length) {
       list = list.filter((d) => d.categories?.some((c) => sharedCategories.includes(c)));
     }
@@ -160,7 +166,7 @@ const TaxContent = ({
       list = list.filter((d) => sharedYears.includes(d.year));
     }
     return list;
-  }, [sharedCategories, sharedYears]);
+  }, [sharedCategories, sharedYears, documentId]);
 
   if (docs.length === 0) {
     return <p className="text-muted-foreground">No records have been shared here yet.</p>;
@@ -184,8 +190,14 @@ const TaxContent = ({
   );
 };
 
-const DocumentsContent = () => {
-  const docs = useMemo(() => DocumentService.getAdvisorItems(), []);
+const DocumentsContent = ({ personId }: { personId?: string }) => {
+  const docs = useMemo(
+    () =>
+      personId
+        ? DocumentService.getAll().filter((d) => AccessService.canSee(personId, 'documents', d.id))
+        : [],
+    [personId]
+  );
 
   if (docs.length === 0) {
     return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
@@ -201,6 +213,41 @@ const DocumentsContent = () => {
           </p>
           {doc.keyDetail && <p className="text-sm text-muted-foreground mt-1">{doc.keyDetail}</p>}
           {doc.notes && <p className="text-sm text-muted-foreground mt-1">{doc.notes}</p>}
+        </div>
+      ))}
+    </SectionCard>
+  );
+};
+
+// Address is never rendered here — it belongs to the household's own record.
+const KeyPeopleContent = ({ personId }: { personId?: string }) => {
+  const people = useMemo(
+    () =>
+      personId
+        ? KeyPeopleService.getAllKeyPeople().filter((p) => AccessService.canSee(personId, 'key_people', p.id))
+        : [],
+    [personId]
+  );
+
+  if (people.length === 0) {
+    return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
+  }
+
+  return (
+    <SectionCard title="Key contacts">
+      {people.map((p) => (
+        <div key={p.id} className="p-4">
+          <p className="font-medium">{p.name}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {[
+              KEY_PERSON_RELATIONSHIP_LABELS[p.relationship as KeyPersonRelationship] || String(p.relationship),
+              p.role,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+          {p.phone && <p className="text-sm text-muted-foreground mt-1">{p.phone}</p>}
+          {p.notes && <p className="text-sm text-muted-foreground mt-1">{p.notes}</p>}
         </div>
       ))}
     </SectionCard>
@@ -229,17 +276,27 @@ const EventsContent = ({ eventId }: { eventId?: string }) => {
 
 interface ShareContentPreviewProps {
   scope: AccessScope;
+  personId?: string;
   resourceId?: string;
   sharedCategories?: TaxCategory[];
   sharedYears?: number[];
 }
 
-const ShareContentPreview = ({ scope, resourceId, sharedCategories, sharedYears }: ShareContentPreviewProps) => {
+const ShareContentPreview = ({
+  scope,
+  personId,
+  resourceId,
+  sharedCategories,
+  sharedYears,
+}: ShareContentPreviewProps) => {
   if (scope === 'bills') return <BillsContent />;
   if (scope === 'events') return <EventsContent eventId={resourceId} />;
-  if (scope === 'tax_documents') return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} />;
-  if (scope === 'documents') return <DocumentsContent />;
+  if (scope === 'tax_documents')
+    return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} documentId={resourceId} />;
+  if (scope === 'documents') return <DocumentsContent personId={personId} />;
+  if (scope === 'key_people') return <KeyPeopleContent personId={personId} />;
   return null;
 };
 
 export default ShareContentPreview;
+

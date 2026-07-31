@@ -67,7 +67,11 @@ const HouseholdSummary = () => {
   const debts = FinancialInfoService.getDebts();
   const misc = FinancialInfoService.getMisc();
 
-  const documents = DocumentService.getAll().filter((d) => d.visibility !== 'private');
+  const documents = DocumentService.getAll();
+  const documentViewers = (id: string) => {
+    const names = AccessService.getPeopleFor('documents', id).map((p) => p.name);
+    return names.length > 0 ? `Visible to: ${names.join(', ')}` : 'Visible to: no one yet';
+  };
 
   const peopleWithAccess = AccessService.getActivePeople().map((p) => ({
     name: p.name,
@@ -304,7 +308,7 @@ const HouseholdSummary = () => {
 
         <Section title="Important Documents">
           {documents.length === 0 ? (
-            <Empty text="No shared documents recorded." />
+            <Empty text="No documents recorded." />
           ) : (
             <ul className="text-sm space-y-1">
               {documents.map((d) => (
@@ -315,8 +319,10 @@ const HouseholdSummary = () => {
                   {d.notes ? ` · ${d.notes}` : ''}
                   {d.physicalLocation ? ` · Original in ${d.physicalLocation}` : ''}
                   {d.externalLink ? ` · ${d.externalLink}` : ''}
+                  <div className="text-xs text-muted-foreground">{documentViewers(d.id)}</div>
                 </li>
               ))}
+
 
             </ul>
           )}

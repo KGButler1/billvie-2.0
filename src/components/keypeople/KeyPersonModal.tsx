@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
+import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS } from '@/types/keyPerson';
+import AccessPicker from '@/components/people/AccessPicker';
+import { PeopleService } from '@/services/PeopleService';
+import { AccessService } from '@/services/AccessService';
 
 interface KeyPersonModalProps {
   person?: KeyPerson;
   defaults?: Partial<Pick<KeyPerson, 'name' | 'email'>>;
-  onSave: (person: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave: (person: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>, personIds: string[]) => void;
   onClose: () => void;
 }
 
@@ -24,21 +26,28 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
   const [address, setAddress] = useState(person?.address ?? '');
   const [notes, setNotes] = useState(person?.notes ?? '');
   const [emailWarning, setEmailWarning] = useState(false);
-  const [visibility, setVisibility] = useState<'private' | 'shared'>(person?.visibility ?? 'private');
+  const [householdIds, setHouseholdIds] = useState<string[]>(() => {
+    const household = PeopleService.getAll().filter((p) => p.role === 'household');
+    if (!person) return household.map((p) => p.id);
+    return household.filter((p) => AccessService.canSee(p.id, 'key_people', person.id)).map((p) => p.id);
+  });
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    onSave({
-      name: name.trim(),
-      relationship,
-      phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
-      address: address.trim() || undefined,
-      notes: notes.trim() || undefined,
-      role: role.trim(),
-      visibility,
-    });
+    onSave(
+      {
+        name: name.trim(),
+        relationship,
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        address: address.trim() || undefined,
+        notes: notes.trim() || undefined,
+        role: role.trim(),
+      },
+      householdIds
+    );
   };
+
 
   return (
     <motion.div
@@ -149,16 +158,17 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
 
 
 
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-sm font-medium">Visible to shared members</p>
-              <p className="text-xs text-muted-foreground">People you've invited can see this</p>
-            </div>
-            <Switch
-              checked={visibility === 'shared'}
-              onCheckedChange={(checked) => setVisibility(checked ? 'shared' : 'private')}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
+            <AccessPicker
+              scope="key_people"
+              itemId={person?.id}
+              roleFilter="household"
+              selectedPersonIds={householdIds}
+              onChange={setHouseholdIds}
             />
           </div>
+
 
           <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
             <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
