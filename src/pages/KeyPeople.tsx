@@ -110,17 +110,17 @@ const KeyPeople = () => {
                         <Phone className="w-3.5 h-3.5" /> {person.phone}
                       </a>
                     )}
+                    <button
+                      onClick={() => setEditing(person)}
+                      className="block text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+                    >
+                      {viewersFor(person).length > 0
+                        ? `Visible to ${viewersFor(person).join(', ')}`
+                        : 'Only you can see this'}
+                    </button>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => toggleVisibility(person)}
-                      title={person.visibility === 'shared' ? 'Visible to shared members' : 'Private to you'}
-                      className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
-                    >
-                      {person.visibility === 'shared'
-                        ? <Eye className="w-4 h-4 text-primary" />
-                        : <EyeOff className="w-4 h-4" />}
-                    </button>
+
                     <button
                       onClick={() => setEditing(person)}
                       className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
