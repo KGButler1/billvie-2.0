@@ -2,12 +2,18 @@ import { TrustedPerson, PersonRole, AccessScope, TrustedPersonStatus } from '@/t
 import { AccessService } from './AccessService';
 import { KeyPeopleService } from './KeyPeopleService';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
+import { EventService } from './EventService';
+import { TaxDocumentService } from './TaxDocumentService';
 
 const PEOPLE_KEY = 'billvie_trusted_people';
 const MIGRATED_KEY = 'billvie_people_migrated_v1';
+const MIGRATED_V2_KEY = 'billvie_grants_migrated_v2';
 const LEGACY_SHARES_KEY = 'billvie_shares';
+const LEGACY_DOCUMENTS_KEY = 'billvie_documents';
+const LEGACY_KEY_PEOPLE_KEY = 'billvie_key_people';
 
 const now = () => new Date().toISOString();
+
 
 const makeToken = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
