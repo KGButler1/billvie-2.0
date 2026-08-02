@@ -242,66 +242,23 @@ const Dashboard = () => {
         {/* Advisor Widget */}
         <AdvisorWidget />
 
-        {/* Category Filter */}
+        {/* Bills needing attention */}
+        <BillList
+          bills={[...overdueBills, ...dueSoonBills]}
+          mode="grouped"
+          sectionTitle={getSectionTitle}
+          onMarkPaid={handleMarkPaid}
+          onMarkUnpaid={handleMarkUnpaid}
+          onDelete={handleDeleteBill}
+        />
+
         {bills.length > 0 && (
-          <div className="mb-4">
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as BillCategory | 'all')}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Overdue Bills */}
-        {overdueBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('overdue')} 
-            bills={overdueBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-          />
-        )}
-
-        {/* Due Soon */}
-        {dueSoonBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('due_soon')} 
-            bills={dueSoonBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-          />
-        )}
-
-        {/* Upcoming */}
-        {upcomingBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('upcoming')} 
-            bills={upcomingBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-          />
-        )}
-
-        {/* Paid */}
-        {paidBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('paid')} 
-            bills={paidBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-            collapsed
-          />
+          <Link
+            to="/bills"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-8"
+          >
+            View all {bills.length} bills →
+          </Link>
         )}
 
         {/* Empty State */}
