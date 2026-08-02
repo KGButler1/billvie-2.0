@@ -90,9 +90,6 @@ const BottomNav = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-background z-50">
                 <DropdownMenuLabel>Records &amp; Tools</DropdownMenuLabel>
-                <DropdownMenuItem className="lg:hidden" onClick={() => navigate('/bills')}>
-                  <Receipt className="w-4 h-4 mr-2" /> Bills
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/events')}>
                   <Calendar className="w-4 h-4 mr-2" /> Events
                 </DropdownMenuItem>
