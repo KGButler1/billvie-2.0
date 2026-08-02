@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
-import { Bill, BillCategory, CATEGORY_LABELS, BILL_LIMITS } from '@/types/bill';
-import BillCard from '@/components/BillCard';
+import { Bill } from '@/types/bill';
+import { canAddBill } from '@/utils/billLimits';
+import BillList from '@/components/bills/BillList';
 import QuickAddBill from '@/components/QuickAddBill';
 import BillScanModal from '@/components/BillScanModal';
 import BottomNav from '@/components/BottomNav';
@@ -21,13 +22,6 @@ import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
 import ReadinessCard from '@/components/ReadinessCard';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
