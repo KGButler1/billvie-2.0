@@ -25,8 +25,15 @@ import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
 import { UserService } from '@/services/UserService';
 
-const primaryNav = [
+const mobileNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/documents', icon: FolderOpen, label: 'Documents' },
+  { path: '/people', icon: Users, label: 'People' },
+];
+
+const desktopNav = [
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/bills', icon: Receipt, label: 'Bills' },
   { path: '/documents', icon: FolderOpen, label: 'Documents' },
   { path: '/people', icon: Users, label: 'People' },
 ];

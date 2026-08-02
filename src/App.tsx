@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
+import Bills from "./pages/Bills";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import EventComparison from "./pages/EventComparison";
@@ -43,7 +44,7 @@ const App = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/bills" element={<Dashboard />} />
+            <Route path="/bills" element={<Bills />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/events/compare" element={<EventComparison />} />
