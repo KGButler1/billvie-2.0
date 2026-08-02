@@ -25,8 +25,15 @@ import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
 import { UserService } from '@/services/UserService';
 
-const primaryNav = [
+const mobileNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/documents', icon: FolderOpen, label: 'Documents' },
+  { path: '/people', icon: Users, label: 'People' },
+];
+
+const desktopNav = [
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/bills', icon: Receipt, label: 'Bills' },
   { path: '/documents', icon: FolderOpen, label: 'Documents' },
   { path: '/people', icon: Users, label: 'People' },
 ];
@@ -38,8 +45,7 @@ const BottomNav = () => {
   const settings = UserService.getSettings();
   const isAccountant = settings.userType === 'accountant';
 
-  const currentPath = location.pathname === '/bills' ? '/dashboard' : location.pathname;
-  const isActive = (path: string) => currentPath === path;
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <>
@@ -54,7 +60,7 @@ const BottomNav = () => {
           </button>
 
           <nav className="flex items-center gap-1">
-            {primaryNav.map(({ path, icon: Icon, label }) => {
+            {desktopNav.map(({ path, icon: Icon, label }) => {
               const active = isActive(path);
               return (
                 <Link
@@ -121,7 +127,7 @@ const BottomNav = () => {
 
       {/* Mobile bottom nav */}
       <nav className="bottom-nav lg:hidden">
-        {[...primaryNav, { path: '/more', icon: MoreHorizontal, label: 'More' }].map(
+        {[...mobileNav, { path: '/more', icon: MoreHorizontal, label: 'More' }].map(
           ({ path, icon: Icon, label }) => {
             const active = isActive(path);
             return (

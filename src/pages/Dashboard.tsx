@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
-import { Bill, BillCategory, CATEGORY_LABELS, BILL_LIMITS } from '@/types/bill';
-import BillCard from '@/components/BillCard';
+import { Bill } from '@/types/bill';
+import { canAddBill } from '@/utils/billLimits';
+import BillList from '@/components/bills/BillList';
 import QuickAddBill from '@/components/QuickAddBill';
 import BillScanModal from '@/components/BillScanModal';
 import BottomNav from '@/components/BottomNav';
@@ -21,13 +22,6 @@ import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
 import ReadinessCard from '@/components/ReadinessCard';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -35,7 +29,7 @@ const Dashboard = () => {
   const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<BillCategory | 'all'>('all');
+  
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFamilyView, setIsFamilyView] = useState(false);
@@ -71,12 +65,6 @@ const Dashboard = () => {
     setBills([...allBills, ...paidBills]);
   };
 
-  const canAddBill = (): boolean => {
-    const settings = UserService.getSettings();
-    const currentCount = BillService.getBillCount();
-    const limit = BILL_LIMITS[settings.userType];
-    return currentCount < limit;
-  };
 
   const handleTryAddBill = () => {
     if (canAddBill()) {
@@ -149,15 +137,8 @@ const Dashboard = () => {
   const spending = BillService.getSpendingByCategory();
   const activeEvents = EventService.getActiveEvents();
 
-  // Group bills by status with optional category filter
-  const filteredBills = categoryFilter === 'all' 
-    ? bills 
-    : bills.filter(b => b.category === categoryFilter);
-  
-  const overdueBills = filteredBills.filter(b => b.status === 'overdue');
-  const dueSoonBills = filteredBills.filter(b => b.status === 'due_soon');
-  const upcomingBills = filteredBills.filter(b => b.status === 'pending');
-  const paidBills = filteredBills.filter(b => b.status === 'paid');
+  const overdueBills = bills.filter(b => b.status === 'overdue');
+  const dueSoonBills = bills.filter(b => b.status === 'due_soon');
 
   const hasSampleBills = bills.some(b => b.isSample);
 
@@ -242,66 +223,23 @@ const Dashboard = () => {
         {/* Advisor Widget */}
         <AdvisorWidget />
 
-        {/* Category Filter */}
+        {/* Bills needing attention */}
+        <BillList
+          bills={[...overdueBills, ...dueSoonBills]}
+          mode="grouped"
+          sectionTitle={getSectionTitle}
+          onMarkPaid={handleMarkPaid}
+          onMarkUnpaid={handleMarkUnpaid}
+          onDelete={handleDeleteBill}
+        />
+
         {bills.length > 0 && (
-          <div className="mb-4">
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as BillCategory | 'all')}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Overdue Bills */}
-        {overdueBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('overdue')} 
-            bills={overdueBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-          />
-        )}
-
-        {/* Due Soon */}
-        {dueSoonBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('due_soon')} 
-            bills={dueSoonBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-          />
-        )}
-
-        {/* Upcoming */}
-        {upcomingBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('upcoming')} 
-            bills={upcomingBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-          />
-        )}
-
-        {/* Paid */}
-        {paidBills.length > 0 && (
-          <BillSection 
-            title={getSectionTitle('paid')} 
-            bills={paidBills}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-            collapsed
-          />
+          <Link
+            to="/bills"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-8"
+          >
+            View all {bills.length} bills →
+          </Link>
         )}
 
         {/* Empty State */}
@@ -409,65 +347,6 @@ const Dashboard = () => {
       <ProgressiveHints />
       <FirstWeekNudges />
     </div>
-  );
-};
-
-// Bill Section Component
-interface BillSectionProps {
-  title: string;
-  bills: Bill[];
-  onMarkPaid: (id: string) => void;
-  onMarkUnpaid: (id: string) => void;
-  onDelete: (id: string) => void;
-  collapsed?: boolean;
-}
-
-const BillSection = ({ title, bills, onMarkPaid, onMarkUnpaid, onDelete, collapsed = false }: BillSectionProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(collapsed);
-
-  return (
-    <section className="mb-8">
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="flex items-center gap-2 mb-4 w-full text-left"
-      >
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <span className="text-sm text-muted-foreground">({bills.length})</span>
-        <motion.span 
-          animate={{ rotate: isCollapsed ? 0 : 180 }}
-          className="ml-auto text-muted-foreground"
-        >
-          ▼
-        </motion.span>
-      </button>
-      
-      <AnimatePresence>
-        {!isCollapsed && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="space-y-3 overflow-hidden"
-          >
-            {bills.map((bill, index) => (
-              <motion.div
-                key={bill.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <BillCard 
-                  bill={bill}
-                  onMarkPaid={onMarkPaid}
-                  onMarkUnpaid={onMarkUnpaid}
-                  onDelete={onDelete}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </section>
   );
 };
 

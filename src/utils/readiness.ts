@@ -21,7 +21,7 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     covered: BillService.getAllBills().length > 0,
     nudge: 'Add your first bill so someone knows what\'s running.',
     actionLabel: 'Add a bill',
-    actionPath: '/dashboard?add=bill',
+    actionPath: '/bills?add=bill',
   },
   {
     id: 'access',

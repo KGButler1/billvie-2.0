@@ -98,6 +98,12 @@ const More = () => {
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
             <MenuItem
+              icon={Receipt}
+              label="Bills"
+              description="Everything running, in one list"
+              onClick={() => navigate('/bills')}
+            />
+            <MenuItem
               icon={Calendar}
               label="Events"
               description="One-off plans and what they cost"
