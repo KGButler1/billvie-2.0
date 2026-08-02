@@ -29,7 +29,7 @@ const Dashboard = () => {
   const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<BillCategory | 'all'>('all');
+  
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFamilyView, setIsFamilyView] = useState(false);
@@ -65,12 +65,6 @@ const Dashboard = () => {
     setBills([...allBills, ...paidBills]);
   };
 
-  const canAddBill = (): boolean => {
-    const settings = UserService.getSettings();
-    const currentCount = BillService.getBillCount();
-    const limit = BILL_LIMITS[settings.userType];
-    return currentCount < limit;
-  };
 
   const handleTryAddBill = () => {
     if (canAddBill()) {
@@ -143,15 +137,8 @@ const Dashboard = () => {
   const spending = BillService.getSpendingByCategory();
   const activeEvents = EventService.getActiveEvents();
 
-  // Group bills by status with optional category filter
-  const filteredBills = categoryFilter === 'all' 
-    ? bills 
-    : bills.filter(b => b.category === categoryFilter);
-  
-  const overdueBills = filteredBills.filter(b => b.status === 'overdue');
-  const dueSoonBills = filteredBills.filter(b => b.status === 'due_soon');
-  const upcomingBills = filteredBills.filter(b => b.status === 'pending');
-  const paidBills = filteredBills.filter(b => b.status === 'paid');
+  const overdueBills = bills.filter(b => b.status === 'overdue');
+  const dueSoonBills = bills.filter(b => b.status === 'due_soon');
 
   const hasSampleBills = bills.some(b => b.isSample);
 
@@ -360,65 +347,6 @@ const Dashboard = () => {
       <ProgressiveHints />
       <FirstWeekNudges />
     </div>
-  );
-};
-
-// Bill Section Component
-interface BillSectionProps {
-  title: string;
-  bills: Bill[];
-  onMarkPaid: (id: string) => void;
-  onMarkUnpaid: (id: string) => void;
-  onDelete: (id: string) => void;
-  collapsed?: boolean;
-}
-
-const BillSection = ({ title, bills, onMarkPaid, onMarkUnpaid, onDelete, collapsed = false }: BillSectionProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(collapsed);
-
-  return (
-    <section className="mb-8">
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="flex items-center gap-2 mb-4 w-full text-left"
-      >
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <span className="text-sm text-muted-foreground">({bills.length})</span>
-        <motion.span 
-          animate={{ rotate: isCollapsed ? 0 : 180 }}
-          className="ml-auto text-muted-foreground"
-        >
-          ▼
-        </motion.span>
-      </button>
-      
-      <AnimatePresence>
-        {!isCollapsed && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="space-y-3 overflow-hidden"
-          >
-            {bills.map((bill, index) => (
-              <motion.div
-                key={bill.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <BillCard 
-                  bill={bill}
-                  onMarkPaid={onMarkPaid}
-                  onMarkUnpaid={onMarkUnpaid}
-                  onDelete={onDelete}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </section>
   );
 };
 
