@@ -1,0 +1,256 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
+import { BillService } from '@/services/BillService';
+import { FinancialInfoService } from '@/services/FinancialInfoService';
+import { UserService } from '@/services/UserService';
+import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
+import { canAddBill } from '@/utils/billLimits';
+import BillList from '@/components/bills/BillList';
+import QuickAddBill from '@/components/QuickAddBill';
+import BillScanModal from '@/components/BillScanModal';
+import UpgradeModal from '@/components/UpgradeModal';
+import BottomNav from '@/components/BottomNav';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+
+type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
+type SortKey = 'due_date' | 'amount' | 'name' | 'category';
+
+const STATUS_CHIPS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'overdue', label: 'Needs attention' },
+  { key: 'due_soon', label: 'Due soon' },
+  { key: 'pending', label: 'Coming up' },
+  { key: 'paid', label: 'Handled' },
+];
+
+const SORT_LABELS: Record<SortKey, string> = {
+  due_date: 'Due date',
+  amount: 'Amount (high to low)',
+  name: 'Name (A–Z)',
+  category: 'Category',
+};
+
+const Bills = () => {
+  const [searchParams] = useSearchParams();
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [sort, setSort] = useState<SortKey>('due_date');
+  const [category, setCategory] = useState<BillCategory | 'all'>('all');
+  const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
+  const [isScanningBill, setIsScanningBill] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const loadBills = () => {
+    const upcoming = BillService.getUpcomingBills();
+    const paid = BillService.getAllBills().filter(b => b.status === 'paid');
+    setBills([...upcoming, ...paid]);
+  };
+
+  useEffect(() => {
+    BillService.initialize();
+    loadBills();
+  }, []);
+
+  const counts = useMemo(
+    () => ({
+      all: bills.length,
+      overdue: bills.filter(b => b.status === 'overdue').length,
+      due_soon: bills.filter(b => b.status === 'due_soon').length,
+      pending: bills.filter(b => b.status === 'pending').length,
+      paid: bills.filter(b => b.status === 'paid').length,
+    }),
+    [bills],
+  );
+
+  const visibleBills = useMemo(() => {
+    let list = bills;
+    if (status !== 'all') list = list.filter(b => b.status === status);
+    if (category !== 'all') list = list.filter(b => b.category === category);
+
+    const sorted = [...list];
+    if (sort === 'amount') sorted.sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
+    else if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === 'category')
+      sorted.sort((a, b) => String(a.category ?? '').localeCompare(String(b.category ?? '')));
+    else
+      sorted.sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      });
+    return sorted;
+  }, [bills, status, category, sort]);
+
+  const mode: 'grouped' | 'flat' =
+    status === 'all' && sort === 'due_date' && category === 'all' ? 'grouped' : 'flat';
+
+  const upcomingTotal = BillService.getUpcomingTotal();
+  const insuranceCount = FinancialInfoService.getInsurance().length;
+  const superCount = FinancialInfoService.getSuperannuation().length;
+
+  const handleTryAddBill = () => {
+    if (canAddBill()) setIsAddingBill(true);
+    else setShowUpgradeModal(true);
+  };
+
+  const handleAddBill = (billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
+    BillService.addBill(billData);
+    loadBills();
+    setIsAddingBill(false);
+    setIsScanningBill(false);
+  };
+
+  const handleMarkPaid = (id: string) => {
+    BillService.markAsPaid(id);
+    loadBills();
+  };
+  const handleMarkUnpaid = (id: string) => {
+    BillService.markAsUnpaid(id);
+    loadBills();
+  };
+  const handleDelete = (id: string) => {
+    if (!confirm('Delete this bill? You can restore it from Recently Deleted within 30 days.')) return;
+    BillService.deleteBill(id);
+    loadBills();
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-24 lg:pt-16">
+      <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
+        <div className="container mx-auto px-4 h-16 flex items-center">
+          <h1 className="text-xl font-bold">Bills &amp; Commitments</h1>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
+        <h1 className="text-2xl font-semibold hidden lg:block mb-2">Bills &amp; Commitments</h1>
+
+        {/* Totals strip */}
+        <p className="text-sm text-muted-foreground mb-4">
+          <span>${upcomingTotal.toFixed(2)} coming up</span>
+          {' · '}
+          <Link to="/financial" className="hover:text-foreground underline-offset-2 hover:underline">
+            {insuranceCount} insurance {insuranceCount === 1 ? 'policy' : 'policies'}
+          </Link>
+          {' · '}
+          <Link to="/financial" className="hover:text-foreground underline-offset-2 hover:underline">
+            {superCount} super {superCount === 1 ? 'account' : 'accounts'}
+          </Link>
+        </p>
+
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {STATUS_CHIPS.map(chip => (
+              <button
+                key={chip.key}
+                onClick={() => setStatus(chip.key)}
+                className={cn(
+                  'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                  status === chip.key
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border hover:bg-muted',
+                )}
+              >
+                {chip.label} ({counts[chip.key]})
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <Select value={sort} onValueChange={v => setSort(v as SortKey)}>
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {Object.entries(SORT_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={category} onValueChange={v => setCategory(v as BillCategory | 'all')}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="all">All types</SelectItem>
+                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button onClick={handleTryAddBill} className="gap-1.5">
+              <Plus className="w-4 h-4" />
+              Add bill
+            </Button>
+          </div>
+        </div>
+
+        <BillList
+          bills={visibleBills}
+          mode={mode}
+          onMarkPaid={handleMarkPaid}
+          onMarkUnpaid={handleMarkUnpaid}
+          onDelete={handleDelete}
+          emptyState={
+            <div className="text-center py-20">
+              <h2 className="text-lg font-semibold mb-1">No bills tracked yet.</h2>
+              <p className="text-muted-foreground mb-6">
+                Add your first one so someone else knows what's running.
+              </p>
+              <Button onClick={handleTryAddBill} className="gap-1.5">
+                <Plus className="w-4 h-4" /> Add bill
+              </Button>
+            </div>
+          }
+        />
+      </main>
+
+      <AnimatePresence>
+        {isAddingBill && (
+          <QuickAddBill onAdd={handleAddBill} onClose={() => setIsAddingBill(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isScanningBill && (
+          <BillScanModal onAdd={handleAddBill} onClose={() => setIsScanningBill(false)} />
+        )}
+      </AnimatePresence>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="bills"
+        onUpgrade={() => {
+          UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+          setShowUpgradeModal(false);
+        }}
+        onPreviewAnyway={() => {
+          setShowUpgradeModal(false);
+          setIsAddingBill(true);
+        }}
+      />
+
+      <BottomNav />
+    </div>
+  );
+};
+
+export default Bills;
