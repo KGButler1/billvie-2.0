@@ -132,7 +132,9 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
       recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
       category: category || undefined,
-      responsibleParty: responsibleParty || undefined,
+      notes: notes.trim() || undefined,
+      taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
+
     });
   };
 
