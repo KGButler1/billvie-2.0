@@ -12,19 +12,23 @@ import { PersonTagPicker } from '@/components/people/PersonTags';
 import { PeopleService } from '@/services/PeopleService';
 
 interface AddDocumentModalProps {
+  document?: HouseholdDocument;
   onAdd: (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[]
   ) => void;
+  onEdit: (id: string, updates: Partial<HouseholdDocument>) => void;
   onClose: () => void;
 }
 
-const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
-  const [title, setTitle] = useState('');
-  const [provider, setProvider] = useState('');
-  const [type, setType] = useState<DocumentType>('insurance');
-  const [keyDetail, setKeyDetail] = useState('');
-  const [notes, setNotes] = useState('');
+const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModalProps) => {
+  const [title, setTitle] = useState(document?.title ?? '');
+  const [provider, setProvider] = useState(document?.provider ?? '');
+  const [type, setType] = useState<DocumentType>(document?.type ?? 'insurance');
+  const [keyDetail, setKeyDetail] = useState(document?.keyDetail ?? '');
+  const [notes, setNotes] = useState(document?.notes ?? '');
+  const [importantDate, setImportantDate] = useState(document?.importantDate ?? '');
+  const [importantDateLabel, setImportantDateLabel] = useState(document?.importantDateLabel ?? '');
   // Sharing with family is the product's purpose; sending something to your
   // accountant is a decision.
   const [householdIds, setHouseholdIds] = useState<string[]>(() =>
@@ -35,18 +39,23 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    onAdd(
-      {
-        title: title.trim(),
-        provider: provider.trim(),
-        type,
-        keyDetail: keyDetail.trim() || undefined,
-        notes: notes.trim() || undefined,
-        taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
-      },
 
-      [...householdIds, ...professionalIds]
-    );
+    const shared = {
+      title: title.trim(),
+      provider: provider.trim(),
+      type,
+      keyDetail: keyDetail.trim() || undefined,
+      notes: notes.trim() || undefined,
+      importantDate: importantDate || undefined,
+      importantDateLabel: importantDateLabel.trim() || undefined,
+      taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
+    };
+
+    if (document) {
+      onEdit(document.id, shared);
+    } else {
+      onAdd(shared, [...householdIds, ...professionalIds]);
+    }
   };
 
   return (
@@ -66,8 +75,10 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-semibold">Add something important</h2>
-            <p className="text-sm text-muted-foreground">Include anything someone else might need to know</p>
+            <h2 className="text-lg font-semibold">{document ? 'Edit document' : 'Add something important'}</h2>
+            {!document && (
+              <p className="text-sm text-muted-foreground">Include anything someone else might need to know</p>
+            )}
           </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg">
             <X className="w-5 h-5" />
@@ -122,6 +133,30 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
 
           <div>
             <label className="text-sm font-medium mb-1.5 block">
+              Important date <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={importantDate}
+                onChange={(e) => setImportantDate(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                placeholder="Expires, Renews, Term ends..."
+                value={importantDateLabel}
+                onChange={(e) => setImportantDateLabel(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              For anything with an expiry or renewal — a passport, a fixed-term policy, a lease
+            </p>
+          </div>
+
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
               Notes & instructions <span className="text-muted-foreground font-normal">(important)</span>
             </label>
             <Textarea
@@ -133,25 +168,29 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
             <p className="text-xs text-muted-foreground mt-1">This helps someone step in if needed</p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
-            <AccessPicker
-              scope="documents"
-              roleFilter="household"
-              selectedPersonIds={householdIds}
-              onChange={setHouseholdIds}
-            />
-          </div>
+          {!document && (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
+                <AccessPicker
+                  scope="documents"
+                  roleFilter="household"
+                  selectedPersonIds={householdIds}
+                  onChange={setHouseholdIds}
+                />
+              </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
-            <AccessPicker
-              scope="documents"
-              roleFilter="professional"
-              selectedPersonIds={professionalIds}
-              onChange={setProfessionalIds}
-            />
-          </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
+                <AccessPicker
+                  scope="documents"
+                  roleFilter="professional"
+                  selectedPersonIds={professionalIds}
+                  onChange={setProfessionalIds}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <label className="text-sm font-medium mb-1.5 block">For someone in particular?</label>
@@ -163,13 +202,15 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
           </div>
 
 
-          <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
-            <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <p className="text-xs text-muted-foreground">No sensitive credentials stored. Only you and people you invite can see this.</p>
-          </div>
+          {!document && (
+            <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
+              <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">No sensitive credentials stored. Only you and people you invite can see this.</p>
+            </div>
+          )}
 
           <Button onClick={handleSubmit} className="w-full" disabled={!title.trim()}>
-            Add to household records
+            {document ? 'Save changes' : 'Add to household records'}
           </Button>
         </div>
       </motion.div>

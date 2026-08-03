@@ -1,4 +1,4 @@
-import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin, CalendarClock } from 'lucide-react';
+import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin, CalendarClock, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { AccessService } from '@/services/AccessService';
@@ -30,9 +30,10 @@ interface DocumentCardProps {
   onAttach: (id: string) => void;
   onEditAccess: (id: string) => void;
   onLinks: (id: string) => void;
+  onEdit: (id: string) => void;
 }
 
-const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks }: DocumentCardProps) => {
+const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onEdit }: DocumentCardProps) => {
   const Icon = typeIcons[document.type] || File;
   const hasAttachment = !!(document.attachment || document.externalLink || document.physicalLocation);
   const viewers = AccessService.getPeopleFor('documents', document.id).map((p) => firstName(p.name));
@@ -132,6 +133,12 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks }: D
           )}
 
           <div className="flex items-center gap-3 mt-3 flex-wrap">
+            <button
+              onClick={() => onEdit(document.id)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
             <button
               onClick={() => onLinks(document.id)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
