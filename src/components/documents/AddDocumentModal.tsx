@@ -202,13 +202,15 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
           </div>
 
 
-          <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
-            <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <p className="text-xs text-muted-foreground">No sensitive credentials stored. Only you and people you invite can see this.</p>
-          </div>
+          {!document && (
+            <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
+              <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">No sensitive credentials stored. Only you and people you invite can see this.</p>
+            </div>
+          )}
 
           <Button onClick={handleSubmit} className="w-full" disabled={!title.trim()}>
-            Add to household records
+            {document ? 'Save changes' : 'Add to household records'}
           </Button>
         </div>
       </motion.div>
