@@ -157,7 +157,13 @@ const HouseholdSummary = () => {
                             <td className="py-1">
                               {b.isRecurring ? titleCase(b.recurringInterval) : 'One time'}
                             </td>
-                            <td className="py-1">{titleCase(b.responsibleParty)}</td>
+                            <td className="py-1">
+                              {(b.taggedPersonIds ?? [])
+                                .map((id) => PeopleService.getById(id)?.name)
+                                .filter(Boolean)
+                                .join(', ') || '—'}
+                            </td>
+
                             <td className="py-1">{titleCase(b.paymentMethod)}</td>
                             <td className="py-1">{titleCase(b.status)}</td>
                           </tr>
