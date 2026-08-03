@@ -20,7 +20,6 @@ export type BillCategory =
 
 export type RecurringInterval = 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
 
-export type ResponsibleParty = 'me' | 'partner' | 'roommate' | 'parent' | 'other';
 
 export interface Bill {
   id: string;
