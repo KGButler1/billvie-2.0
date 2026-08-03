@@ -48,22 +48,19 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
   // Custom options
   const [customCategories, setCustomCategories] = useState<CustomOption[]>([]);
   const [customPaymentMethods, setCustomPaymentMethods] = useState<CustomOption[]>([]);
-  const [customResponsibleParties, setCustomResponsibleParties] = useState<CustomOption[]>([]);
 
   // Adding new option states
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
-  const [isAddingResponsibleParty, setIsAddingResponsibleParty] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newPaymentMethodName, setNewPaymentMethodName] = useState('');
-  const [newResponsiblePartyName, setNewResponsiblePartyName] = useState('');
 
   // Load custom options on mount
   useEffect(() => {
     setCustomCategories(CustomBillOptionsService.getCustomCategories());
     setCustomPaymentMethods(CustomBillOptionsService.getCustomPaymentMethods());
-    setCustomResponsibleParties(CustomBillOptionsService.getCustomResponsibleParties());
   }, []);
+
 
   const handleCategoryChange = (value: string) => {
     if (value === ADD_NEW_VALUE) {
