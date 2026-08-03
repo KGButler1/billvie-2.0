@@ -16,12 +16,11 @@ import {
   CATEGORY_LABELS,
   PAYMENT_METHOD_LABELS,
   RECURRING_LABELS,
-  RESPONSIBLE_PARTY_LABELS,
   BillCategory,
   PaymentMethod,
   RecurringInterval,
-  ResponsibleParty,
 } from '@/types/bill';
+
 
 const formatMoney = (amount?: number) =>
   amount === undefined || amount === null
