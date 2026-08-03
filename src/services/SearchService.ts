@@ -154,8 +154,9 @@ export const SearchService = {
     const financialEntries: { title: string; subtitle?: string }[] = [
       ...FinancialInfoService.getInsurance().map((e) => ({ title: e.provider, subtitle: 'Insurance' })),
       ...FinancialInfoService.getSuperannuation().map((e) => ({ title: e.fundName, subtitle: 'Super / 401k' })),
-      ...FinancialInfoService.getIncomeSources().map((e) => ({ title: e.source, subtitle: 'Income' })),
-      ...FinancialInfoService.getDebts().map((e) => ({ title: e.lender, subtitle: 'Debt' })),
+      ...FinancialInfoService.getIncome().map((e) => ({ title: e.sourceName, subtitle: 'Income' })),
+      ...FinancialInfoService.getDebts().map((e) => ({ title: e.lenderName, subtitle: 'Debt' })),
+
     ];
     financialEntries.forEach((entry, i) => {
       const score = scoreText(q, entry.title, entry.subtitle);
