@@ -29,12 +29,16 @@ interface DocumentCardProps {
   onDelete: (id: string) => void;
   onAttach: (id: string) => void;
   onEditAccess: (id: string) => void;
+  onLinks: (id: string) => void;
 }
 
-const DocumentCard = ({ document, onDelete, onAttach, onEditAccess }: DocumentCardProps) => {
+const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks }: DocumentCardProps) => {
   const Icon = typeIcons[document.type] || File;
   const hasAttachment = !!(document.attachment || document.externalLink || document.physicalLocation);
   const viewers = AccessService.getPeopleFor('documents', document.id).map((p) => firstName(p.name));
+  const linkedBillId = DocumentLinkService.getLinkedBillId(document.id);
+  const linkedBill = linkedBillId ? BillService.getBillById(linkedBillId) : undefined;
+  const relatedCount = DocumentLinkService.getRelatedDocumentIds(document.id).length;
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow">
