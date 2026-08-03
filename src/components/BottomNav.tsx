@@ -88,8 +88,9 @@ const BottomNav = () => {
                 ⌘K
               </kbd>
             </Button>
-
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
+
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <MoreHorizontal className="w-4 h-4" />
                   More
