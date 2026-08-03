@@ -20,6 +20,8 @@ const Documents = () => {
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [accessId, setAccessId] = useState<string | null>(null);
+  const [linkingId, setLinkingId] = useState<string | null>(null);
+
 
   const reload = () => setDocuments(DocumentService.getAll());
 
