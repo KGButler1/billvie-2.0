@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
 import { Bill } from '@/types/bill';
@@ -87,8 +88,12 @@ const Dashboard = () => {
     setShowFabMenu(false);
   };
 
-  const handleAddBill = (billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
-    BillService.addBill(billData);
+  const handleAddBill = (
+    billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
+    linkedDocumentId?: string
+  ) => {
+    const created = BillService.addBill(billData);
+    if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,10 +25,16 @@ import {
 import { PersonTagPicker } from '@/components/people/PersonTags';
 import CardPicker from '@/components/bills/CardPicker';
 import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { DocumentService } from '@/services/DocumentService';
+import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 
 
 interface QuickAddBillProps {
-  onAdd: (bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
+  onAdd: (
+    bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
+    linkedDocumentId?: string
+  ) => void;
   onClose: () => void;
   /** When provided with mode="edit", the form pre-fills and saves back to this bill. */
   initialBill?: Bill;
@@ -57,6 +63,39 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
   const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>(
     initialBill?.taggedPersonIds ?? []
   );
+
+  const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(() => {
+    if (!initialBill) return null;
+    const docId = DocumentLinkService.getLinkedDocumentIdForBill(initialBill.id);
+    const doc = docId ? DocumentService.getAll().find((d) => d.id === docId) : undefined;
+    return doc ? { id: doc.id, label: doc.title } : null;
+  });
+
+  const documentOptions = useMemo(
+    () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
+    []
+  );
+
+  const handleLinkedDocumentChange = (option: LinkPickerOption | null) => {
+    setLinkedDocument(option);
+    if (!initialBill) return; // create mode: applied after save via onAdd instead
+
+    if (option) {
+      DocumentLinkService.linkToBill(option.id, initialBill.id);
+    } else {
+      const currentDocId = DocumentLinkService.getLinkedDocumentIdForBill(initialBill.id);
+      if (currentDocId) {
+        const linkId = DocumentLinkService.findActiveLinkId(currentDocId, initialBill.id);
+        if (linkId) DocumentLinkService.unlink(linkId);
+      }
+    }
+  };
+
+  const handleCreateDocument = (docName: string): LinkPickerOption => {
+    const type = category === 'insurance' ? 'insurance' : 'other';
+    const created = DocumentService.add({ title: docName, provider: '', type });
+    return { id: created.id, label: created.title };
+  };
 
 
   // Custom options
@@ -130,8 +169,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
       category: category || undefined,
       notes: notes.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
-
-    });
+    }, !isEdit ? linkedDocument?.id : undefined);
   };
 
   // Helper to get display label for custom options
@@ -395,6 +433,26 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
           <div className="space-y-2">
             <Label>For someone in particular?</Label>
             <PersonTagPicker value={taggedPersonIds} onChange={setTaggedPersonIds} scope="bills" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Linked document</Label>
+            <div>
+              <LinkPicker
+                triggerLabel="Link a document"
+                emptyLabel="No documents yet — type a name to create one"
+                createLabel={(q) => `Create document: ${q}`}
+                options={documentOptions}
+                value={linkedDocument}
+                onChange={handleLinkedDocumentChange}
+                onCreate={handleCreateDocument}
+                initialQuery={name}
+                chipIcon={Link2}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              For things like an insurance policy or account this bill pays for
+            </p>
           </div>
 
 

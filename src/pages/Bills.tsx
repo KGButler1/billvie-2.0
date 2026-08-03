@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { BillService } from '@/services/BillService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
 import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
@@ -106,8 +107,12 @@ const Bills = () => {
     else setShowUpgradeModal(true);
   };
 
-  const handleAddBill = (billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
-    BillService.addBill(billData);
+  const handleAddBill = (
+    billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
+    linkedDocumentId?: string
+  ) => {
+    const created = BillService.addBill(billData);
+    if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);

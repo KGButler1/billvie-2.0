@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Shield } from 'lucide-react';
+import { X, Shield, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,12 +10,16 @@ import AccessPicker from '@/components/people/AccessPicker';
 import { PersonTagPicker } from '@/components/people/PersonTags';
 
 import { PeopleService } from '@/services/PeopleService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { BillService } from '@/services/BillService';
+import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 
 interface AddDocumentModalProps {
   document?: HouseholdDocument;
   onAdd: (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
-    personIds: string[]
+    personIds: string[],
+    linkedBillId?: string
   ) => void;
   onEdit: (id: string, updates: Partial<HouseholdDocument>) => void;
   onClose: () => void;
@@ -37,6 +41,38 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
   const [professionalIds, setProfessionalIds] = useState<string[]>([]);
   const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
 
+  const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(() => {
+    if (!document) return null;
+    const billId = DocumentLinkService.getLinkedBillId(document.id);
+    const bill = billId ? BillService.getBillById(billId) : undefined;
+    return bill ? { id: bill.id, label: bill.name } : null;
+  });
+
+  const billOptions = useMemo(
+    () => BillService.getAllBills().map((b) => ({ id: b.id, label: b.name })),
+    []
+  );
+
+  const handleLinkedBillChange = (option: LinkPickerOption | null) => {
+    setLinkedBill(option);
+    if (!document) return; // create mode: applied after save via onAdd instead
+
+    if (option) {
+      DocumentLinkService.linkToBill(document.id, option.id);
+    } else {
+      const currentBillId = DocumentLinkService.getLinkedBillId(document.id);
+      if (currentBillId) {
+        const linkId = DocumentLinkService.findActiveLinkId(document.id, currentBillId);
+        if (linkId) DocumentLinkService.unlink(linkId);
+      }
+    }
+  };
+
+  const handleCreateBill = (name: string): LinkPickerOption => {
+    const created = BillService.addBill({ name, isRecurring: false });
+    return { id: created.id, label: created.name };
+  };
+
   const handleSubmit = () => {
     if (!title.trim()) return;
 
@@ -54,7 +90,7 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
     if (document) {
       onEdit(document.id, shared);
     } else {
-      onAdd(shared, [...householdIds, ...professionalIds]);
+      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id);
     }
   };
 
@@ -151,6 +187,26 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               For anything with an expiry or renewal — a passport, a fixed-term policy, a lease
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Linked bill <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <LinkPicker
+              triggerLabel="Link a bill"
+              emptyLabel="No bills yet — type a name to create one"
+              createLabel={(q) => `Create bill: ${q}`}
+              options={billOptions}
+              value={linkedBill}
+              onChange={handleLinkedBillChange}
+              onCreate={handleCreateBill}
+              initialQuery={title}
+              chipIcon={Link2}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              For things like an insurance premium or contribution this document represents
             </p>
           </div>
 
