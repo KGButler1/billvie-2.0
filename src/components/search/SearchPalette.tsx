@@ -4,7 +4,6 @@ import { Receipt, FileText, CalendarDays, Users, UserCircle, Wallet } from 'luci
 import {
   CommandDialog,
   CommandGroup,
-  CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
