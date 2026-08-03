@@ -16,12 +16,11 @@ import {
   CATEGORY_LABELS,
   PAYMENT_METHOD_LABELS,
   RECURRING_LABELS,
-  RESPONSIBLE_PARTY_LABELS,
   BillCategory,
   PaymentMethod,
   RecurringInterval,
-  ResponsibleParty,
 } from '@/types/bill';
+
 
 const formatMoney = (amount?: number) =>
   amount === undefined || amount === null
@@ -46,7 +45,7 @@ const BillRow = ({ bill }: { bill: Bill }) => {
     bill.isRecurring
       ? label(RECURRING_LABELS as Record<RecurringInterval, string>, bill.recurringInterval)
       : formatDate(bill.dueDate) && `Due ${formatDate(bill.dueDate)}`,
-    label(RESPONSIBLE_PARTY_LABELS as Record<ResponsibleParty, string>, bill.responsibleParty),
+    bill.notes || undefined,
     label(PAYMENT_METHOD_LABELS as Record<PaymentMethod, string>, bill.paymentMethod),
   ].filter(Boolean);
 

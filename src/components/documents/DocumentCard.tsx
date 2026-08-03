@@ -1,6 +1,8 @@
 import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin } from 'lucide-react';
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { AccessService } from '@/services/AccessService';
+import { PersonTagChips } from '@/components/people/PersonTags';
+
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
   insurance: Shield,
@@ -90,9 +92,12 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess }: DocumentCa
             </div>
           </div>
 
+          <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
+
           {document.notes && (
             <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{document.notes}</p>
           )}
+
           <div className="flex items-center gap-2 mt-3">
             <button
               onClick={() => onDelete(document.id)}

@@ -11,7 +11,10 @@ import {
   HelpCircle,
   FileText,
   Shield,
+  Search,
 } from 'lucide-react';
+import { openSearch } from '@/components/search/GlobalSearch';
+
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -81,8 +84,16 @@ const BottomNav = () => {
           </nav>
 
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={openSearch}>
+              <Search className="w-4 h-4" />
+              Search
+              <kbd className="ml-1 text-xs text-muted-foreground border border-border rounded px-1">
+                ⌘K
+              </kbd>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
+
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <MoreHorizontal className="w-4 h-4" />
                   More

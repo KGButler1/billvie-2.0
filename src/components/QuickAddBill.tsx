@@ -12,18 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Bill, 
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Bill,
   BillCategory,
-  PaymentMethod, 
+  PaymentMethod,
   RecurringInterval,
-  ResponsibleParty,
   PAYMENT_METHOD_LABELS,
   CATEGORY_LABELS,
   RECURRING_LABELS,
-  RESPONSIBLE_PARTY_LABELS,
 } from '@/types/bill';
+import { PersonTagPicker } from '@/components/people/PersonTags';
 import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
+
 
 interface QuickAddBillProps {
   onAdd: (bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
@@ -40,27 +41,26 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
   const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | string>('');
   const [category, setCategory] = useState<BillCategory | string>('');
-  const [responsibleParty, setResponsibleParty] = useState<ResponsibleParty | string>('');
+  const [notes, setNotes] = useState('');
+  const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
+
 
   // Custom options
   const [customCategories, setCustomCategories] = useState<CustomOption[]>([]);
   const [customPaymentMethods, setCustomPaymentMethods] = useState<CustomOption[]>([]);
-  const [customResponsibleParties, setCustomResponsibleParties] = useState<CustomOption[]>([]);
 
   // Adding new option states
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingPaymentMethod, setIsAddingPaymentMethod] = useState(false);
-  const [isAddingResponsibleParty, setIsAddingResponsibleParty] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newPaymentMethodName, setNewPaymentMethodName] = useState('');
-  const [newResponsiblePartyName, setNewResponsiblePartyName] = useState('');
 
   // Load custom options on mount
   useEffect(() => {
     setCustomCategories(CustomBillOptionsService.getCustomCategories());
     setCustomPaymentMethods(CustomBillOptionsService.getCustomPaymentMethods());
-    setCustomResponsibleParties(CustomBillOptionsService.getCustomResponsibleParties());
   }, []);
+
 
   const handleCategoryChange = (value: string) => {
     if (value === ADD_NEW_VALUE) {
@@ -78,13 +78,6 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
     }
   };
 
-  const handleResponsiblePartyChange = (value: string) => {
-    if (value === ADD_NEW_VALUE) {
-      setIsAddingResponsibleParty(true);
-    } else {
-      setResponsibleParty(value);
-    }
-  };
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
@@ -106,15 +99,6 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
     }
   };
 
-  const handleAddResponsibleParty = () => {
-    if (newResponsiblePartyName.trim()) {
-      const newOption = CustomBillOptionsService.addCustomResponsibleParty(newResponsiblePartyName);
-      setCustomResponsibleParties(CustomBillOptionsService.getCustomResponsibleParties());
-      setResponsibleParty(newOption.id);
-      setNewResponsiblePartyName('');
-      setIsAddingResponsibleParty(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +113,9 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
       recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
       category: category || undefined,
-      responsibleParty: responsibleParty || undefined,
+      notes: notes.trim() || undefined,
+      taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
+
     });
   };
 
@@ -150,13 +136,6 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
     return custom?.label || value;
   };
 
-  const getResponsiblePartyLabel = (value: string): string => {
-    if (RESPONSIBLE_PARTY_LABELS[value as ResponsibleParty]) {
-      return RESPONSIBLE_PARTY_LABELS[value as ResponsibleParty];
-    }
-    const custom = customResponsibleParties.find(p => p.id === value);
-    return custom?.label || value;
-  };
 
   return (
     <>
@@ -377,77 +356,24 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
             )}
           </div>
 
-          {/* Responsible Party */}
+          {/* Notes */}
           <div className="space-y-2">
-            <Label>Who's Responsible?</Label>
-            {isAddingResponsibleParty ? (
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter name"
-                  value={newResponsiblePartyName}
-                  onChange={(e) => setNewResponsiblePartyName(e.target.value)}
-                  className="h-12 flex-1"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddResponsibleParty();
-                    } else if (e.key === 'Escape') {
-                      setIsAddingResponsibleParty(false);
-                      setNewResponsiblePartyName('');
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  onClick={handleAddResponsibleParty}
-                  disabled={!newResponsiblePartyName.trim()}
-                  className="h-12 w-12"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsAddingResponsibleParty(false);
-                    setNewResponsiblePartyName('');
-                  }}
-                  className="h-12 w-12"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <Select value={responsibleParty} onValueChange={handleResponsiblePartyChange}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Optional - assign responsibility">
-                    {responsibleParty ? getResponsiblePartyLabel(responsibleParty) : 'Optional - assign responsibility'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(RESPONSIBLE_PARTY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                  {customResponsibleParties.map((custom) => (
-                    <SelectItem key={custom.id} value={custom.id}>
-                      {custom.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value={ADD_NEW_VALUE} className="text-primary font-medium">
-                    <span className="flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      Add new person...
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <Label htmlFor="bill-notes">Notes</Label>
+            <Textarea
+              id="bill-notes"
+              placeholder="Anything someone else would need to know"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
           </div>
+
+          {/* Person tags */}
+          <div className="space-y-2">
+            <Label>For someone in particular?</Label>
+            <PersonTagPicker value={taggedPersonIds} onChange={setTaggedPersonIds} scope="bills" />
+          </div>
+
 
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between py-2">

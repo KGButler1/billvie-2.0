@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DocumentType, DOCUMENT_TYPE_LABELS, HouseholdDocument } from '@/types/document';
 import AccessPicker from '@/components/people/AccessPicker';
+import { PersonTagPicker } from '@/components/people/PersonTags';
+
 import { PeopleService } from '@/services/PeopleService';
 
 interface AddDocumentModalProps {
@@ -29,6 +31,7 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
     PeopleService.getAll().filter((p) => p.role === 'household').map((p) => p.id)
   );
   const [professionalIds, setProfessionalIds] = useState<string[]>([]);
+  const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -39,7 +42,9 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
         type,
         keyDetail: keyDetail.trim() || undefined,
         notes: notes.trim() || undefined,
+        taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
       },
+
       [...householdIds, ...professionalIds]
     );
   };
@@ -147,6 +152,16 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
               onChange={setProfessionalIds}
             />
           </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">For someone in particular?</label>
+            <PersonTagPicker
+              value={taggedPersonIds}
+              onChange={setTaggedPersonIds}
+              scope="documents"
+            />
+          </div>
+
 
           <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
             <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />

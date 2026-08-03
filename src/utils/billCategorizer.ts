@@ -1,7 +1,7 @@
 import { BillCategory } from '@/types/bill';
 
 // Keywords for auto-categorization
-const CATEGORY_KEYWORDS: Record<BillCategory, string[]> = {
+export const CATEGORY_KEYWORDS: Record<BillCategory, string[]> = {
   utilities: [
     'electric', 'electricity', 'power', 'gas', 'water', 'sewer', 'trash', 'garbage',
     'utility', 'utilities', 'pge', 'con ed', 'duke energy', 'xcel', 'national grid'

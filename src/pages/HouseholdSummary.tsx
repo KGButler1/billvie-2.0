@@ -7,6 +7,8 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { DocumentService } from '@/services/DocumentService';
 import { AccessService } from '@/services/AccessService';
+import { PeopleService } from '@/services/PeopleService';
+
 import { ACCESS_SCOPE_LABELS } from '@/types/people';
 import {
   FinancialInfoService,
@@ -157,7 +159,13 @@ const HouseholdSummary = () => {
                             <td className="py-1">
                               {b.isRecurring ? titleCase(b.recurringInterval) : 'One time'}
                             </td>
-                            <td className="py-1">{titleCase(b.responsibleParty)}</td>
+                            <td className="py-1">
+                              {(b.taggedPersonIds ?? [])
+                                .map((id) => PeopleService.getById(id)?.name)
+                                .filter(Boolean)
+                                .join(', ') || '—'}
+                            </td>
+
                             <td className="py-1">{titleCase(b.paymentMethod)}</td>
                             <td className="py-1">{titleCase(b.status)}</td>
                           </tr>

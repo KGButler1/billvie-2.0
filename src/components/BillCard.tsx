@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, User } from 'lucide-react';
-import { Bill, PaymentMethod, ResponsibleParty, PAYMENT_METHOD_LABELS, RECURRING_LABELS, RESPONSIBLE_PARTY_LABELS } from '@/types/bill';
+import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap } from 'lucide-react';
+import { Bill, PaymentMethod, PAYMENT_METHOD_LABELS, RECURRING_LABELS } from '@/types/bill';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import CategoryBadge from './CategoryBadge';
+import { PersonTagChips } from '@/components/people/PersonTags';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 
 interface BillCardProps {
@@ -24,15 +25,6 @@ const getPaymentMethodLabel = (method: PaymentMethod | string): string => {
   return custom?.label || method;
 };
 
-// Helper to get responsible party label (built-in or custom)
-const getResponsiblePartyLabel = (party: ResponsibleParty | string): string => {
-  if (party in RESPONSIBLE_PARTY_LABELS) {
-    return RESPONSIBLE_PARTY_LABELS[party as ResponsibleParty];
-  }
-  const customParties = CustomBillOptionsService.getCustomResponsibleParties();
-  const custom = customParties.find(p => p.id === party);
-  return custom?.label || party;
-};
 
 const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) => {
   const isPaid = bill.status === 'paid';
@@ -93,6 +85,8 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             </div>
           )}
 
+          <PersonTagChips personIds={bill.taggedPersonIds} className="mb-2" />
+
           {/* Amount and due date */}
           <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
             {bill.amount !== undefined && (
@@ -118,13 +112,12 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             )}
           </div>
 
-          {/* Responsible party */}
-          {bill.responsibleParty && (
-            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-              <User className="w-3 h-3" />
-              <span>{getResponsiblePartyLabel(bill.responsibleParty)}</span>
-            </div>
+          {bill.notes && (
+            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 whitespace-pre-line">
+              {bill.notes}
+            </p>
           )}
+
         </div>
 
         {/* Status badge */}

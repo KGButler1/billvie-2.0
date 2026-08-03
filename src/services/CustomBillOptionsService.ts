@@ -2,7 +2,9 @@
 
 const CUSTOM_CATEGORIES_KEY = 'billvie_custom_categories';
 const CUSTOM_PAYMENT_METHODS_KEY = 'billvie_custom_payment_methods';
-const CUSTOM_RESPONSIBLE_PARTIES_KEY = 'billvie_custom_responsible_parties';
+// `billvie_custom_responsible_parties` is deliberately left unread — the field it
+// backed was retired and migrated into bill notes.
+
 
 export interface CustomOption {
   id: string;
@@ -52,22 +54,5 @@ export class CustomBillOptionsService {
     localStorage.setItem(CUSTOM_PAYMENT_METHODS_KEY, JSON.stringify(methods));
   }
 
-  // Custom Responsible Parties
-  static getCustomResponsibleParties(): CustomOption[] {
-    const data = localStorage.getItem(CUSTOM_RESPONSIBLE_PARTIES_KEY);
-    return data ? JSON.parse(data) : [];
-  }
-
-  static addCustomResponsibleParty(label: string): CustomOption {
-    const parties = this.getCustomResponsibleParties();
-    const newParty: CustomOption = { id: generateId(), label: label.trim() };
-    parties.push(newParty);
-    localStorage.setItem(CUSTOM_RESPONSIBLE_PARTIES_KEY, JSON.stringify(parties));
-    return newParty;
-  }
-
-  static deleteCustomResponsibleParty(id: string): void {
-    const parties = this.getCustomResponsibleParties().filter(p => p.id !== id);
-    localStorage.setItem(CUSTOM_RESPONSIBLE_PARTIES_KEY, JSON.stringify(parties));
-  }
 }
+

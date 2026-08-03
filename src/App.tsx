@@ -23,6 +23,8 @@ import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import GlobalSearch from "./components/search/GlobalSearch";
+
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
 
@@ -64,7 +66,9 @@ const App = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <GlobalSearch />
         </BrowserRouter>
+
       </TooltipProvider>
     </QueryClientProvider>
   );

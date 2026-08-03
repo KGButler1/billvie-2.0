@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Menu, X, Settings, Info, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, Settings, Info, Eye, EyeOff, Search } from 'lucide-react';
+import { openSearch } from '@/components/search/GlobalSearch';
+
 import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +30,16 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Family View Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Search"
+              onClick={openSearch}
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+
+
             {onToggleFamilyView && (
               <Button
                 variant={isFamilyView ? "default" : "ghost"}

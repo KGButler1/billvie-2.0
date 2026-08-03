@@ -20,7 +20,6 @@ export type BillCategory =
 
 export type RecurringInterval = 'one_time' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
 
-export type ResponsibleParty = 'me' | 'partner' | 'roommate' | 'parent' | 'other';
 
 export interface Bill {
   id: string;
@@ -31,7 +30,9 @@ export interface Bill {
   recurringInterval?: RecurringInterval;
   paymentMethod?: PaymentMethod | string; // Supports custom payment methods
   category?: BillCategory | string; // Supports custom categories
-  responsibleParty?: ResponsibleParty | string; // Supports custom responsible parties
+  notes?: string;
+  taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
+
   isAutoDebited?: boolean;
   status: BillStatus;
   paidDate?: string;
@@ -134,15 +135,8 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   custom: 'Custom',
 };
 
-export const RESPONSIBLE_PARTY_LABELS: Record<ResponsibleParty, string> = {
-  me: 'Me',
-  partner: 'Partner',
-  roommate: 'Roommate',
-  parent: 'Parent',
-  other: 'Other',
-};
-
 export const BILL_LIMITS = {
+
   free: 25,
   paid: Infinity,
   anonymous: 25,
