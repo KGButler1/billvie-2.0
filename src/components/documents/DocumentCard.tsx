@@ -1,6 +1,8 @@
 import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin } from 'lucide-react';
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { AccessService } from '@/services/AccessService';
+import { PersonTagChips } from '@/components/people/PersonTags';
+
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
   insurance: Shield,
