@@ -135,15 +135,8 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   custom: 'Custom',
 };
 
-export const RESPONSIBLE_PARTY_LABELS: Record<ResponsibleParty, string> = {
-  me: 'Me',
-  partner: 'Partner',
-  roommate: 'Roommate',
-  parent: 'Parent',
-  other: 'Other',
-};
-
 export const BILL_LIMITS = {
+
   free: 25,
   paid: Infinity,
   anonymous: 25,
