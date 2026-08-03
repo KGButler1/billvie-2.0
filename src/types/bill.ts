@@ -30,7 +30,9 @@ export interface Bill {
   recurringInterval?: RecurringInterval;
   paymentMethod?: PaymentMethod | string; // Supports custom payment methods
   category?: BillCategory | string; // Supports custom categories
-  responsibleParty?: ResponsibleParty | string; // Supports custom responsible parties
+  notes?: string;
+  taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
+
   isAutoDebited?: boolean;
   status: BillStatus;
   paidDate?: string;
