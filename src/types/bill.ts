@@ -29,6 +29,7 @@ export interface Bill {
   isRecurring: boolean;
   recurringInterval?: RecurringInterval;
   paymentMethod?: PaymentMethod | string; // Supports custom payment methods
+  paymentCardId?: string; // References a PaymentCard — set only when paid by credit card
   category?: BillCategory | string; // Supports custom categories
   notes?: string;
   taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access

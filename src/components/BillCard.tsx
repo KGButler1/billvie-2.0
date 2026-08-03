@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap } from 'lucide-react';
+import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, Pencil, AlertTriangle } from 'lucide-react';
 import { Bill, PaymentMethod, PAYMENT_METHOD_LABELS, RECURRING_LABELS } from '@/types/bill';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,16 @@ import { cn } from '@/lib/utils';
 import CategoryBadge from './CategoryBadge';
 import { PersonTagChips } from '@/components/people/PersonTags';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
+import { PaymentCardService } from '@/services/PaymentCardService';
+import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
 
 interface BillCardProps {
   bill: Bill;
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (bill: Bill) => void;
+  onOpen?: (bill: Bill) => void;
 }
 
 // Helper to get payment method label (built-in or custom)
@@ -26,8 +30,10 @@ const getPaymentMethodLabel = (method: PaymentMethod | string): string => {
 };
 
 
-const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) => {
+const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: BillCardProps) => {
   const isPaid = bill.status === 'paid';
+  const card = PaymentCardService.getById(bill.paymentCardId);
+  const cardFlag = cardExpiryFlag(card);
   
   const statusStyles = {
     paid: 'status-paid',
@@ -46,9 +52,11 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
   return (
     <motion.div
       layout
+      onClick={() => onOpen?.(bill)}
       className={cn(
         'card-bill relative',
-        isPaid && 'opacity-60'
+        isPaid && 'opacity-60',
+        onOpen && 'cursor-pointer'
       )}
     >
       {/* Sample indicator */}
@@ -105,6 +113,9 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
                 {getPaymentMethodLabel(bill.paymentMethod)}
               </span>
             )}
+            {card && (
+              <span className="text-xs">{card.nickname}</span>
+            )}
             {bill.isRecurring && bill.recurringInterval && (
               <span className="text-xs">
                 {RECURRING_LABELS[bill.recurringInterval]}
@@ -120,17 +131,28 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
 
         </div>
 
-        {/* Status badge */}
+        {/* Status + card badges */}
+        <div className={cn('flex flex-col items-end gap-1.5 flex-shrink-0', bill.isSample && 'mt-5')}>
         <span className={cn(
           'text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0',
           statusStyles[bill.status]
         )}>
           {statusLabels[bill.status]}
         </span>
+        {cardFlag && (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full status-overdue inline-flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            {CARD_FLAG_LABELS[cardFlag]}
+          </span>
+        )}
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
+      <div
+        className="flex items-center gap-1 mt-4 pt-3 border-t border-border"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isPaid ? (
           <Button
             variant="ghost"
@@ -152,13 +174,25 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             Mark as Handled
           </Button>
         )}
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Edit ${bill.name}`}
+            onClick={() => onEdit(bill)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
+          aria-label={`Delete ${bill.name}`}
           onClick={() => onDelete(bill.id)}
-          className="text-destructive hover:bg-destructive/10"
+          className="h-8 w-8 text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
     </motion.div>

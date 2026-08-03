@@ -9,6 +9,7 @@ import { Bill } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
 import BillList from '@/components/bills/BillList';
 import QuickAddBill from '@/components/QuickAddBill';
+import BillDetailDialog from '@/components/bills/BillDetailDialog';
 import BillScanModal from '@/components/BillScanModal';
 import BottomNav from '@/components/BottomNav';
 import DevPanel from '@/components/DevPanel';
@@ -27,6 +28,8 @@ const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
   const [searchParams] = useSearchParams();
   const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
+  const [detailBill, setDetailBill] = useState<Bill | null>(null);
+  const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
   
@@ -94,6 +97,14 @@ const Dashboard = () => {
   const handleUpgrade = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgradeModal(false);
+  };
+
+  const handleUpdateBill = (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingBill) return;
+    BillService.updateBill(editingBill.id, updates);
+    loadBills();
+    setEditingBill(null);
+    setDetailBill(null);
   };
 
   const handleMarkPaid = (id: string) => {
@@ -231,6 +242,8 @@ const Dashboard = () => {
           onMarkPaid={handleMarkPaid}
           onMarkUnpaid={handleMarkUnpaid}
           onDelete={handleDeleteBill}
+          onEdit={setEditingBill}
+          onOpen={setDetailBill}
         />
 
         {bills.length > 0 && (
@@ -300,6 +313,28 @@ const Dashboard = () => {
           <Plus className="w-6 h-6" />
         </motion.button>
       </div>
+
+      {/* Bill detail + edit */}
+      <AnimatePresence>
+        {detailBill && !editingBill && (
+          <BillDetailDialog
+            bill={detailBill}
+            onEdit={() => setEditingBill(detailBill)}
+            onClose={() => setDetailBill(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingBill && (
+          <QuickAddBill
+            mode="edit"
+            initialBill={editingBill}
+            onAdd={handleUpdateBill}
+            onClose={() => setEditingBill(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Quick Add Modal */}
       <AnimatePresence>

@@ -30,12 +30,15 @@ import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserSettings } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
+import ManageCardsSheet from '@/components/cards/ManageCardsSheet';
+import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const Settings = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(UserService.getSettings());
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showCardsSheet, setShowCardsSheet] = useState(false);
 
   useEffect(() => {
     // Apply theme on mount
@@ -270,6 +273,23 @@ const Settings = () => {
             </button>
 
 
+            {/* Payment Cards — a sheet, not a route */}
+            <button
+              onClick={() => setShowCardsSheet(true)}
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Payment Cards</p>
+                <p className="text-sm text-muted-foreground">
+                  Nickname and expiry only — so nobody's caught out by a dead card
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
             {/* Recently Deleted — never paywalled */}
             <button
               onClick={() => navigate('/recently-deleted')}
@@ -335,6 +355,10 @@ const Settings = () => {
           </div>
         </section>
       </main>
+
+      <AnimatePresence>
+        {showCardsSheet && <ManageCardsSheet onClose={() => setShowCardsSheet(false)} />}
+      </AnimatePresence>
 
       <BottomNav />
 

@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bill } from '@/types/bill';
 import BillCard from '@/components/BillCard';
+import { PaymentCardService } from '@/services/PaymentCardService';
+import { cardExpiryFlag } from '@/utils/cardExpiry';
+
+// A bill whose card is expired or about to expire needs attention even if the
+// bill itself isn't overdue — presentation-only, BillService stays untouched.
+const needsCardAttention = (bill: Bill): boolean =>
+  !!bill.paymentCardId &&
+  bill.status !== 'paid' &&
+  !!cardExpiryFlag(PaymentCardService.getById(bill.paymentCardId));
 
 type SectionKey = 'overdue' | 'due_soon' | 'upcoming' | 'paid';
 
@@ -11,6 +20,8 @@ interface BillSectionProps {
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (bill: Bill) => void;
+  onOpen?: (bill: Bill) => void;
   collapsed?: boolean;
 }
 
@@ -20,6 +31,8 @@ export const BillSection = ({
   onMarkPaid,
   onMarkUnpaid,
   onDelete,
+  onEdit,
+  onOpen,
   collapsed = false,
 }: BillSectionProps) => {
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
@@ -60,6 +73,8 @@ export const BillSection = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
+                  onOpen={onOpen}
                 />
               </motion.div>
             ))}
@@ -83,6 +98,8 @@ interface BillListProps {
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (bill: Bill) => void;
+  onOpen?: (bill: Bill) => void;
   sectionTitle?: (section: SectionKey) => string;
   emptyState?: React.ReactNode;
 }
@@ -93,6 +110,8 @@ const BillList = ({
   onMarkPaid,
   onMarkUnpaid,
   onDelete,
+  onEdit,
+  onOpen,
   sectionTitle,
   emptyState,
 }: BillListProps) => {
@@ -115,6 +134,8 @@ const BillList = ({
               onMarkPaid={onMarkPaid}
               onMarkUnpaid={onMarkUnpaid}
               onDelete={onDelete}
+              onEdit={onEdit}
+              onOpen={onOpen}
             />
           </motion.div>
         ))}
@@ -123,9 +144,12 @@ const BillList = ({
   }
 
   const groups: { key: SectionKey; items: Bill[]; collapsed?: boolean }[] = [
-    { key: 'overdue', items: bills.filter(b => b.status === 'overdue') },
-    { key: 'due_soon', items: bills.filter(b => b.status === 'due_soon') },
-    { key: 'upcoming', items: bills.filter(b => b.status === 'pending') },
+    {
+      key: 'overdue',
+      items: bills.filter(b => b.status === 'overdue' || needsCardAttention(b)),
+    },
+    { key: 'due_soon', items: bills.filter(b => b.status === 'due_soon' && !needsCardAttention(b)) },
+    { key: 'upcoming', items: bills.filter(b => b.status === 'pending' && !needsCardAttention(b)) },
     { key: 'paid', items: bills.filter(b => b.status === 'paid'), collapsed: true },
   ];
 
@@ -141,6 +165,8 @@ const BillList = ({
             onMarkPaid={onMarkPaid}
             onMarkUnpaid={onMarkUnpaid}
             onDelete={onDelete}
+            onEdit={onEdit}
+            onOpen={onOpen}
             collapsed={g.collapsed}
           />
         ))}
