@@ -29,6 +29,7 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
     PeopleService.getAll().filter((p) => p.role === 'household').map((p) => p.id)
   );
   const [professionalIds, setProfessionalIds] = useState<string[]>([]);
+  const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -39,7 +40,9 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
         type,
         keyDetail: keyDetail.trim() || undefined,
         notes: notes.trim() || undefined,
+        taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
       },
+
       [...householdIds, ...professionalIds]
     );
   };
