@@ -71,9 +71,10 @@ const ProgressiveHints = () => {
       action: 'Learn About Sharing',
       condition: () => {
         const bills = BillService.getAllBills();
-        const hasPartnerBills = bills.some(b => b.responsibleParty === 'partner');
-        return hasPartnerBills && !isPaid;
+        const hasTaggedBills = bills.some(b => (b.taggedPersonIds?.length ?? 0) > 0);
+        return hasTaggedBills && !isPaid;
       },
+
     },
   ];
 
