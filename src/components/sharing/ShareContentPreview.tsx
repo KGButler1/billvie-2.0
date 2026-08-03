@@ -103,7 +103,7 @@ const BillsContent = ({ personId }: { personId?: string }) => {
       {Object.entries(groups).map(([category, items]) => (
         <SectionCard key={category} title={label(CATEGORY_LABELS as Record<BillCategory, string>, category) || 'Other'}>
           {items.map((bill) => (
-            <BillRow key={bill.id} bill={bill} />
+            <BillRow key={bill.id} bill={bill} viewerId={personId} />
           ))}
         </SectionCard>
       ))}
@@ -304,7 +304,7 @@ const ShareContentPreview = ({
   sharedCategories,
   sharedYears,
 }: ShareContentPreviewProps) => {
-  if (scope === 'bills') return <BillsContent />;
+  if (scope === 'bills') return <BillsContent personId={personId} />;
   if (scope === 'events') return <EventsContent eventId={resourceId} />;
   if (scope === 'tax_documents')
     return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} documentId={resourceId} />;
