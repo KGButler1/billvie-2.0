@@ -23,6 +23,8 @@ import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import GlobalSearch from "./components/search/GlobalSearch";
+
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
 
