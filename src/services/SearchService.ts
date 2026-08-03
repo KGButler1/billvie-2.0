@@ -4,6 +4,7 @@ import { EventService } from '@/services/EventService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { PeopleService } from '@/services/PeopleService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
+import { PaymentCardService } from '@/services/PaymentCardService';
 import { CATEGORY_KEYWORDS } from '@/utils/billCategorizer';
 import { CATEGORY_LABELS, BillCategory } from '@/types/bill';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
@@ -67,10 +68,20 @@ export const SearchService = {
     const results: SearchResult[] = [];
     const categories = synonymCategories(q);
 
+    // Payment cards — searching a card nickname surfaces every bill on it.
+    const matchingCardIds = new Map<string, string>();
+    PaymentCardService.getRaw().forEach((card) => {
+      if (scoreText(q, card.nickname)) matchingCardIds.set(card.id, card.nickname);
+    });
+
     // Bills
     BillService.getAllBills().forEach((bill) => {
       let score = scoreText(q, bill.name, bill.notes);
       let matchedVia: string | undefined;
+      if (!score && bill.paymentCardId && matchingCardIds.has(bill.paymentCardId)) {
+        score = 50;
+        matchedVia = matchingCardIds.get(bill.paymentCardId);
+      }
       if (!score && bill.category && categories.includes(bill.category as BillCategory)) {
         score = 40;
         matchedVia = CATEGORY_LABELS[bill.category as BillCategory] || String(bill.category);
