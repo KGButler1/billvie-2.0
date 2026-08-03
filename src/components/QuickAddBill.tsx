@@ -81,13 +81,6 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
     }
   };
 
-  const handleResponsiblePartyChange = (value: string) => {
-    if (value === ADD_NEW_VALUE) {
-      setIsAddingResponsibleParty(true);
-    } else {
-      setResponsibleParty(value);
-    }
-  };
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
