@@ -5,6 +5,7 @@ import { Plus, FolderOpen, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentService } from '@/services/DocumentService';
 import { AccessService } from '@/services/AccessService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { HouseholdDocument } from '@/types/document';
 import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
@@ -28,10 +29,12 @@ const Documents = () => {
 
   const handleAdd = (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
-    personIds: string[]
+    personIds: string[],
+    linkedBillId?: string
   ) => {
     const created = DocumentService.add(doc);
     personIds.forEach((pid) => AccessService.grantItem(pid, 'documents', created.id));
+    if (linkedBillId) DocumentLinkService.linkToBill(created.id, linkedBillId);
     reload();
     setIsAdding(false);
     setAttachingId(created.id);
