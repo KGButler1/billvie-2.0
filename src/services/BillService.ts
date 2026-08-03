@@ -311,7 +311,9 @@ export class BillService {
         recurringInterval: bill.recurringInterval,
         paymentMethod: bill.paymentMethod,
         category: bill.category,
-        responsibleParty: bill.responsibleParty,
+        notes: bill.notes,
+        taggedPersonIds: bill.taggedPersonIds,
+
         isAutoDebited: bill.isAutoDebited,
       });
     }
