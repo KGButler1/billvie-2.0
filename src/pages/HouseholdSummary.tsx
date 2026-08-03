@@ -7,6 +7,8 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { DocumentService } from '@/services/DocumentService';
 import { AccessService } from '@/services/AccessService';
+import { PeopleService } from '@/services/PeopleService';
+
 import { ACCESS_SCOPE_LABELS } from '@/types/people';
 import {
   FinancialInfoService,
