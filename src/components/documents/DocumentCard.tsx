@@ -42,7 +42,10 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
   const relatedCount = DocumentLinkService.getRelatedDocumentIds(document.id).length;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow">
+    <div
+      onClick={() => onEdit(document.id)}
+      className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer"
+    >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
           <Icon className="w-5 h-5 text-primary" />
@@ -55,7 +58,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
             )}
 
             <button
-              onClick={() => onEditAccess(document.id)}
+              onClick={(e) => { e.stopPropagation(); onEditAccess(document.id); }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 block text-left"
             >
               {viewers.length > 0 ? `Visible to ${joinNames(viewers)}` : 'Only you can see this'}
@@ -67,6 +70,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
                   href={document.attachment.dataUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
                 >
                   <Paperclip className="w-3 h-3 flex-shrink-0" />
@@ -78,6 +82,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
                   href={document.externalLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <Link2 className="w-3 h-3 flex-shrink-0" /> Opens at provider
@@ -91,7 +96,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
               )}
               {!hasAttachment && (
                 <button
-                  onClick={() => onAttach(document.id)}
+                  onClick={(e) => { e.stopPropagation(); onAttach(document.id); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Add the document itself
@@ -99,6 +104,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
               )}
             </div>
           </div>
+
 
           <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
 
@@ -132,7 +138,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
             <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{document.notes}</p>
           )}
 
-          <div className="flex items-center gap-3 mt-3 flex-wrap">
+          <div className="flex items-center gap-3 mt-3 flex-wrap" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => onEdit(document.id)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"

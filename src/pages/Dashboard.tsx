@@ -23,7 +23,7 @@ import ProgressiveHints from '@/components/ProgressiveHints';
 import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
-import ReadinessCard from '@/components/ReadinessCard';
+import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -224,14 +224,16 @@ const Dashboard = () => {
           Only you and people you invite can see this
         </p>
 
+        {/* Household setup */}
+        <HouseholdSetupWidget />
+
         {/* Spending Chart */}
         <SpendingChart spending={spending} />
 
         {/* Active Events Widget */}
         <ActiveEventsWidget events={activeEvents} />
 
-        {/* Household readiness summary */}
-        <ReadinessCard />
+
 
         {/* Important Documents Widget */}
         <DocumentsWidget />
