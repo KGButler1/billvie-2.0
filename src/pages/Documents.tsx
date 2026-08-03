@@ -21,6 +21,7 @@ const Documents = () => {
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [accessId, setAccessId] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
 
   const reload = () => setDocuments(DocumentService.getAll());
@@ -36,8 +37,15 @@ const Documents = () => {
     setAttachingId(created.id);
   };
 
+  const handleEditSave = (id: string, updates: Partial<HouseholdDocument>) => {
+    DocumentService.update(id, updates);
+    reload();
+    setEditingId(null);
+  };
+
   const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
   const linkingDoc = linkingId ? documents.find((d) => d.id === linkingId) : undefined;
+  const editingDoc = editingId ? documents.find((d) => d.id === editingId) : undefined;
 
 
   return (
@@ -89,6 +97,7 @@ const Documents = () => {
                   onAttach={(id) => setAttachingId(id)}
                   onEditAccess={(id) => setAccessId(id)}
                   onLinks={(id) => setLinkingId(id)}
+                  onEdit={(id) => setEditingId(id)}
                   onDelete={(id) => {
                     if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
                     DocumentService.delete(id);
@@ -102,8 +111,13 @@ const Documents = () => {
       </main>
 
       <AnimatePresence>
-        {isAdding && (
-          <AddDocumentModal onAdd={handleAdd} onClose={() => setIsAdding(false)} />
+        {(isAdding || editingDoc) && (
+          <AddDocumentModal
+            document={editingDoc}
+            onAdd={handleAdd}
+            onEdit={handleEditSave}
+            onClose={() => { setIsAdding(false); setEditingId(null); }}
+          />
         )}
         {attachingDoc && (
           <AttachDocumentSheet
