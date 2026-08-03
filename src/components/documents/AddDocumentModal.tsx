@@ -168,25 +168,29 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
             <p className="text-xs text-muted-foreground mt-1">This helps someone step in if needed</p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
-            <AccessPicker
-              scope="documents"
-              roleFilter="household"
-              selectedPersonIds={householdIds}
-              onChange={setHouseholdIds}
-            />
-          </div>
+          {!document && (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
+                <AccessPicker
+                  scope="documents"
+                  roleFilter="household"
+                  selectedPersonIds={householdIds}
+                  onChange={setHouseholdIds}
+                />
+              </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
-            <AccessPicker
-              scope="documents"
-              roleFilter="professional"
-              selectedPersonIds={professionalIds}
-              onChange={setProfessionalIds}
-            />
-          </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
+                <AccessPicker
+                  scope="documents"
+                  roleFilter="professional"
+                  selectedPersonIds={professionalIds}
+                  onChange={setProfessionalIds}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <label className="text-sm font-medium mb-1.5 block">For someone in particular?</label>
