@@ -371,77 +371,24 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
             )}
           </div>
 
-          {/* Responsible Party */}
+          {/* Notes */}
           <div className="space-y-2">
-            <Label>Who's Responsible?</Label>
-            {isAddingResponsibleParty ? (
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter name"
-                  value={newResponsiblePartyName}
-                  onChange={(e) => setNewResponsiblePartyName(e.target.value)}
-                  className="h-12 flex-1"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddResponsibleParty();
-                    } else if (e.key === 'Escape') {
-                      setIsAddingResponsibleParty(false);
-                      setNewResponsiblePartyName('');
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  onClick={handleAddResponsibleParty}
-                  disabled={!newResponsiblePartyName.trim()}
-                  className="h-12 w-12"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsAddingResponsibleParty(false);
-                    setNewResponsiblePartyName('');
-                  }}
-                  className="h-12 w-12"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <Select value={responsibleParty} onValueChange={handleResponsiblePartyChange}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Optional - assign responsibility">
-                    {responsibleParty ? getResponsiblePartyLabel(responsibleParty) : 'Optional - assign responsibility'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(RESPONSIBLE_PARTY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                  {customResponsibleParties.map((custom) => (
-                    <SelectItem key={custom.id} value={custom.id}>
-                      {custom.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value={ADD_NEW_VALUE} className="text-primary font-medium">
-                    <span className="flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      Add new person...
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <Label htmlFor="bill-notes">Notes</Label>
+            <Textarea
+              id="bill-notes"
+              placeholder="Anything someone else would need to know"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
           </div>
+
+          {/* Person tags */}
+          <div className="space-y-2">
+            <Label>For someone in particular?</Label>
+            <PersonTagPicker value={taggedPersonIds} onChange={setTaggedPersonIds} scope="bills" />
+          </div>
+
 
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between py-2">
