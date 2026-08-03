@@ -90,9 +90,12 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess }: DocumentCa
             </div>
           </div>
 
+          <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
+
           {document.notes && (
             <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{document.notes}</p>
           )}
+
           <div className="flex items-center gap-2 mt-3">
             <button
               onClick={() => onDelete(document.id)}
