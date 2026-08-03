@@ -41,7 +41,9 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
   const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | string>('');
   const [category, setCategory] = useState<BillCategory | string>('');
-  const [responsibleParty, setResponsibleParty] = useState<ResponsibleParty | string>('');
+  const [notes, setNotes] = useState('');
+  const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
+
 
   // Custom options
   const [customCategories, setCustomCategories] = useState<CustomOption[]>([]);
