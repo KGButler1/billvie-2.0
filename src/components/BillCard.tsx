@@ -132,7 +132,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
         </div>
 
         {/* Status + card badges */}
-        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <div className={cn('flex flex-col items-end gap-1.5 flex-shrink-0', bill.isSample && 'mt-5')}>
         <span className={cn(
           'text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0',
           statusStyles[bill.status]
