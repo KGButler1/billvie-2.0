@@ -42,7 +42,10 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
   const relatedCount = DocumentLinkService.getRelatedDocumentIds(document.id).length;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow">
+    <div
+      onClick={() => onEdit(document.id)}
+      className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer"
+    >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
           <Icon className="w-5 h-5 text-primary" />
