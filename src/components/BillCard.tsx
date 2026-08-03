@@ -135,6 +135,15 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
             </p>
           )}
 
+          {linkedDoc && (
+            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1 min-w-0">
+              <Link2 className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">Linked to {linkedDoc.title}</span>
+            </p>
+          )}
+
+
+
         </div>
 
         {/* Status + card badges */}
