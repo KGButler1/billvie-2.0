@@ -151,13 +151,6 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
     return custom?.label || value;
   };
 
-  const getResponsiblePartyLabel = (value: string): string => {
-    if (RESPONSIBLE_PARTY_LABELS[value as ResponsibleParty]) {
-      return RESPONSIBLE_PARTY_LABELS[value as ResponsibleParty];
-    }
-    const custom = customResponsibleParties.find(p => p.id === value);
-    return custom?.label || value;
-  };
 
   return (
     <>
