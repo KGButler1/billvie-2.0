@@ -85,6 +85,8 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             </div>
           )}
 
+          <PersonTagChips personIds={bill.taggedPersonIds} className="mb-2" />
+
           {/* Amount and due date */}
           <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
             {bill.amount !== undefined && (
@@ -110,13 +112,12 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete }: BillCardProps) =
             )}
           </div>
 
-          {/* Responsible party */}
-          {bill.responsibleParty && (
-            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-              <User className="w-3 h-3" />
-              <span>{getResponsiblePartyLabel(bill.responsibleParty)}</span>
-            </div>
+          {bill.notes && (
+            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 whitespace-pre-line">
+              {bill.notes}
+            </p>
           )}
+
         </div>
 
         {/* Status badge */}
