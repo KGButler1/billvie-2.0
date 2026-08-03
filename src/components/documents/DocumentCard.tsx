@@ -1,6 +1,9 @@
-import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin } from 'lucide-react';
+import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin, CalendarClock } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { AccessService } from '@/services/AccessService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { BillService } from '@/services/BillService';
 import { PersonTagChips } from '@/components/people/PersonTags';
 
 
@@ -26,12 +29,16 @@ interface DocumentCardProps {
   onDelete: (id: string) => void;
   onAttach: (id: string) => void;
   onEditAccess: (id: string) => void;
+  onLinks: (id: string) => void;
 }
 
-const DocumentCard = ({ document, onDelete, onAttach, onEditAccess }: DocumentCardProps) => {
+const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks }: DocumentCardProps) => {
   const Icon = typeIcons[document.type] || File;
   const hasAttachment = !!(document.attachment || document.externalLink || document.physicalLocation);
   const viewers = AccessService.getPeopleFor('documents', document.id).map((p) => firstName(p.name));
+  const linkedBillId = DocumentLinkService.getLinkedBillId(document.id);
+  const linkedBill = linkedBillId ? BillService.getBillById(linkedBillId) : undefined;
+  const relatedCount = DocumentLinkService.getRelatedDocumentIds(document.id).length;
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow">
@@ -94,11 +101,43 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess }: DocumentCa
 
           <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
 
+          {document.importantDate && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 min-w-0">
+              <CalendarClock className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">
+                {(document.importantDateLabel || 'Important date') + ': '}
+                {format(parseISO(document.importantDate), 'MMM d, yyyy')}
+              </span>
+            </p>
+          )}
+
+          {linkedBill && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 min-w-0">
+              <Link2 className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">Linked to {linkedBill.name}</span>
+            </p>
+          )}
+
+          {relatedCount > 0 && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 min-w-0">
+              <FileText className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">
+                Related to {relatedCount} other document{relatedCount === 1 ? '' : 's'}
+              </span>
+            </p>
+          )}
+
           {document.notes && (
             <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{document.notes}</p>
           )}
 
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
+            <button
+              onClick={() => onLinks(document.id)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Link2 className="w-3 h-3" /> Link to a bill or document
+            </button>
             <button
               onClick={() => onDelete(document.id)}
               className="text-xs text-destructive/70 hover:text-destructive transition-colors flex items-center gap-1"
@@ -106,6 +145,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess }: DocumentCa
               <Trash2 className="w-3 h-3" /> Remove
             </button>
           </div>
+
         </div>
       </div>
     </div>

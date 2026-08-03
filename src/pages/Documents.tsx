@@ -10,6 +10,7 @@ import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
 import AttachDocumentSheet from '@/components/documents/AttachDocumentSheet';
 import AccessSheet from '@/components/documents/AccessSheet';
+import LinkItemsSheet from '@/components/documents/LinkItemsSheet';
 
 import BottomNav from '@/components/BottomNav';
 
@@ -19,6 +20,8 @@ const Documents = () => {
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
   const [attachingId, setAttachingId] = useState<string | null>(null);
   const [accessId, setAccessId] = useState<string | null>(null);
+  const [linkingId, setLinkingId] = useState<string | null>(null);
+
 
   const reload = () => setDocuments(DocumentService.getAll());
 
@@ -34,6 +37,7 @@ const Documents = () => {
   };
 
   const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
+  const linkingDoc = linkingId ? documents.find((d) => d.id === linkingId) : undefined;
 
 
   return (
@@ -84,6 +88,7 @@ const Documents = () => {
                   document={doc}
                   onAttach={(id) => setAttachingId(id)}
                   onEditAccess={(id) => setAccessId(id)}
+                  onLinks={(id) => setLinkingId(id)}
                   onDelete={(id) => {
                     if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
                     DocumentService.delete(id);
@@ -111,6 +116,12 @@ const Documents = () => {
             scope="documents"
             itemId={accessId}
             onClose={() => { setAccessId(null); reload(); }}
+          />
+        )}
+        {linkingDoc && (
+          <LinkItemsSheet
+            document={linkingDoc}
+            onClose={() => { setLinkingId(null); reload(); }}
           />
         )}
       </AnimatePresence>
