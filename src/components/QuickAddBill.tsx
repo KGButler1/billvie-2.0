@@ -109,15 +109,6 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
     }
   };
 
-  const handleAddResponsibleParty = () => {
-    if (newResponsiblePartyName.trim()) {
-      const newOption = CustomBillOptionsService.addCustomResponsibleParty(newResponsiblePartyName);
-      setCustomResponsibleParties(CustomBillOptionsService.getCustomResponsibleParties());
-      setResponsibleParty(newOption.id);
-      setNewResponsiblePartyName('');
-      setIsAddingResponsibleParty(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
