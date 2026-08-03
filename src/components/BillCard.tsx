@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, Pencil, AlertTriangle } from 'lucide-react';
+import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, Pencil, AlertTriangle, Link2 } from 'lucide-react';
 import { Bill, PaymentMethod, PAYMENT_METHOD_LABELS, RECURRING_LABELS } from '@/types/bill';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { PersonTagChips } from '@/components/people/PersonTags';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 import { PaymentCardService } from '@/services/PaymentCardService';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { DocumentService } from '@/services/DocumentService';
 
 interface BillCardProps {
   bill: Bill;
