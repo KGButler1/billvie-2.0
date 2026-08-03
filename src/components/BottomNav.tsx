@@ -81,7 +81,14 @@ const BottomNav = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            <DropdownMenu>
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={openSearch}>
+              <Search className="w-4 h-4" />
+              Search
+              <kbd className="ml-1 text-xs text-muted-foreground border border-border rounded px-1">
+                ⌘K
+              </kbd>
+            </Button>
+
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <MoreHorizontal className="w-4 h-4" />
