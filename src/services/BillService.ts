@@ -138,9 +138,64 @@ const getSampleBills = (): Bill[] => {
   ];
 };
 
+// Retired `responsibleParty` → notes. Runs once, guarded by a key, wrapped in
+// try/catch, legacy localStorage keys deliberately left in place.
+const RESPONSIBLE_MIGRATED_KEY = 'billvie_bill_responsible_migrated_v1';
+const LEGACY_CUSTOM_PARTIES_KEY = 'billvie_custom_responsible_parties';
+const LEGACY_PARTY_LABELS: Record<string, string> = {
+  me: 'Me',
+  partner: 'Partner',
+  roommate: 'Roommate',
+  parent: 'Parent',
+  other: 'Other',
+};
+
+const runResponsiblePartyMigration = (): void => {
+  if (localStorage.getItem(RESPONSIBLE_MIGRATED_KEY) === 'true') return;
+
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    const bills: Bill[] = data ? JSON.parse(data) : [];
+
+    let customOptions: { id: string; label: string }[] = [];
+    try {
+      const rawCustom = localStorage.getItem(LEGACY_CUSTOM_PARTIES_KEY);
+      customOptions = rawCustom ? JSON.parse(rawCustom) : [];
+    } catch {
+      customOptions = [];
+    }
+
+    bills.forEach((bill) => {
+      const record = bill as unknown as Record<string, unknown>;
+      const value = record.responsibleParty;
+      if (typeof value !== 'string' || !value.trim()) {
+        delete record.responsibleParty;
+        return;
+      }
+
+      const label =
+        LEGACY_PARTY_LABELS[value] ||
+        customOptions.find((o) => o.id === value)?.label ||
+        value;
+
+      const line = `Previously marked as: ${label}`;
+      bill.notes = bill.notes && bill.notes.trim() ? `${bill.notes}\n\n${line}` : line;
+      delete record.responsibleParty;
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
+  } catch {
+    // A broken payload must never block the app.
+  }
+
+  localStorage.setItem(RESPONSIBLE_MIGRATED_KEY, 'true');
+};
+
 export class BillService {
   // Initialize with sample data if first visit
   static initialize(): void {
+    runResponsiblePartyMigration();
+
     const sampleShown = localStorage.getItem(SAMPLE_DATA_SHOWN_KEY);
     if (!sampleShown) {
       const existingBills = this.getAllBills();
@@ -151,6 +206,7 @@ export class BillService {
       }
     }
   }
+
 
   // Raw getter — includes soft-deleted bills. Every read-modify-write cycle
   // in this service MUST use this, never getAllBills(), or soft-deleted bills
