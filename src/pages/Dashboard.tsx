@@ -102,7 +102,7 @@ const Dashboard = () => {
   const handleUpdateBill = (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
     if (!editingBill) return;
     BillService.updateBill(editingBill.id, updates);
-    loadData();
+    loadBills();
     setEditingBill(null);
     setDetailBill(null);
   };
