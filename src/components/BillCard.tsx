@@ -36,6 +36,10 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
   const isPaid = bill.status === 'paid';
   const card = PaymentCardService.getById(bill.paymentCardId);
   const cardFlag = cardExpiryFlag(card);
+  const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
+  const linkedDoc = linkedDocId ? DocumentService.getAll().find((d) => d.id === linkedDocId) : undefined;
+
+
   
   const statusStyles = {
     paid: 'status-paid',
