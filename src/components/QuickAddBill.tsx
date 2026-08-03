@@ -12,18 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Bill, 
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Bill,
   BillCategory,
-  PaymentMethod, 
+  PaymentMethod,
   RecurringInterval,
-  ResponsibleParty,
   PAYMENT_METHOD_LABELS,
   CATEGORY_LABELS,
   RECURRING_LABELS,
-  RESPONSIBLE_PARTY_LABELS,
 } from '@/types/bill';
+import { PersonTagPicker } from '@/components/people/PersonTags';
 import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
+
 
 interface QuickAddBillProps {
   onAdd: (bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
