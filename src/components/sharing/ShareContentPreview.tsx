@@ -40,7 +40,7 @@ const SectionCard = ({ title, children }: { title: string; children: React.React
   </section>
 );
 
-const BillRow = ({ bill }: { bill: Bill }) => {
+const BillRow = ({ bill, viewerId }: { bill: Bill; viewerId?: string }) => {
   const meta = [
     bill.isRecurring
       ? label(RECURRING_LABELS as Record<RecurringInterval, string>, bill.recurringInterval)
@@ -49,11 +49,25 @@ const BillRow = ({ bill }: { bill: Bill }) => {
     label(PAYMENT_METHOD_LABELS as Record<PaymentMethod, string>, bill.paymentMethod),
   ].filter(Boolean);
 
+  const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
+  const linkedDoc = linkedDocId ? DocumentService.getAll().find((d) => d.id === linkedDocId) : undefined;
+  const viewerCanSee =
+    !!linkedDoc && (!viewerId || AccessService.canSee(viewerId, 'documents', linkedDoc.id));
+
   return (
     <div className="p-4 flex items-start justify-between gap-4">
       <div className="min-w-0">
         <p className="font-medium truncate">{bill.name}</p>
         {meta.length > 0 && <p className="text-sm text-muted-foreground mt-0.5">{meta.join(' · ')}</p>}
+        {linkedDoc && viewerCanSee && (
+          <a
+            href="/documents"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 inline-flex items-center gap-1 min-w-0"
+          >
+            <Link2 className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">Linked to {linkedDoc.title}</span>
+          </a>
+        )}
       </div>
       <div className="text-right shrink-0">
         <p className="font-semibold">{formatMoney(bill.amount)}</p>
@@ -70,7 +84,8 @@ const BillRow = ({ bill }: { bill: Bill }) => {
   );
 };
 
-const BillsContent = () => {
+const BillsContent = ({ personId }: { personId?: string }) => {
+
   const bills = useMemo(() => BillService.getAllBills(), []);
   if (bills.length === 0) {
     return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
