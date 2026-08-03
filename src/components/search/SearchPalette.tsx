@@ -63,7 +63,7 @@ const SearchPalette = ({ open, onOpenChange }: SearchPaletteProps) => {
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={onOpenChange} shouldFilter={false}>
       <CommandInput
         placeholder="Search bills, documents, people…"
         value={query}
@@ -74,11 +74,13 @@ const SearchPalette = ({ open, onOpenChange }: SearchPaletteProps) => {
           <div className="py-6 px-4 text-sm text-muted-foreground">
             Type to find anything you've put in here.
           </div>
+        ) : results.length === 0 ? (
+          <div className="py-6 px-4 text-sm text-muted-foreground">
+            Nothing matched "{query}". It may not be in here yet.
+          </div>
         ) : (
           <>
-            <CommandEmpty className="py-6 px-4 text-sm text-muted-foreground">
-              Nothing matched "{query}". It may not be in here yet.
-            </CommandEmpty>
+
             {grouped.map(([type, items]) => {
               const Icon = ICONS[type];
               return (
