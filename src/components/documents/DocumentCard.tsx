@@ -101,11 +101,43 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks }: D
 
           <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
 
+          {document.importantDate && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 min-w-0">
+              <CalendarClock className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">
+                {(document.importantDateLabel || 'Important date') + ': '}
+                {format(parseISO(document.importantDate), 'MMM d, yyyy')}
+              </span>
+            </p>
+          )}
+
+          {linkedBill && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 min-w-0">
+              <Link2 className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">Linked to {linkedBill.name}</span>
+            </p>
+          )}
+
+          {relatedCount > 0 && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 min-w-0">
+              <FileText className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">
+                Related to {relatedCount} other document{relatedCount === 1 ? '' : 's'}
+              </span>
+            </p>
+          )}
+
           {document.notes && (
             <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{document.notes}</p>
           )}
 
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
+            <button
+              onClick={() => onLinks(document.id)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Link2 className="w-3 h-3" /> Link to a bill or document
+            </button>
             <button
               onClick={() => onDelete(document.id)}
               className="text-xs text-destructive/70 hover:text-destructive transition-colors flex items-center gap-1"
@@ -113,6 +145,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks }: D
               <Trash2 className="w-3 h-3" /> Remove
             </button>
           </div>
+
         </div>
       </div>
     </div>

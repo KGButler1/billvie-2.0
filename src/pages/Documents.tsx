@@ -10,6 +10,7 @@ import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
 import AttachDocumentSheet from '@/components/documents/AttachDocumentSheet';
 import AccessSheet from '@/components/documents/AccessSheet';
+import LinkItemsSheet from '@/components/documents/LinkItemsSheet';
 
 import BottomNav from '@/components/BottomNav';
 
