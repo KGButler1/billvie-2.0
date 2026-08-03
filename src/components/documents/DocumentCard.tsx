@@ -1,6 +1,9 @@
-import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin } from 'lucide-react';
+import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin, CalendarClock } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { AccessService } from '@/services/AccessService';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { BillService } from '@/services/BillService';
 import { PersonTagChips } from '@/components/people/PersonTags';
 
 
