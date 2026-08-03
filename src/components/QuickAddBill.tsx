@@ -23,26 +23,40 @@ import {
   RECURRING_LABELS,
 } from '@/types/bill';
 import { PersonTagPicker } from '@/components/people/PersonTags';
+import CardPicker from '@/components/bills/CardPicker';
 import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
 
 
 interface QuickAddBillProps {
   onAdd: (bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => void;
   onClose: () => void;
+  /** When provided with mode="edit", the form pre-fills and saves back to this bill. */
+  initialBill?: Bill;
+  mode?: 'add' | 'edit';
 }
 
 const ADD_NEW_VALUE = '__add_new__';
 
-const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
-  const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>('monthly');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | string>('');
-  const [category, setCategory] = useState<BillCategory | string>('');
-  const [notes, setNotes] = useState('');
-  const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
+const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBillProps) => {
+  const isEdit = mode === 'edit';
+  const [name, setName] = useState(initialBill?.name ?? '');
+  const [amount, setAmount] = useState(
+    initialBill?.amount !== undefined ? String(initialBill.amount) : ''
+  );
+  const [dueDate, setDueDate] = useState(initialBill?.dueDate?.slice(0, 10) ?? '');
+  const [isRecurring, setIsRecurring] = useState(initialBill?.isRecurring ?? false);
+  const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>(
+    initialBill?.recurringInterval ?? 'monthly'
+  );
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | string>(
+    initialBill?.paymentMethod ?? ''
+  );
+  const [paymentCardId, setPaymentCardId] = useState<string | undefined>(initialBill?.paymentCardId);
+  const [category, setCategory] = useState<BillCategory | string>(initialBill?.category ?? '');
+  const [notes, setNotes] = useState(initialBill?.notes ?? '');
+  const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>(
+    initialBill?.taggedPersonIds ?? []
+  );
 
 
   // Custom options
@@ -112,6 +126,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
       isRecurring,
       recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
+      paymentCardId: paymentMethod === 'credit_card' ? paymentCardId : undefined,
       category: category || undefined,
       notes: notes.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
@@ -157,7 +172,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
         className="pointer-events-auto w-full sm:max-w-lg sm:rounded-2xl bg-card rounded-t-3xl shadow-dramatic p-6 pb-8 max-h-[85vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Add Household Bill</h2>
+          <h2 className="text-xl font-semibold">{isEdit ? 'Edit Bill' : 'Add Household Bill'}</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -356,6 +371,14 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
             )}
           </div>
 
+          {/* Payment card — only relevant for credit cards */}
+          {paymentMethod === 'credit_card' && (
+            <div className="space-y-2">
+              <Label>Which card?</Label>
+              <CardPicker value={paymentCardId} onChange={setPaymentCardId} />
+            </div>
+          )}
+
           {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="bill-notes">Notes</Label>
@@ -417,7 +440,7 @@ const QuickAddBill = ({ onAdd, onClose }: QuickAddBillProps) => {
             disabled={!name.trim()}
             className="btn-hero w-full"
           >
-            Save Bill
+            {isEdit ? 'Save Changes' : 'Save Bill'}
           </Button>
         </form>
       </motion.div>
