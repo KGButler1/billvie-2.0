@@ -2,7 +2,9 @@
 
 const CUSTOM_CATEGORIES_KEY = 'billvie_custom_categories';
 const CUSTOM_PAYMENT_METHODS_KEY = 'billvie_custom_payment_methods';
-const CUSTOM_RESPONSIBLE_PARTIES_KEY = 'billvie_custom_responsible_parties';
+// `billvie_custom_responsible_parties` is deliberately left unread — the field it
+// backed was retired and migrated into bill notes.
+
 
 export interface CustomOption {
   id: string;
