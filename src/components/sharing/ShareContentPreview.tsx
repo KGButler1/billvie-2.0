@@ -45,7 +45,7 @@ const BillRow = ({ bill }: { bill: Bill }) => {
     bill.isRecurring
       ? label(RECURRING_LABELS as Record<RecurringInterval, string>, bill.recurringInterval)
       : formatDate(bill.dueDate) && `Due ${formatDate(bill.dueDate)}`,
-    label(RESPONSIBLE_PARTY_LABELS as Record<ResponsibleParty, string>, bill.responsibleParty),
+    bill.notes || undefined,
     label(PAYMENT_METHOD_LABELS as Record<PaymentMethod, string>, bill.paymentMethod),
   ].filter(Boolean);
 
