@@ -37,6 +37,7 @@ const Documents = () => {
   };
 
   const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
+  const linkingDoc = linkingId ? documents.find((d) => d.id === linkingId) : undefined;
 
 
   return (
@@ -87,6 +88,7 @@ const Documents = () => {
                   document={doc}
                   onAttach={(id) => setAttachingId(id)}
                   onEditAccess={(id) => setAccessId(id)}
+                  onLinks={(id) => setLinkingId(id)}
                   onDelete={(id) => {
                     if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
                     DocumentService.delete(id);
@@ -114,6 +116,12 @@ const Documents = () => {
             scope="documents"
             itemId={accessId}
             onClose={() => { setAccessId(null); reload(); }}
+          />
+        )}
+        {linkingDoc && (
+          <LinkItemsSheet
+            document={linkingDoc}
+            onClose={() => { setLinkingId(null); reload(); }}
           />
         )}
       </AnimatePresence>
