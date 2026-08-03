@@ -148,6 +148,16 @@ const AddDocumentModal = ({ onAdd, onClose }: AddDocumentModalProps) => {
             />
           </div>
 
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">For someone in particular?</label>
+            <PersonTagPicker
+              value={taggedPersonIds}
+              onChange={setTaggedPersonIds}
+              scope="documents"
+            />
+          </div>
+
+
           <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
             <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <p className="text-xs text-muted-foreground">No sensitive credentials stored. Only you and people you invite can see this.</p>
