@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Link2 } from 'lucide-react';
+import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
