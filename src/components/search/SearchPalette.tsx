@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Receipt, FileText, CalendarDays, Users, UserCircle, Wallet } from 'lucide-react';
 import {
   CommandDialog,
-  CommandEmpty,
+  CommandGroup,
   CommandGroup,
   CommandInput,
   CommandItem,
