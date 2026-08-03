@@ -12,6 +12,8 @@ export interface HouseholdDocument {
   attachment?: FileAttachment;
   externalLink?: string;
   physicalLocation?: string;
+  taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
+
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
