@@ -12,6 +12,8 @@ export interface HouseholdDocument {
   attachment?: FileAttachment;
   externalLink?: string;
   physicalLocation?: string;
+  importantDate?: string; // ISO date — expiry, renewal, term end
+  importantDateLabel?: string; // e.g. "Expires", "Renews", "Term ends"
   taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
 
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
@@ -19,6 +21,8 @@ export interface HouseholdDocument {
   updatedAt: string;
 }
 
+
+export const IMPORTANT_DATE_LABEL_PRESETS = ['Expires', 'Renews', 'Term ends'] as const;
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   insurance: 'Insurance',
