@@ -11,7 +11,10 @@ import {
   HelpCircle,
   FileText,
   Shield,
+  Search,
 } from 'lucide-react';
+import { openSearch } from '@/components/search/GlobalSearch';
+
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
