@@ -19,6 +19,9 @@ import { Label } from '@/components/ui/label';
 import { AccountantClient, AccountantProfile } from '@/types/sharing';
 import { AccountantService } from '@/services/AccountantService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
+import { TaxTagService } from '@/services/TaxTagService';
+import { Bill } from '@/types/bill';
+import { HouseholdDocument } from '@/types/document';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
