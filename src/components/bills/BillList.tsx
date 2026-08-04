@@ -7,6 +7,8 @@ import { cardExpiryFlag } from '@/utils/cardExpiry';
 
 // A bill whose card is expired or about to expire needs attention even if the
 // bill itself isn't overdue — presentation-only, BillService stays untouched.
+// This also catches auto-debited bills whose card has expired: "this pays itself"
+// is false when the card is dead, so they should surface in Needs Attention.
 const needsCardAttention = (bill: Bill): boolean =>
   !!bill.paymentCardId &&
   bill.status !== 'paid' &&

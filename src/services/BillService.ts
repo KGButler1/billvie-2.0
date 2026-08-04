@@ -10,17 +10,20 @@ const generateId = (): string => {
   return `bill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// Calculate bill status based on due date and payment status
+// Calculate bill status based on due date and payment status.
+// Auto-debited bills that have passed their due date are treated as pending
+// rather than overdue — the bill pays itself, so it doesn't need attention.
+// The caller (e.g. BillList) can still surface them if the linked card is expired.
 export const calculateBillStatus = (bill: Bill): BillStatus => {
   if (bill.status === 'paid') return 'paid';
-  
+
   if (!bill.dueDate) return 'pending';
-  
+
   const today = startOfDay(new Date());
   const dueDate = startOfDay(parseISO(bill.dueDate));
   const daysUntilDue = differenceInDays(dueDate, today);
-  
-  if (daysUntilDue < 0) return 'overdue';
+
+  if (daysUntilDue < 0) return bill.isAutoDebited ? 'pending' : 'overdue';
   if (daysUntilDue <= 7) return 'due_soon';
   return 'pending';
 };

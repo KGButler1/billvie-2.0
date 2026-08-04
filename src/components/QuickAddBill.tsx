@@ -64,6 +64,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
     initialBill?.paymentMethod ?? ''
   );
   const [paymentCardId, setPaymentCardId] = useState<string | undefined>(initialBill?.paymentCardId);
+  const [isAutoDebited, setIsAutoDebited] = useState(initialBill?.isAutoDebited ?? false);
   const [category, setCategory] = useState<BillCategory | string>(initialBill?.category ?? '');
   const [notes, setNotes] = useState(initialBill?.notes ?? '');
   const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>(
@@ -186,6 +187,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
       recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
       paymentCardId: paymentMethod === 'credit_card' ? paymentCardId : undefined,
+      isAutoDebited,
       category: category || undefined,
       notes: notes.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
@@ -467,6 +469,23 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
               <CardPicker value={paymentCardId} onChange={setPaymentCardId} />
             </div>
           )}
+
+          {/* Auto-debited toggle — sits with the payment-mechanics cluster */}
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <Label htmlFor="auto-debited" className="cursor-pointer">
+                Auto-debited
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                This bill pays itself — no action needed when it's due
+              </p>
+            </div>
+            <Switch
+              id="auto-debited"
+              checked={isAutoDebited}
+              onCheckedChange={setIsAutoDebited}
+            />
+          </div>
 
           {/* Notes */}
           <div className="space-y-2">
