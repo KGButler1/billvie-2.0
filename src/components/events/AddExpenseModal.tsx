@@ -8,8 +8,8 @@ import {
   CancellableStatus,
   EXPENSE_UNIT_LABELS 
 } from '@/types/event';
-import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
+import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -39,13 +47,17 @@ interface AddExpenseModalProps {
 }
 
 const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpenseModalProps) => {
-  const categories = EventService.getTemplateCategories(event.type);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(
+    () => CustomBillOptionsService.getEventCategories().map(c => c.label)
+  );
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryQuery, setCategoryQuery] = useState('');
   const existingExpense = editingExpenseId 
     ? EventExpenseService.getExpenses(event.id).find(e => e.id === editingExpenseId)
     : null;
 
   const [formData, setFormData] = useState({
-    category: existingExpense?.category || categories[0] || '',
+    category: existingExpense?.category || '',
     name: existingExpense?.name || '',
     vendor: existingExpense?.vendor || '',
     amount: existingExpense?.amount?.toString() || '',
@@ -70,17 +82,22 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Valid amount is required';
     }
+    if (!formData.category.trim()) {
+      newErrors.category = 'Category is required';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
+    CustomBillOptionsService.addEventCategory(formData.category);
+
     const expenseData: Omit<EventExpenseExtended, 'id' | 'eventId' | 'createdAt' | 'updatedAt'> = {
       name: formData.name.trim(),
       vendor: formData.vendor.trim() || undefined,
       amount: parseFloat(formData.amount),
-      category: formData.category,
+      category: formData.category.trim(),
       quantity: formData.quantityValue 
         ? { value: parseFloat(formData.quantityValue), unit: formData.quantityUnit }
         : undefined,
@@ -101,6 +118,19 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
 
     onSave();
     onClose();
+  };
+
+  const filteredCategories = categoryOptions.filter(c =>
+    c.toLowerCase().includes(categoryQuery.trim().toLowerCase())
+  );
+
+  const selectCategory = (label: string) => {
+    setFormData(prev => ({ ...prev, category: label }));
+    if (!categoryOptions.some(c => c.toLowerCase() === label.toLowerCase())) {
+      setCategoryOptions(prev => [...prev, label]);
+    }
+    setCategoryQuery('');
+    setCategoryOpen(false);
   };
 
   // Calculate per-unit cost for display
@@ -136,20 +166,57 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
         <div className="p-4 space-y-4">
           {/* Category */}
           <div className="space-y-2">
-            <Label>Category</Label>
-            <Select 
-              value={formData.category} 
-              onValueChange={(v) => setFormData(prev => ({ ...prev, category: v }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Category *</Label>
+            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    'w-full justify-start text-left font-normal',
+                    !formData.category && 'text-muted-foreground',
+                    errors.category && 'border-destructive'
+                  )}
+                >
+                  {formData.category || 'Type or pick a category'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Type a category..."
+                    value={categoryQuery}
+                    onValueChange={setCategoryQuery}
+                  />
+                  <CommandList>
+                    {filteredCategories.length === 0 && !categoryQuery.trim() && (
+                      <CommandEmpty>No categories yet — type one.</CommandEmpty>
+                    )}
+                    {filteredCategories.length > 0 && (
+                      <CommandGroup>
+                        {filteredCategories.map(cat => (
+                          <CommandItem key={cat} value={cat} onSelect={() => selectCategory(cat)}>
+                            {cat}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                    {categoryQuery.trim() &&
+                      !categoryOptions.some(c => c.toLowerCase() === categoryQuery.trim().toLowerCase()) && (
+                        <CommandGroup>
+                          <CommandItem
+                            value={`create-${categoryQuery}`}
+                            onSelect={() => selectCategory(categoryQuery.trim())}
+                          >
+                            Use "{categoryQuery.trim()}"
+                          </CommandItem>
+                        </CommandGroup>
+                      )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
           </div>
 
           {/* Description */}

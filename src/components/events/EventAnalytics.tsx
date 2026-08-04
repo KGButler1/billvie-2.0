@@ -4,10 +4,9 @@ import { EventExpenseService } from '@/services/EventExpenseService';
 
 interface EventAnalyticsProps {
   eventId: string;
-  onCategoryClick?: (category: string) => void;
 }
 
-const EventAnalytics = ({ eventId, onCategoryClick }: EventAnalyticsProps) => {
+const EventAnalytics = ({ eventId }: EventAnalyticsProps) => {
   const data = EventExpenseService.getSpendingByCategory(eventId);
 
   if (data.length === 0) {
@@ -19,22 +18,21 @@ const EventAnalytics = ({ eventId, onCategoryClick }: EventAnalyticsProps) => {
   return (
     <Card className="mb-6">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Spending by Category</CardTitle>
+        <CardTitle className="text-base">Breakdown</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={80}
+                innerRadius={32}
+                outerRadius={52}
                 paddingAngle={2}
                 dataKey="value"
-                onClick={(entry) => onCategoryClick?.(entry.name)}
-                style={{ cursor: 'pointer' }}
+                isAnimationActive={false}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
@@ -56,7 +54,7 @@ const EventAnalytics = ({ eventId, onCategoryClick }: EventAnalyticsProps) => {
                   const item = data.find(d => d.name === value);
                   const percentage = item ? ((item.value / total) * 100).toFixed(0) : 0;
                   return (
-                    <span className="text-sm text-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {value} ({percentage}%)
                     </span>
                   );
@@ -69,7 +67,7 @@ const EventAnalytics = ({ eventId, onCategoryClick }: EventAnalyticsProps) => {
         {/* Total */}
         <div className="text-center pt-2 border-t border-border mt-2">
           <span className="text-muted-foreground text-sm">Total: </span>
-          <span className="font-bold text-lg">${total.toLocaleString()}</span>
+          <span className="font-semibold">${total.toLocaleString()}</span>
         </div>
       </CardContent>
     </Card>

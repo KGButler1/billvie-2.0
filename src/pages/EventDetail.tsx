@@ -22,7 +22,6 @@ const EventDetail = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const settings = UserService.getSettings();
@@ -52,15 +51,6 @@ const EventDetail = () => {
 
   const stats = EventExpenseService.getEventStats(event);
   const categorySummaries = EventExpenseService.getCategorySummaries(event);
-  
-  // Filter categories if a category filter is set
-  const filteredSummaries = categoryFilter
-    ? categorySummaries.filter(s => s.name === categoryFilter)
-    : categorySummaries;
-
-  const handleCategoryClick = (category: string) => {
-    setCategoryFilter(prev => prev === category ? null : category);
-  };
 
   const handleEditExpense = (expenseId: string) => {
     setEditingExpenseId(expenseId);
@@ -81,6 +71,9 @@ const EventDetail = () => {
       <EventHeader event={event} onUpdate={loadEvent} />
 
       <main className="container mx-auto px-4 pt-20">
+        <p className="text-sm text-muted-foreground mb-4">
+          What's committed for this, and what your household would need to know.
+        </p>
         {/* Share Button */}
         <div className="flex justify-end mb-4">
           <Button
@@ -100,31 +93,15 @@ const EventDetail = () => {
 
         {/* Analytics Pie Chart */}
         {categorySummaries.length > 0 && (
-          <EventAnalytics 
-            eventId={event.id} 
-            onCategoryClick={handleCategoryClick}
-          />
-        )}
-
-        {/* Category Filter Indicator */}
-        {categoryFilter && (
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Filtered by:</span>
-            <button
-              onClick={() => setCategoryFilter(null)}
-              className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium hover:bg-primary/20"
-            >
-              {categoryFilter} ×
-            </button>
-          </div>
+          <EventAnalytics eventId={event.id} />
         )}
 
         {/* Category Breakdown */}
         <section>
           <h2 className="text-lg font-semibold mb-4">What's committed</h2>
           
-          {filteredSummaries.length > 0 ? (
-            filteredSummaries.map(summary => (
+          {categorySummaries.length > 0 ? (
+            categorySummaries.map(summary => (
               <CategoryAccordion
                 key={summary.name}
                 summary={summary}

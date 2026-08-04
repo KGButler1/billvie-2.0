@@ -138,24 +138,7 @@ export class EventExpenseService {
   // Get category summaries for an event
   static getCategorySummaries(event: Event): CategorySummary[] {
     const expenses = this.getExpenses(event.id);
-    const categories = EventService.getTemplateCategories(event.type);
-    
     const summaryMap = new Map<string, CategorySummary>();
-
-    // Initialize all categories from template
-    categories.forEach(cat => {
-      summaryMap.set(cat, {
-        name: cat,
-        icon: CATEGORY_ICONS[cat] || '📝',
-        totalAmount: 0,
-        itemCount: 0,
-        paidCount: 0,
-        cancellableCount: 0,
-        nonRefundableCount: 0,
-        tbdCount: 0,
-        expenses: [],
-      });
-    });
 
     // Populate with expenses
     expenses.forEach(expense => {
