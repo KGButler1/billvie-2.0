@@ -2,6 +2,7 @@
 
 const CUSTOM_CATEGORIES_KEY = 'billvie_custom_categories';
 const CUSTOM_PAYMENT_METHODS_KEY = 'billvie_custom_payment_methods';
+const CUSTOM_EVENT_CATEGORIES_KEY = 'billvie_custom_event_categories';
 // `billvie_custom_responsible_parties` is deliberately left unread — the field it
 // backed was retired and migrated into bill notes.
 
