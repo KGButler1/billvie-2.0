@@ -16,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import FinancialAccessCard from '@/components/financial/FinancialAccessCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -99,6 +100,7 @@ const FinancialInfo = () => {
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
         <h1 className="text-2xl font-semibold hidden lg:block mb-4">Financial Snapshot</h1>
+        <FinancialAccessCard />
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-card border border-border rounded-xl p-4">
