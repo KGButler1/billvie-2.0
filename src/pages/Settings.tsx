@@ -1,28 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Sun, 
-  Moon, 
-  Monitor, 
-  User, 
-  CreditCard, 
-  Trash2, 
-  LogOut,
-  Bell,
-  Download,
-  FileText,
-  FileSpreadsheet,
-  ChevronRight,
-  Check,
-  Lock,
-  Undo2
-} from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2 } from 'lucide-react';
 import { downloadBackup } from '@/utils/dataBackup';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { UserService } from '@/services/UserService';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
@@ -33,6 +17,10 @@ import UpgradeModal from '@/components/UpgradeModal';
 import ManageCardsSheet from '@/components/cards/ManageCardsSheet';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
+import UserAvatar, { getInitials } from '@/components/UserAvatar';
+import { toast } from 'sonner';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -91,25 +79,8 @@ const Settings = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
-        {/* Account Section */}
-        <section className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Account</h2>
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
-            <button className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium">Sign In / Create Account</p>
-                <p className="text-sm text-muted-foreground">Sync data across devices</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
-        </section>
-
-
-
+        {/* Profile Section */}
+        <ProfileSection />
 
         {/* Subscription Section */}
         <section className="mb-8">
@@ -401,6 +372,136 @@ const Settings = () => {
         onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
     </div>
+  );
+};
+
+const ProfileSection = () => {
+  const { profile, updateDisplayName, uploadAvatar, loading: profileLoading } = useProfile();
+  const { session } = useAuth();
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (profileLoading) {
+    return (
+      <section className="mb-8">
+        <div className="bg-card rounded-xl border border-border p-6 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      </section>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  const handleSaveName = async () => {
+    if (!nameValue.trim()) return;
+    setSavingName(true);
+    const { error } = await updateDisplayName(nameValue.trim());
+    setSavingName(false);
+    if (error) {
+      toast.error('Could not save your name. Please try again.');
+    } else {
+      toast.success('Name updated');
+      setEditingName(false);
+    }
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Photo must be under 2 MB');
+      return;
+    }
+    setUploadingPhoto(true);
+    const { error } = await uploadAvatar(file);
+    setUploadingPhoto(false);
+    if (error) {
+      toast.error('Could not upload photo. Please try again.');
+    } else {
+      toast.success('Photo updated');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Profile</h2>
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        {/* Avatar + name row */}
+        <div className="flex items-center gap-4 p-4">
+          <div className="relative">
+            <UserAvatar
+              displayName={profile?.displayName ?? 'You'}
+              avatarUrl={profile?.avatarUrl}
+              size="lg"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md disabled:opacity-50"
+              aria-label="Change photo"
+            >
+              {uploadingPhoto ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Camera className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  className="h-9 max-w-[200px]"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                />
+                <Button size="sm" onClick={handleSaveName} disabled={savingName || !nameValue.trim()}>
+                  {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingName(false)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setNameValue(profile?.displayName ?? '');
+                  setEditingName(true);
+                }}
+                className="text-left group"
+              >
+                <p className="font-medium text-lg group-hover:underline">{profile?.displayName ?? 'You'}</p>
+                <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{profile?.householdName}</p>
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="px-4 pb-3">
+          <p className="text-xs text-muted-foreground">
+            {profile?.avatarUrl
+              ? 'Click the camera icon to change your photo.'
+              : `Showing your initials (${getInitials(profile?.displayName ?? 'You')}). Upload a photo to personalize.`}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 };
 

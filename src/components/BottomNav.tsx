@@ -1,19 +1,8 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Receipt,
-  Calendar,
-  MoreHorizontal,
-  FolderOpen,
-  Settings,
-  Users,
-  Building,
-  HelpCircle,
-  FileText,
-  Shield,
-  Search,
-} from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal } from 'lucide-react';
 import { openSearch } from '@/components/search/GlobalSearch';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 
 import { cn } from '@/lib/utils';
 import {
@@ -26,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
-import { UserService } from '@/services/UserService';
+import UserAvatar from '@/components/UserAvatar';
 
 const mobileNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -41,12 +30,70 @@ const desktopNav = [
   { path: '/people', icon: Users, label: 'People' },
 ];
 
+const AccountDropdownContent = () => {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const { profile } = useProfile();
+
+  return (
+    <>
+      <DropdownMenuLabel className="px-3 py-3">
+        <div className="flex items-center gap-3">
+          <UserAvatar
+            displayName={profile?.displayName ?? 'You'}
+            avatarUrl={profile?.avatarUrl}
+            size="md"
+          />
+          <div className="min-w-0">
+            <p className="font-medium text-sm truncate">{profile?.displayName ?? 'You'}</p>
+            <p className="text-xs text-muted-foreground truncate">{profile?.householdName ?? 'My Household'}</p>
+          </div>
+        </div>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel>Records &amp; Tools</DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => navigate('/events')}>
+        <Calendar className="w-4 h-4 mr-2" /> Events
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => navigate('/tax-documents')}>
+        <Receipt className="w-4 h-4 mr-2" /> Tax Documents
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => navigate('/financial')}>
+        <Building className="w-4 h-4 mr-2" /> Financial Snapshot
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel>App</DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => navigate('/settings')}>
+        <Settings className="w-4 h-4 mr-2" /> Settings
+      </DropdownMenuItem>
+      <DropdownMenuItem>
+        <HelpCircle className="w-4 h-4 mr-2" /> Help &amp; Support
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem>
+        <FileText className="w-4 h-4 mr-2" /> Terms of Service
+      </DropdownMenuItem>
+      <DropdownMenuItem>
+        <Shield className="w-4 h-4 mr-2" /> Privacy Policy
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onClick={async () => {
+          await signOut();
+          navigate('/');
+        }}
+        className="text-destructive"
+      >
+        <LogOut className="w-4 h-4 mr-2" /> Sign out
+      </DropdownMenuItem>
+    </>
+  );
+};
+
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const settings = UserService.getSettings();
-  const isAccountant = settings.userType === 'accountant';
+  const { profile } = useProfile();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -93,43 +140,16 @@ const BottomNav = () => {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-
-                <Button variant="ghost" size="sm" className="gap-1.5">
-                  <MoreHorizontal className="w-4 h-4" />
-                  More
-                </Button>
+                <button className="flex items-center rounded-full hover:ring-2 hover:ring-primary/30 transition-all">
+                  <UserAvatar
+                    displayName={profile?.displayName ?? 'You'}
+                    avatarUrl={profile?.avatarUrl}
+                    size="md"
+                  />
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-background z-50">
-                <DropdownMenuLabel>Records &amp; Tools</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigate('/events')}>
-                  <Calendar className="w-4 h-4 mr-2" /> Events
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/tax-documents')}>
-                  <Receipt className="w-4 h-4 mr-2" /> Tax Documents
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/financial')}>
-                  <Building className="w-4 h-4 mr-2" /> Financial Snapshot
-                </DropdownMenuItem>
-                {isAccountant && (
-                  <DropdownMenuItem onClick={() => navigate('/accountant')}>
-                    <Users className="w-4 h-4 mr-2" /> Accountant Portal
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>App</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="w-4 h-4 mr-2" /> Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <HelpCircle className="w-4 h-4 mr-2" /> Help & Support
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <FileText className="w-4 h-4 mr-2" /> Terms of Service
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Shield className="w-4 h-4 mr-2" /> Privacy Policy
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-64 bg-background z-50">
+                <AccountDropdownContent />
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -138,21 +158,38 @@ const BottomNav = () => {
 
       {/* Mobile bottom nav */}
       <nav className="bottom-nav lg:hidden">
-        {[...mobileNav, { path: '/more', icon: MoreHorizontal, label: 'More' }].map(
-          ({ path, icon: Icon, label }) => {
-            const active = isActive(path);
-            return (
-              <Link
-                key={path}
-                to={path}
-                className={cn('bottom-nav-item', active && 'active')}
-              >
-                <Icon className="w-5 h-5 mb-0.5" />
-                <span className="text-xs">{label}</span>
-              </Link>
-            );
-          },
-        )}
+        {mobileNav.map(({ path, icon: Icon, label }) => {
+          const active = isActive(path);
+          return (
+            <Link
+              key={path}
+              to={path}
+              className={cn('bottom-nav-item', active && 'active')}
+            >
+              <Icon className="w-5 h-5 mb-0.5" />
+              <span className="text-xs">{label}</span>
+            </Link>
+          );
+        })}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className={cn('bottom-nav-item', isActive('/more') && 'active')}>
+              {profile?.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.displayName}
+                  className="w-5 h-5 rounded-full object-cover mb-0.5"
+                />
+              ) : (
+                <MoreHorizontal className="w-5 h-5 mb-0.5" />
+              )}
+              <span className="text-xs">More</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 bg-background z-50 mb-2">
+            <AccountDropdownContent />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </nav>
     </>
   );

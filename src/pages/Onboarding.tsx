@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, User, FileText, ChevronRight, Check, Shield, Eye, Plus, ArrowRight } from 'lucide-react';
+import { Chrome as Home, User, FileText, ChevronRight, Check, Shield, Eye, Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,40 @@ import { OnboardingService } from '@/services/OnboardingService';
 import { BillService } from '@/services/BillService';
 
 type Step = 'hook' | 'quickstart' | 'add-item' | 'confirmation' | 'sharing' | 'family-preview';
+
+const DRAFT_KEY = 'billvie_onboarding_draft';
+
+interface BillDraft {
+  billName: string;
+  billAmount: string;
+  billDueDate: string;
+}
+
+function loadDraft(): BillDraft {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore parse errors
+  }
+  return { billName: '', billAmount: '', billDueDate: '' };
+}
+
+function saveDraft(draft: BillDraft) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // ignore write errors
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 const slideVariants = {
   enter: { opacity: 0, x: 60 },
@@ -22,10 +56,15 @@ const Onboarding = () => {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
   // Add bill form state
-  const [billName, setBillName] = useState('');
-  const [billAmount, setBillAmount] = useState('');
-  const [billDueDate, setBillDueDate] = useState('');
+  const [billName, setBillName] = useState(() => loadDraft().billName);
+  const [billAmount, setBillAmount] = useState(() => loadDraft().billAmount);
+  const [billDueDate, setBillDueDate] = useState(() => loadDraft().billDueDate);
   const [addedItemName, setAddedItemName] = useState('');
+
+  // Persist draft as the user types
+  useEffect(() => {
+    saveDraft({ billName, billAmount, billDueDate });
+  }, [billName, billAmount, billDueDate]);
 
   const goTo = (next: Step) => setStep(next);
 
@@ -39,6 +78,7 @@ const Onboarding = () => {
       isRecurring: false,
     });
     setAddedItemName(billName.trim());
+    clearDraft();
     OnboardingService.setState({ firstItemAdded: true });
     goTo('confirmation');
   };

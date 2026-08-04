@@ -285,6 +285,37 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
             </div>
           </div>
 
+          {/* Recurring Toggle — right after Amount/Due Date */}
+          <div className="flex items-center justify-between py-2">
+            <Label htmlFor="recurring" className="cursor-pointer">
+              This repeats regularly
+            </Label>
+            <Switch
+              id="recurring"
+              checked={isRecurring}
+              onCheckedChange={setIsRecurring}
+            />
+          </div>
+
+          {/* Recurring Interval — only relevant when toggle is on */}
+          {isRecurring && (
+            <div className="space-y-2">
+              <Label>Frequency</Label>
+              <Select value={recurringInterval} onValueChange={(v) => setRecurringInterval(v as RecurringInterval)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(RECURRING_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Category */}
           <div className="space-y-2">
             <Label>Category</Label>
@@ -483,37 +514,6 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
               This shows up in Tax Documents for that year — the bill itself doesn't change.
             </p>
           </div>
-
-          {/* Recurring Toggle */}
-          <div className="flex items-center justify-between py-2">
-            <Label htmlFor="recurring" className="cursor-pointer">
-              This repeats regularly
-            </Label>
-            <Switch
-              id="recurring"
-              checked={isRecurring}
-              onCheckedChange={setIsRecurring}
-            />
-          </div>
-
-          {/* Recurring Interval */}
-          {isRecurring && (
-            <div className="space-y-2">
-              <Label>Frequency</Label>
-              <Select value={recurringInterval} onValueChange={(v) => setRecurringInterval(v as RecurringInterval)}>
-                <SelectTrigger className="h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(RECURRING_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {/* Trust signal */}
           <p className="text-xs text-muted-foreground text-center">

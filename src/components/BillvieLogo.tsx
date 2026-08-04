@@ -1,5 +1,7 @@
-import wordmark from '@/assets/billvie-wordmark.png.asset.json';
 import { cn } from '@/lib/utils';
+
+const WORDMARK_URL =
+  'https://bjlsespfbaqkwxbrjpwd.supabase.co/storage/v1/object/public/branding/billvie-wordmark.webp';
 
 interface BillvieLogoProps {
   className?: string;
@@ -15,7 +17,14 @@ const sizeMap = {
 export const BillvieLogo = ({ className, size = 'md' }: BillvieLogoProps) => {
   return (
     <div className={cn('flex items-center', className)}>
-      <img src={wordmark.url} alt="Billvie" className={cn(sizeMap[size], 'w-auto object-contain')} />
+      <img
+        src={WORDMARK_URL}
+        alt="Billvie"
+        className={cn(sizeMap[size], 'w-auto object-contain')}
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+        }}
+      />
     </div>
   );
 };
