@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -489,13 +489,29 @@ const InsuranceCard = ({
   onEdit: () => void; 
   onDelete: () => void;
 }) => {
-  const premiumText = () => {
-    switch (entry.premiumFrequency) {
-      case 'monthly': return `$${entry.premium}/mo`;
-      case 'quarterly': return `$${entry.premium}/qtr`;
-      case 'annual': return `$${entry.premium}/yr`;
+  const linkedBill = entry.linkedBillId ? BillService.getBillById(entry.linkedBillId) : undefined;
+
+  const frequencyLabel = (freq?: string) => {
+    switch (freq) {
+      case 'monthly': return '/mo';
+      case 'quarterly': return '/qtr';
+      case 'annual':
+      case 'yearly': return '/yr';
+      default: return '';
     }
   };
+
+  const premiumText = () => {
+    if (linkedBill) {
+      return linkedBill.amount !== undefined
+        ? `$${linkedBill.amount}${frequencyLabel(linkedBill.recurringInterval)}`
+        : null;
+    }
+    if (entry.premium === undefined) return null;
+    return `$${entry.premium}${frequencyLabel(entry.premiumFrequency)}`;
+  };
+
+  const amount = premiumText();
 
   return (
     <div className="bg-card border border-border rounded-xl p-4">
@@ -519,14 +535,36 @@ const InsuranceCard = ({
         </div>
       </div>
       
-      <div className="flex items-center justify-between pt-2 border-t border-border mt-2">
-        <span className="text-lg font-bold text-primary">{premiumText()}</span>
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-border mt-2">
+        {amount ? (
+          <span className="text-lg font-bold text-primary">{amount}</span>
+        ) : entry.contactInfo ? (
+          <span className="text-sm">
+            <span className="text-muted-foreground">Who to contact: </span>
+            {entry.contactInfo}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">No premium recorded</span>
+        )}
         {entry.renewalDate && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground shrink-0">
             Renews: {format(parseISO(entry.renewalDate), 'dd MMM yyyy')}
           </span>
         )}
       </div>
+
+      {linkedBill && (
+        <Link
+          to="/bills"
+          className="inline-flex items-center gap-1 mt-2 text-xs rounded-full border border-border bg-muted/60 px-2.5 py-1 hover:bg-muted transition-colors"
+        >
+          <ExternalLink className="w-3 h-3" /> Linked to {linkedBill.name}
+        </Link>
+      )}
+
+      {amount && entry.contactInfo && (
+        <p className="text-sm text-muted-foreground mt-2">Who to contact: {entry.contactInfo}</p>
+      )}
 
       {entry.notes && (
         <p className="text-sm text-muted-foreground mt-2 pt-2 border-t border-border">
@@ -555,6 +593,9 @@ const SuperCard = ({
           <p className="text-sm text-muted-foreground">Account: {entry.accountNumber}</p>
         )}
         <p className="text-lg font-bold text-primary mt-2">${entry.estimatedBalance.toLocaleString()}</p>
+        {entry.contactInfo && (
+          <p className="text-sm text-muted-foreground mt-1">Who to contact: {entry.contactInfo}</p>
+        )}
       </div>
       <div className="flex gap-1">
         <Button variant="ghost" size="sm" onClick={onEdit}>
@@ -625,6 +666,13 @@ const InsuranceModal = ({
   const [frequency, setFrequency] = useState<'monthly' | 'quarterly' | 'annual'>('monthly');
   const [renewalDate, setRenewalDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
+  const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(null);
+
+  const billOptions = useMemo(
+    () => BillService.getAllBills().map((b) => ({ id: b.id, label: b.name })),
+    [isOpen]
+  );
 
   useEffect(() => {
     if (editingId) {
@@ -633,10 +681,13 @@ const InsuranceModal = ({
         setProvider(entry.provider);
         setPolicyNumber(entry.policyNumber || '');
         setType(entry.type);
-        setPremium(entry.premium.toString());
-        setFrequency(entry.premiumFrequency);
+        setPremium(entry.premium !== undefined ? entry.premium.toString() : '');
+        setFrequency(entry.premiumFrequency || 'monthly');
         setRenewalDate(entry.renewalDate || '');
         setNotes(entry.notes || '');
+        setContactInfo(entry.contactInfo || '');
+        const bill = entry.linkedBillId ? BillService.getBillById(entry.linkedBillId) : undefined;
+        setLinkedBill(bill ? { id: bill.id, label: bill.name } : null);
       }
     } else {
       setProvider('');
@@ -646,20 +697,24 @@ const InsuranceModal = ({
       setFrequency('monthly');
       setRenewalDate('');
       setNotes('');
+      setContactInfo('');
+      setLinkedBill(null);
     }
   }, [editingId, isOpen]);
 
   const handleSave = () => {
-    if (!provider || !premium) return;
-    
+    if (!provider) return;
+
     const data = {
       provider,
       policyNumber: policyNumber || undefined,
       type,
-      premium: parseFloat(premium),
-      premiumFrequency: frequency,
+      premium: linkedBill || premium === '' ? undefined : parseFloat(premium),
+      premiumFrequency: linkedBill || premium === '' ? undefined : frequency,
       renewalDate: renewalDate || undefined,
       notes: notes || undefined,
+      contactInfo: contactInfo || undefined,
+      linkedBillId: linkedBill?.id,
     };
 
     if (editingId) {
@@ -698,32 +753,83 @@ const InsuranceModal = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Premium</Label>
-              <Input type="number" value={premium} onChange={(e) => setPremium(e.target.value)} placeholder="$0" />
-            </div>
-            <div>
-              <Label>Frequency</Label>
-              <Select value={frequency} onValueChange={(v) => setFrequency(v as typeof frequency)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="annual">Annual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label className="mb-1.5 block">Linked bill (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing bill"
+              emptyLabel="No bills yet — type a name to create one"
+              createLabel={(q) => `Create bill: ${q}`}
+              options={billOptions}
+              value={linkedBill}
+              onChange={setLinkedBill}
+              onCreate={(name) => {
+                const created = BillService.addBill({ name, isRecurring: false });
+                return { id: created.id, label: created.name };
+              }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              If the premium is already tracked as a bill, link it instead of typing it twice.
+            </p>
           </div>
+
+          {linkedBill ? (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
+              {(() => {
+                const bill = BillService.getBillById(linkedBill.id);
+                if (!bill) return <span className="text-muted-foreground">Bill not found</span>;
+                return (
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      {bill.amount !== undefined ? `$${bill.amount}` : 'No amount'}
+                      {bill.recurringInterval ? ` · ${bill.recurringInterval.replace('_', ' ')}` : ''}
+                    </span>
+                    <Link to="/bills" className="text-xs inline-flex items-center gap-1 hover:underline">
+                      <ExternalLink className="w-3 h-3" /> Open bill
+                    </Link>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Premium (optional)</Label>
+                <Input type="number" value={premium} onChange={(e) => setPremium(e.target.value)} placeholder="$0" />
+              </div>
+              <div>
+                <Label>Frequency</Label>
+                <Select value={frequency} onValueChange={(v) => setFrequency(v as typeof frequency)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="annual">Annual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
           <div>
             <Label>Renewal Date (optional)</Label>
             <Input type="date" value={renewalDate} onChange={(e) => setRenewalDate(e.target.value)} />
           </div>
           <div>
+            <Label>Who to contact (optional)</Label>
+            <Input
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              placeholder="e.g. employer benefits line, 1800-xxx-xxx"
+            />
+          </div>
+          <div>
             <Label>Notes (optional)</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional details..." />
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Jewelry is covered under Home Insurance, plus a separate rider for the wedding ring."
+            />
           </div>
           <Button onClick={handleSave} className="w-full">Save</Button>
         </div>
@@ -748,6 +854,7 @@ const SuperModal = ({
   const [accountNumber, setAccountNumber] = useState('');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
 
   useEffect(() => {
     if (editingId) {
@@ -757,23 +864,26 @@ const SuperModal = ({
         setAccountNumber(entry.accountNumber || '');
         setBalance(entry.estimatedBalance.toString());
         setNotes(entry.notes || '');
+        setContactInfo(entry.contactInfo || '');
       }
     } else {
       setFundName('');
       setAccountNumber('');
       setBalance('');
       setNotes('');
+      setContactInfo('');
     }
   }, [editingId, isOpen]);
 
   const handleSave = () => {
     if (!fundName || !balance) return;
-    
+
     const data = {
       fundName,
       accountNumber: accountNumber || undefined,
       estimatedBalance: parseFloat(balance),
       notes: notes || undefined,
+      contactInfo: contactInfo || undefined,
     };
 
     if (editingId) {
@@ -802,6 +912,14 @@ const SuperModal = ({
           <div>
             <Label>Estimated Balance</Label>
             <Input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="$0" />
+          </div>
+          <div>
+            <Label>Who to contact (optional)</Label>
+            <Input
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              placeholder="e.g. fund administrator, 1800-xxx-xxx"
+            />
           </div>
           <div>
             <Label>Notes (optional)</Label>
@@ -972,7 +1090,7 @@ const DebtModal = ({
   editingId: string | null;
   onSave: () => void;
 }) => {
-  const [lenderName, setLenderName] = useState('');
+  const [owedTo, setOwedTo] = useState('');
   const [type, setType] = useState<DebtType>('mortgage');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
@@ -981,13 +1099,13 @@ const DebtModal = ({
     if (editingId) {
       const entry = FinancialInfoService.getDebts().find(d => d.id === editingId);
       if (entry) {
-        setLenderName(entry.lenderName);
+        setOwedTo(entry.owedTo);
         setType(entry.type);
         setBalance(entry.approximateBalance.toString());
         setNotes(entry.notes || '');
       }
     } else {
-      setLenderName('');
+      setOwedTo('');
       setType('mortgage');
       setBalance('');
       setNotes('');
@@ -995,9 +1113,9 @@ const DebtModal = ({
   }, [editingId, isOpen]);
 
   const handleSave = () => {
-    if (!lenderName || !balance) return;
+    if (!owedTo || !balance) return;
     const data = {
-      lenderName,
+      owedTo,
       type,
       approximateBalance: parseFloat(balance),
       notes: notes || undefined,
@@ -1018,8 +1136,8 @@ const DebtModal = ({
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Lender Name</Label>
-            <Input value={lenderName} onChange={(e) => setLenderName(e.target.value)} placeholder="Commonwealth Bank" />
+            <Label>Owed to</Label>
+            <Input value={owedTo} onChange={(e) => setOwedTo(e.target.value)} placeholder="e.g. Commonwealth Bank, or a family member" />
           </div>
           <div>
             <Label>Type</Label>
