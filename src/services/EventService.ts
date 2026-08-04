@@ -12,6 +12,9 @@ const generateExpenseId = (): string => {
 };
 
 // Template category structures for different event types
+// DEPRECATED: categories are now household-defined via
+// CustomBillOptionsService.getEventCategories(). Kept only until a cleanup pass
+// confirms no remaining callers.
 const EVENT_TEMPLATES: Record<EventType, string[]> = {
   travel: ['Flights', 'Accommodation', 'Transportation', 'Food & Dining', 'Activities', 'Shopping', 'Other'],
   wedding: ['Venue', 'Catering', 'Photography', 'Attire', 'Flowers', 'Entertainment', 'Invitations', 'Other'],
@@ -110,6 +113,7 @@ export class EventService {
     return this.getAllEvents().filter(e => e.status === 'active' || e.status === 'planning');
   }
 
+  /** @deprecated Unused — event categories are household-defined now. */
   static getTemplateCategories(type: EventType): string[] {
     return EVENT_TEMPLATES[type] || EVENT_TEMPLATES.custom;
   }

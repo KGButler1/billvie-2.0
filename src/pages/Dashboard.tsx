@@ -23,6 +23,8 @@ import ProgressiveHints from '@/components/ProgressiveHints';
 import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
+import FinancialSnapshotWidget from '@/components/FinancialSnapshotWidget';
+import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
 
 const Dashboard = () => {
@@ -158,6 +160,9 @@ const Dashboard = () => {
 
   const hasSampleBills = bills.some(b => b.isSample);
 
+  // Jan-Apr: tax records matter more, so lift that widget up the stack
+  const isTaxSeason = new Date().getMonth() <= 3;
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <DashboardHeader 
@@ -235,8 +240,16 @@ const Dashboard = () => {
 
 
 
+        {/* Tax season (Jan-Apr) surfaces tax records earlier in the stack */}
+        {isTaxSeason && <TaxWidget />}
+
         {/* Important Documents Widget */}
         <DocumentsWidget />
+
+        {/* Financial Snapshot Widget */}
+        <FinancialSnapshotWidget />
+
+        {!isTaxSeason && <TaxWidget />}
 
         {/* Advisor Widget */}
         <AdvisorWidget />
