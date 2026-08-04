@@ -164,9 +164,9 @@ export const SearchService = {
     // Financial snapshot
     const financialEntries: { title: string; subtitle?: string }[] = [
       ...FinancialInfoService.getInsurance().map((e) => ({ title: e.provider, subtitle: 'Insurance' })),
-      ...FinancialInfoService.getSuperannuation().map((e) => ({ title: e.fundName, subtitle: 'Super / 401k' })),
+      ...FinancialInfoService.getSuperannuation().map((e) => ({ title: e.fundName, subtitle: 'Savings & Retirement' })),
       ...FinancialInfoService.getIncome().map((e) => ({ title: e.sourceName, subtitle: 'Income' })),
-      ...FinancialInfoService.getDebts().map((e) => ({ title: e.lenderName, subtitle: 'Debt' })),
+      ...FinancialInfoService.getDebts().map((e) => ({ title: e.owedTo, subtitle: 'Debt' })),
 
     ];
     financialEntries.forEach((entry, i) => {

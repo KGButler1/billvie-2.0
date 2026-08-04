@@ -28,7 +28,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   insurance: 'Insurance',
   investment: 'Investment',
   account: 'Account',
-  superannuation: 'Super / 401k',
+  superannuation: 'Savings & Retirement',
   will: 'Will / Estate',
   other: 'Other',
 };
