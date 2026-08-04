@@ -239,19 +239,32 @@ const HouseholdSummary = () => {
                 <Empty text="None recorded." />
               ) : (
                 <ul className="space-y-1">
-                  {insurance.map((i) => (
-                    <li key={i.id} className="border-t border-border/60 pt-1">
-                      {i.provider} — {INSURANCE_TYPE_LABELS[i.type]} · {money(i.premium)}{' '}
-                      {i.premiumFrequency} · Renews {formatDate(i.renewalDate)}
-                      {i.notes ? ` · ${i.notes}` : ''}
-                    </li>
-                  ))}
+                  {insurance.map((i) => {
+                    const bill = i.linkedBillId ? BillService.getBillById(i.linkedBillId) : undefined;
+                    const cost = bill
+                      ? `${money(bill.amount)}${bill.recurringInterval ? ` ${bill.recurringInterval.replace('_', ' ')}` : ''}`
+                      : i.premium !== undefined
+                        ? `${money(i.premium)}${i.premiumFrequency ? ` ${i.premiumFrequency}` : ''}`
+                        : null;
+                    return (
+                      <li key={i.id} className="border-t border-border/60 pt-1">
+                        {i.provider} — {INSURANCE_TYPE_LABELS[i.type]}
+                        {cost
+                          ? ` · ${cost}`
+                          : i.contactInfo
+                            ? ` · Contact: ${i.contactInfo}`
+                            : ''}
+                        {i.renewalDate ? ` · Renews ${formatDate(i.renewalDate)}` : ''}
+                        {i.notes ? ` · ${i.notes}` : ''}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
 
             <div>
-              <h3 className="font-medium mb-1">Superannuation</h3>
+              <h3 className="font-medium mb-1">Savings &amp; Retirement</h3>
               {superannuation.length === 0 ? (
                 <Empty text="None recorded." />
               ) : (
@@ -259,6 +272,7 @@ const HouseholdSummary = () => {
                   {superannuation.map((s) => (
                     <li key={s.id} className="border-t border-border/60 pt-1">
                       {s.fundName} · {money(s.estimatedBalance)}
+                      {s.contactInfo ? ` · Contact: ${s.contactInfo}` : ''}
                       {s.notes ? ` · ${s.notes}` : ''}
                     </li>
                   ))}
@@ -290,7 +304,7 @@ const HouseholdSummary = () => {
                 <ul className="space-y-1">
                   {debts.map((d) => (
                     <li key={d.id} className="border-t border-border/60 pt-1">
-                      {d.lenderName} — {DEBT_TYPE_LABELS[d.type]} · {money(d.approximateBalance)}
+                      {d.owedTo} — {DEBT_TYPE_LABELS[d.type]} · {money(d.approximateBalance)}
                       {d.notes ? ` · ${d.notes}` : ''}
                     </li>
                   ))}

@@ -153,6 +153,12 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
                 ))}
               </SelectContent>
             </Select>
+            {type === 'other' && (
+              <p className="text-xs text-muted-foreground mt-1">
+                e.g. a classic car, jewelry, or family heirloom — note what it's worth so it isn't
+                given away by accident.
+              </p>
+            )}
           </div>
 
           <div>
