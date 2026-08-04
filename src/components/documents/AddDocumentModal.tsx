@@ -13,15 +13,21 @@ import { PeopleService } from '@/services/PeopleService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
+import TaxRelevanceFields, {
+  TaxRelevanceValue,
+  emptyTaxRelevance,
+} from '@/components/tax/TaxRelevanceFields';
+import { TaxTagService } from '@/services/TaxTagService';
 
 interface AddDocumentModalProps {
   document?: HouseholdDocument;
   onAdd: (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
-    linkedBillId?: string
+    linkedBillId?: string,
+    tax?: TaxRelevanceValue
   ) => void;
-  onEdit: (id: string, updates: Partial<HouseholdDocument>) => void;
+  onEdit: (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => void;
   onClose: () => void;
 }
 
@@ -40,6 +46,20 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
   );
   const [professionalIds, setProfessionalIds] = useState<string[]>([]);
   const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>([]);
+
+  const [tax, setTax] = useState<TaxRelevanceValue>(() => {
+    const base = emptyTaxRelevance();
+    if (!document) return base;
+    const existing = TaxTagService.getTagForItem(document.id, 'document', base.taxYear);
+    return existing
+      ? {
+          enabled: true,
+          taxYear: existing.taxYear,
+          taxType: existing.taxType ?? 'personal',
+          businessName: existing.businessName,
+        }
+      : base;
+  });
 
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(() => {
     if (!document) return null;
@@ -88,9 +108,9 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
     };
 
     if (document) {
-      onEdit(document.id, shared);
+      onEdit(document.id, shared, tax);
     } else {
-      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id);
+      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id, tax);
     }
   };
 
@@ -228,6 +248,13 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
               rows={3}
             />
             <p className="text-xs text-muted-foreground mt-1">This helps someone step in if needed</p>
+          </div>
+
+          <div>
+            <TaxRelevanceFields value={tax} onChange={setTax} />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              This shows up in Tax Documents for that year — the document itself doesn't change.
+            </p>
           </div>
 
           {!document && (

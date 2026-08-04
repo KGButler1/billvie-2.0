@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { TaxTagService } from '@/services/TaxTagService';
+import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
 import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
@@ -109,18 +111,25 @@ const Bills = () => {
 
   const handleAddBill = (
     billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
-    linkedDocumentId?: string
+    linkedDocumentId?: string,
+    tax?: TaxRelevanceValue
   ) => {
     const created = BillService.addBill(billData);
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
+    if (tax) TaxTagService.setTag(created.id, 'bill', tax);
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);
   };
 
-  const handleUpdateBill = (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateBill = (
+    updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
+    _linkedDocumentId?: string,
+    tax?: TaxRelevanceValue
+  ) => {
     if (!editingBill) return;
     BillService.updateBill(editingBill.id, updates);
+    if (tax) TaxTagService.setTag(editingBill.id, 'bill', tax);
     loadBills();
     setEditingBill(null);
     setDetailBill(null);

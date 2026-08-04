@@ -19,6 +19,9 @@ import { Label } from '@/components/ui/label';
 import { AccountantClient, AccountantProfile } from '@/types/sharing';
 import { AccountantService } from '@/services/AccountantService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
+import { TaxTagService } from '@/services/TaxTagService';
+import { Bill } from '@/types/bill';
+import { HouseholdDocument } from '@/types/document';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -304,10 +307,35 @@ interface ClientTaxViewProps {
 }
 
 const ClientTaxView = ({ client, onBack }: ClientTaxViewProps) => {
-  // In a real app, this would fetch the client's tax documents
-  // For now, we'll show sample data
-  const documents = TaxDocumentService.getAllDocuments();
   const currentYear = new Date().getFullYear();
+  const categories = TaxDocumentService.getCategories();
+  const categoryLabel = (id: string) => categories.find((c) => c.id === id)?.label || id;
+  const categoryIcon = (id: string) => categories.find((c) => c.id === id)?.icon || '📄';
+
+  // Same shape as the household's own tax view: direct entries plus anything
+  // tagged as tax-relevant on a bill or document.
+  const rows = [
+    ...TaxDocumentService.getAllDocuments()
+      .filter((d) => d.year === currentYear)
+      .map((d) => ({
+        key: d.id,
+        name: d.name,
+        categories: d.categories.length ? d.categories : ['other'],
+        amount: d.amount,
+        notes: d.notes,
+        businessName: undefined as string | undefined,
+      })),
+    ...TaxTagService.getResolvedItemsForYear(currentYear).map(({ item, tag }) => ({
+      key: tag.id,
+      name: tag.itemType === 'bill' ? (item as Bill).name : (item as HouseholdDocument).title,
+      categories: tag.categories?.length ? tag.categories : ['other'],
+      amount: tag.itemType === 'bill' ? (item as Bill).amount : undefined,
+      notes: item.notes,
+      businessName: tag.businessName,
+    })),
+  ];
+
+  const total = rows.reduce((sum, r) => sum + (r.amount ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -331,31 +359,37 @@ const ClientTaxView = ({ client, onBack }: ClientTaxViewProps) => {
       </header>
 
       <main className="container mx-auto px-4 pt-28">
-        {documents.length > 0 ? (
-          <div className="space-y-3">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="bg-card rounded-xl border border-border p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                    📄
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium">{doc.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {doc.year} • {doc.categories.join(', ')}
-                      {doc.amount && ` • $${doc.amount.toLocaleString()}`}
-                    </p>
-                    {doc.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">{doc.notes}</p>
-                    )}
+        {rows.length > 0 ? (
+          <>
+            <div className="bg-card rounded-xl border border-border p-4 mb-6">
+              <p className="text-sm text-muted-foreground">{currentYear} total</p>
+              <p className="text-3xl font-semibold">${total.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">{rows.length} items shared</p>
+            </div>
+
+            <div className="space-y-3">
+              {rows.map((row) => (
+                <div key={row.key} className="bg-card rounded-xl border border-border p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                      {categoryIcon(row.categories[0])}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium">{row.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {row.categories.map(categoryLabel).join(', ')}
+                        {row.businessName && ` • ${row.businessName}`}
+                        {row.amount !== undefined && ` • $${row.amount.toLocaleString()}`}
+                      </p>
+                      {row.notes && (
+                        <p className="text-sm text-muted-foreground mt-1">{row.notes}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No tax documents shared yet.</p>
@@ -365,5 +399,6 @@ const ClientTaxView = ({ client, onBack }: ClientTaxViewProps) => {
     </div>
   );
 };
+
 
 export default AccountantPortal;

@@ -1,17 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Plus, 
-  FileText, 
-  Search, 
+import {
+  ArrowLeft,
+  Plus,
+  FileText,
+  Search,
   Trash2,
   Settings,
   Calendar,
   Paperclip,
   Users,
   Download,
-  Lock
+  Lock,
+  Link2,
+  Receipt,
+  ChevronDown,
+  ChevronRight,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,59 +32,175 @@ import {
 } from '@/components/ui/select';
 import { TaxDocument, TaxCategory, FileAttachment } from '@/types/sharing';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
+import { TaxTagService } from '@/services/TaxTagService';
 import { UserService } from '@/services/UserService';
+import { Bill } from '@/types/bill';
+import { HouseholdDocument } from '@/types/document';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
 import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
 import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
 import { TaxSharingPanel } from '@/components/tax/TaxSharingPanel';
+import TaxAccessSheet from '@/components/tax/TaxAccessSheet';
+import LinkTaxItemsSheet from '@/components/tax/LinkTaxItemsSheet';
 import { FileAttachmentInput, AttachmentBadge } from '@/components/shared/FileAttachmentInput';
 import { arrayToCSV, downloadCSV } from '@/utils/csvExport';
 import { cn } from '@/lib/utils';
 
+type RowSource = 'tax' | 'bill' | 'document';
+
+interface TaxRow {
+  key: string;
+  itemId: string;
+  source: RowSource;
+  name: string;
+  categories: string[];
+  year: number;
+  amount?: number;
+  notes?: string;
+  attachmentName?: string;
+  taxType: 'personal' | 'business';
+  businessName?: string;
+  carriedFromYear?: number;
+  taxDoc?: TaxDocument;
+}
+
 const TaxDocuments = () => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<TaxDocument[]>([]);
+  const [tagVersion, setTagVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [yearFilter, setYearFilter] = useState<number | 'all'>('all');
+  const [yearFilter, setYearFilter] = useState<number>(() => new Date().getFullYear());
   const [categoryFilter, setCategoryFilter] = useState<TaxCategory | 'all'>('all');
+  const [businessFilter, setBusinessFilter] = useState<string | 'all'>('all');
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [isAddingDocument, setIsAddingDocument] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [showManageYears, setShowManageYears] = useState(false);
   const [categoriesVersion, setCategoriesVersion] = useState(0);
+  const [accessTarget, setAccessTarget] = useState<{ id: string; title: string } | null>(null);
+  const [linkingTaxDoc, setLinkingTaxDoc] = useState<TaxDocument | null>(null);
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
 
   const loadDocuments = () => {
     setDocuments(TaxDocumentService.getAllDocuments());
   };
 
-  const availableYears = TaxDocumentService.getAvailableYears();
+  useEffect(() => {
+    loadDocuments();
+  }, []);
 
-  const allCategories = TaxDocumentService.getCategories();
-  const getCategoryLabel = (id: string) => allCategories.find(c => c.id === id)?.label || id;
-  const getCategoryIcon = (id: string) => allCategories.find(c => c.id === id)?.icon || '📄';
+  // Carrying forward means nobody has to re-tag a year from scratch. It only
+  // ever runs for a year that has nothing tagged yet.
+  useEffect(() => {
+    TaxTagService.carryForwardIfNeeded(yearFilter);
+    setTagVersion((v) => v + 1);
+  }, [yearFilter]);
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = searchQuery === '' || 
-      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.notes?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesYear = yearFilter === 'all' || doc.year === yearFilter;
-    const matchesCategory = categoryFilter === 'all' || doc.categories.includes(categoryFilter);
-    return matchesSearch && matchesYear && matchesCategory;
-  });
+  const availableYears = useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from(
+      new Set<number>([
+        current,
+        yearFilter,
+        ...TaxDocumentService.getAvailableYears(),
+        ...TaxTagService.getYearsWithTags(),
+      ])
+    ).sort((a, b) => b - a);
+  }, [documents, tagVersion, yearFilter]);
+
+  const allCategories = useMemo(() => TaxDocumentService.getCategories(), [categoriesVersion]);
+  const getCategoryLabel = (id: string) => allCategories.find((c) => c.id === id)?.label || id;
+  const getCategoryIcon = (id: string) => allCategories.find((c) => c.id === id)?.icon || '📄';
+
+  // ---- Rows: direct tax entries + tagged bills/documents, one list ----
+  const allRows: TaxRow[] = useMemo(() => {
+    const direct: TaxRow[] = documents
+      .filter((d) => d.year === yearFilter)
+      .map((doc) => ({
+        key: `tax_${doc.id}`,
+        itemId: doc.id,
+        source: 'tax' as const,
+        name: doc.name,
+        categories: doc.categories.length ? doc.categories : ['other'],
+        year: doc.year,
+        amount: doc.amount,
+        notes: doc.notes,
+        attachmentName: doc.attachment?.name,
+        taxType: 'personal' as const,
+        taxDoc: doc,
+      }));
+
+    const tagged: TaxRow[] = TaxTagService.getResolvedItemsForYear(yearFilter).map(({ item, tag }) => {
+      const isBill = tag.itemType === 'bill';
+      const bill = item as Bill;
+      const doc = item as HouseholdDocument;
+      return {
+        key: `tag_${tag.id}`,
+        itemId: tag.itemId,
+        source: (isBill ? 'bill' : 'document') as RowSource,
+        name: isBill ? bill.name : doc.title,
+        categories: tag.categories?.length ? tag.categories : ['other'],
+        year: tag.taxYear,
+        amount: isBill ? bill.amount : undefined,
+        notes: isBill ? bill.notes : doc.notes,
+        taxType: tag.taxType ?? 'personal',
+        businessName: tag.businessName,
+        carriedFromYear: tag.origin === 'carried' ? tag.carriedFromYear : undefined,
+      };
+    });
+
+    return [...direct, ...tagged];
+  }, [documents, yearFilter, tagVersion]);
+
+  const businessNames = useMemo(
+    () => Array.from(new Set(allRows.map((r) => r.businessName).filter(Boolean) as string[])),
+    [allRows]
+  );
+
+  const rows = useMemo(
+    () =>
+      allRows.filter((row) => {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          q === '' || row.name.toLowerCase().includes(q) || (row.notes ?? '').toLowerCase().includes(q);
+        const matchesCategory = categoryFilter === 'all' || row.categories.includes(categoryFilter);
+        const matchesBusiness = businessFilter === 'all' || row.businessName === businessFilter;
+        return matchesSearch && matchesCategory && matchesBusiness;
+      }),
+    [allRows, searchQuery, categoryFilter, businessFilter]
+  );
+
+  // Grouped by the row's first category — keeps every row counted exactly once.
+  const sections = useMemo(() => {
+    const map = new Map<string, TaxRow[]>();
+    rows.forEach((row) => {
+      const cat = row.categories[0];
+      map.set(cat, [...(map.get(cat) ?? []), row]);
+    });
+    return Array.from(map.entries()).sort((a, b) =>
+      getCategoryLabel(a[0]).localeCompare(getCategoryLabel(b[0]))
+    );
+  }, [rows, allCategories]);
+
+  const grandTotal = rows.reduce((sum, r) => sum + (r.amount ?? 0), 0);
+  const unpricedCount = rows.filter((r) => r.amount === undefined).length;
+  const personalTotal = rows.filter((r) => r.taxType === 'personal').reduce((s, r) => s + (r.amount ?? 0), 0);
+  const businessTotal = rows.filter((r) => r.taxType === 'business').reduce((s, r) => s + (r.amount ?? 0), 0);
 
   const handleDelete = (id: string) => {
     if (confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) {
       TaxDocumentService.deleteDocument(id);
       loadDocuments();
     }
+  };
+
+  const handleRemoveFromTax = (row: TaxRow) => {
+    TaxTagService.untagItem(row.itemId, row.source === 'bill' ? 'bill' : 'document', row.year);
+    setTagVersion((v) => v + 1);
   };
 
   const handleUpgrade = () => {
@@ -89,33 +210,41 @@ const TaxDocuments = () => {
 
   const handleExportCSV = () => {
     const csv = arrayToCSV(
-      filteredDocuments.map((doc) => ({
-        name: doc.name,
-        categories: doc.categories.map((c) => getCategoryLabel(c)).join('; '),
-        year: doc.year,
-        amount: doc.amount ?? '',
-        notes: doc.notes ?? '',
-        taxRelevant: doc.isTaxRelevant ? 'Yes' : 'No',
+      rows.map((row) => ({
+        name: row.name,
+        source: row.source === 'tax' ? 'Tax entry' : row.source === 'bill' ? 'Bill' : 'Document',
+        categories: row.categories.map((c) => getCategoryLabel(c)).join('; '),
+        year: row.year,
+        amount: row.amount ?? '',
+        taxType: row.taxType === 'business' ? 'Business' : 'Personal',
+        businessName: row.businessName ?? '',
+        notes: row.notes ?? '',
+        status: row.carriedFromYear ? `Carried from ${row.carriedFromYear}` : 'New',
       })),
       [
-        { key: 'name', label: 'Document' },
+        { key: 'name', label: 'Item' },
+        { key: 'source', label: 'Source' },
         { key: 'categories', label: 'Categories' },
         { key: 'year', label: 'Year' },
         { key: 'amount', label: 'Amount' },
+        { key: 'taxType', label: 'Personal/Business' },
+        { key: 'businessName', label: 'Business' },
         { key: 'notes', label: 'Notes' },
-        { key: 'taxRelevant', label: 'Tax Relevant' },
+        { key: 'status', label: 'Status' },
       ]
     );
-    const yearLabel = yearFilter === 'all' ? 'all-years' : String(yearFilter);
-    downloadCSV(csv, `billvie-tax-export-${yearLabel}.csv`);
+    downloadCSV(csv, `billvie-tax-export-${yearFilter}.csv`);
   };
 
-  const categorySummary = yearFilter !== 'all' 
-    ? TaxDocumentService.getCategorySummary(yearFilter)
-    : null;
+  const SourceIcon = ({ source }: { source: RowSource }) =>
+    source === 'bill' ? (
+      <Receipt className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-label="From a bill" />
+    ) : source === 'document' ? (
+      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-label="From a document" />
+    ) : null;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 lg:pt-16">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center gap-4">
@@ -123,38 +252,41 @@ const TaxDocuments = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-xl font-bold flex-1">Tax Documents</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/people')}
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate('/people')}>
             <Users className="w-5 h-5" />
           </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-20">
+      <main className="container mx-auto px-4 pt-20 lg:pt-8">
+        <h1 className="text-2xl font-semibold hidden lg:block mb-2">Tax Documents</h1>
+        <p className="text-sm text-muted-foreground mb-6">
+          Everything that matters at tax time, in one place — including bills and documents you've
+          marked as relevant.
+        </p>
+
         {/* Search and Filters */}
         <div className="space-y-3 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search documents..."
+              placeholder="Search this year..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex gap-2">
-            <Select value={String(yearFilter)} onValueChange={(v) => setYearFilter(v === 'all' ? 'all' : parseInt(v))}>
+            <Select value={String(yearFilter)} onValueChange={(v) => setYearFilter(parseInt(v))}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Years</SelectItem>
-                {availableYears.map(year => (
-                  <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+              <SelectContent className="bg-background z-50">
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -163,14 +295,36 @@ const TaxDocuments = () => {
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="all">All Categories</SelectItem>
                 {allCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>{cat.icon} {cat.label}</SelectItem>
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Business filter — only worth showing once there's more than one */}
+          {businessNames.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {['all', ...businessNames].map((name) => (
+                <button
+                  key={name}
+                  onClick={() => setBusinessFilter(name)}
+                  className={cn(
+                    'text-xs px-3 py-1.5 rounded-full border transition-colors',
+                    businessFilter === name
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border hover:bg-muted'
+                  )}
+                >
+                  {name === 'all' ? 'All businesses' : name}
+                </button>
+              ))}
+            </div>
+          )}
 
           <Button
             variant="outline"
@@ -183,7 +337,7 @@ const TaxDocuments = () => {
 
           {/* Manage Categories/Years buttons */}
           <div className="flex gap-2 text-sm">
-            <button 
+            <button
               onClick={() => setShowManageCategories(true)}
               className="text-primary hover:underline flex items-center gap-1"
             >
@@ -191,7 +345,7 @@ const TaxDocuments = () => {
               Manage Categories
             </button>
             <span className="text-muted-foreground">•</span>
-            <button 
+            <button
               onClick={() => setShowManageYears(true)}
               className="text-primary hover:underline flex items-center gap-1"
             >
@@ -205,96 +359,175 @@ const TaxDocuments = () => {
         <TaxSharingPanel />
 
         {/* Year Summary */}
-        {categorySummary && (
+        {rows.length > 0 && (
           <div className="bg-card rounded-xl border border-border p-4 mb-6">
-            <h3 className="text-sm font-medium mb-3">
-              {yearFilter} Summary
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.entries(categorySummary).map(([cat, data]) => (
-                data.count > 0 && (
-                  <div key={cat} className="flex items-center gap-2 text-sm">
-                    <span>{getCategoryIcon(cat)}</span>
-                    <span className="text-muted-foreground flex-1">{getCategoryLabel(cat)}</span>
-                    <span className="font-medium">${data.total.toLocaleString()}</span>
-                  </div>
-                )
+            <p className="text-sm text-muted-foreground">{yearFilter} total</p>
+            <p className="text-3xl font-semibold">${grandTotal.toLocaleString()}</p>
+            {unpricedCount > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {unpricedCount} {unpricedCount === 1 ? 'item has' : 'items have'} no amount — counted,
+                not added up.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
+              <div>
+                <p className="text-xs text-muted-foreground">Personal</p>
+                <p className="font-medium">${personalTotal.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Business</p>
+                <p className="font-medium">${businessTotal.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
+              {sections.map(([cat, catRows]) => (
+                <div key={cat} className="flex items-center gap-2 text-sm">
+                  <span>{getCategoryIcon(cat)}</span>
+                  <span className="text-muted-foreground flex-1 truncate">{getCategoryLabel(cat)}</span>
+                  <span className="font-medium">
+                    ${catRows.reduce((s, r) => s + (r.amount ?? 0), 0).toLocaleString()}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Documents List */}
-        <div className="space-y-3">
-          {filteredDocuments.map((doc, index) => (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-card rounded-xl border border-border p-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg">
-                  {getCategoryIcon(doc.categories[0])}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium truncate">{doc.name}</h3>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex flex-wrap gap-1">
-                      {doc.categories.map((catId, idx) => (
-                        <span key={catId} className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs">
-                          {getCategoryIcon(catId)} {getCategoryLabel(catId)}
-                        </span>
-                      ))}
-                    </div>
-                    <span>•</span>
-                    <span>{doc.year}</span>
-                    {doc.amount && (
-                      <>
-                        <span>•</span>
-                        <span className="font-medium text-foreground">${doc.amount.toLocaleString()}</span>
-                      </>
-                    )}
-                    {doc.attachment && (
-                      <span className="inline-flex items-center gap-1 text-xs text-primary">
-                        <Paperclip className="w-3 h-3" />
-                        {doc.attachment.name.length > 15 
-                          ? doc.attachment.name.substring(0, 12) + '...' 
-                          : doc.attachment.name}
-                      </span>
-                    )}
-                  </div>
-                  {doc.notes && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{doc.notes}</p>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(doc.id)}
-                  className="text-destructive hover:bg-destructive/10"
+        {/* Grouped list */}
+        <div className="space-y-4">
+          {sections.map(([cat, catRows]) => {
+            const isCollapsed = !!collapsed[cat];
+            return (
+              <section key={cat}>
+                <button
+                  onClick={() => setCollapsed((prev) => ({ ...prev, [cat]: !prev[cat] }))}
+                  className="w-full flex items-center gap-2 py-2 text-left"
+                  aria-expanded={!isCollapsed}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </motion.div>
-          ))}
+                  {isCollapsed ? (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                  <span>{getCategoryIcon(cat)}</span>
+                  <h2 className="text-sm font-medium">{getCategoryLabel(cat)}</h2>
+                  <span className="text-sm text-muted-foreground">({catRows.length})</span>
+                </button>
 
-          {filteredDocuments.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
+                {!isCollapsed && (
+                  <div className="space-y-3">
+                    {catRows.map((row, index) => (
+                      <motion.div
+                        key={row.key}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        className="bg-card rounded-xl border border-border p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg shrink-0">
+                            {getCategoryIcon(row.categories[0])}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium truncate flex items-center gap-1.5">
+                              <SourceIcon source={row.source} />
+                              {row.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                              <div className="flex flex-wrap gap-1">
+                                {row.categories.map((catId) => (
+                                  <span
+                                    key={catId}
+                                    className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs"
+                                  >
+                                    {getCategoryIcon(catId)} {getCategoryLabel(catId)}
+                                  </span>
+                                ))}
+                              </div>
+                              {row.amount !== undefined && (
+                                <span className="font-medium text-foreground">
+                                  ${row.amount.toLocaleString()}
+                                </span>
+                              )}
+                              {row.businessName && <span>{row.businessName}</span>}
+                              {row.attachmentName && (
+                                <span className="inline-flex items-center gap-1 text-xs text-primary">
+                                  <Paperclip className="w-3 h-3" />
+                                  {row.attachmentName.length > 15
+                                    ? row.attachmentName.substring(0, 12) + '...'
+                                    : row.attachmentName}
+                                </span>
+                              )}
+                              {row.carriedFromYear && (
+                                <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs">
+                                  Carried from {row.carriedFromYear}
+                                </span>
+                              )}
+                            </div>
+                            {row.notes && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{row.notes}</p>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
+                              <button
+                                onClick={() => setAccessTarget({ id: row.itemId, title: row.name })}
+                                className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <Users className="w-3.5 h-3.5" /> Who can see this
+                              </button>
+                              {row.source === 'tax' && row.taxDoc && (
+                                <button
+                                  onClick={() => setLinkingTaxDoc(row.taxDoc!)}
+                                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <Link2 className="w-3.5 h-3.5" /> What is this about?
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {row.source === 'tax' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(row.itemId)}
+                              className="text-destructive hover:bg-destructive/10"
+                              aria-label="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFromTax(row)}
+                              className="text-muted-foreground hover:text-foreground shrink-0"
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              <span className="hidden sm:inline">Remove from tax</span>
+                            </Button>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+
+          {rows.length === 0 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
               <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="font-semibold mb-2">No documents found</h3>
+              <h3 className="font-semibold mb-2">Nothing here for {yearFilter} yet</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {searchQuery || yearFilter !== 'all' || categoryFilter !== 'all'
+                {searchQuery || categoryFilter !== 'all' || businessFilter !== 'all'
                   ? 'Try adjusting your filters'
-                  : 'Add your first tax document to get started'}
+                  : "Add a receipt here, or tick “Relevant for tax?” on a bill or document."}
               </p>
               <Button onClick={() => setIsAddingDocument(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -306,7 +539,7 @@ const TaxDocuments = () => {
       </main>
 
       {/* FAB */}
-      {filteredDocuments.length > 0 && (
+      {rows.length > 0 && (
         <motion.button
           onClick={() => setIsAddingDocument(true)}
           className="fab"
@@ -320,10 +553,25 @@ const TaxDocuments = () => {
       {/* Add Document Modal */}
       <AnimatePresence>
         {isAddingDocument && (
-          <AddTaxDocumentModal
-            onClose={() => setIsAddingDocument(false)}
-            onSave={loadDocuments}
+          <AddTaxDocumentModal onClose={() => setIsAddingDocument(false)} onSave={loadDocuments} />
+        )}
+      </AnimatePresence>
+
+      {/* Per-row access */}
+      <AnimatePresence>
+        {accessTarget && (
+          <TaxAccessSheet
+            itemId={accessTarget.id}
+            title={accessTarget.title}
+            onClose={() => setAccessTarget(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Linking a direct tax entry to a bill or document */}
+      <AnimatePresence>
+        {linkingTaxDoc && (
+          <LinkTaxItemsSheet taxDocument={linkingTaxDoc} onClose={() => setLinkingTaxDoc(null)} />
         )}
       </AnimatePresence>
 
@@ -342,7 +590,7 @@ const TaxDocuments = () => {
           <ManageCategoriesModal
             isOpen={showManageCategories}
             onClose={() => setShowManageCategories(false)}
-            onCategoriesChanged={() => setCategoriesVersion(v => v + 1)}
+            onCategoriesChanged={() => setCategoriesVersion((v) => v + 1)}
           />
         )}
       </AnimatePresence>
@@ -362,7 +610,6 @@ const TaxDocuments = () => {
     </div>
   );
 };
-
 // Add Tax Document Modal
 interface AddTaxDocumentModalProps {
   onClose: () => void;
