@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { DocumentService } from '@/services/DocumentService';
 import { AccessService } from '@/services/AccessService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
+import { TaxTagService } from '@/services/TaxTagService';
+import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { HouseholdDocument } from '@/types/document';
 import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
@@ -30,18 +32,21 @@ const Documents = () => {
   const handleAdd = (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
-    linkedBillId?: string
+    linkedBillId?: string,
+    tax?: TaxRelevanceValue
   ) => {
     const created = DocumentService.add(doc);
     personIds.forEach((pid) => AccessService.grantItem(pid, 'documents', created.id));
     if (linkedBillId) DocumentLinkService.linkToBill(created.id, linkedBillId);
+    if (tax) TaxTagService.setTag(created.id, 'document', tax);
     reload();
     setIsAdding(false);
     setAttachingId(created.id);
   };
 
-  const handleEditSave = (id: string, updates: Partial<HouseholdDocument>) => {
+  const handleEditSave = (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => {
     DocumentService.update(id, updates);
+    if (tax) TaxTagService.setTag(id, 'document', tax);
     reload();
     setEditingId(null);
   };
