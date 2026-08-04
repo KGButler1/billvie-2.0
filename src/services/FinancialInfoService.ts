@@ -9,12 +9,13 @@ export interface InsuranceEntry {
   provider: string;
   policyNumber?: string;
   type: InsuranceType;
-  premium: number;
-  premiumFrequency: 'monthly' | 'quarterly' | 'annual';
+  premium?: number;
+  premiumFrequency?: 'monthly' | 'quarterly' | 'annual';
   renewalDate?: string;
   documentLink?: string;
   notes?: string;
   linkedBillId?: string;
+  contactInfo?: string; // Free text: who to call about this policy
 }
 
 export interface SuperannuationEntry {
@@ -23,6 +24,7 @@ export interface SuperannuationEntry {
   accountNumber?: string;
   estimatedBalance: number;
   notes?: string;
+  contactInfo?: string; // Free text: fund administrator or benefits contact
 }
 
 export interface MiscFinancialEntry {
@@ -43,7 +45,7 @@ export type DebtType = 'mortgage' | 'car' | 'personal' | 'other';
 
 export interface DebtEntry {
   id: string;
-  lenderName: string;
+  owedTo: string;
   type: DebtType;
   approximateBalance: number;
   notes?: string;
@@ -81,14 +83,21 @@ export const INSURANCE_TYPE_LABELS: Record<InsuranceType, string> = {
 export const DEBT_TYPE_LABELS: Record<DebtType, string> = {
   mortgage: 'Mortgage',
   car: 'Car Loan',
-  personal: 'Personal Loan',
+  personal: 'Personal loan / owed to someone',
   other: 'Other',
 };
 
 export class FinancialInfoService {
   private static getData(): FinancialData {
-    const data = localStorage.getItem(FINANCIAL_KEY);
-    return data ? { ...DEFAULT_DATA, ...JSON.parse(data) } : { ...DEFAULT_DATA };
+    const raw = localStorage.getItem(FINANCIAL_KEY);
+    if (!raw) return { ...DEFAULT_DATA };
+    const parsed = { ...DEFAULT_DATA, ...JSON.parse(raw) } as FinancialData;
+    // Migration: lenderName -> owedTo. Copy the value across, invent nothing.
+    parsed.debts = (parsed.debts || []).map((d) => {
+      const legacy = d as DebtEntry & { lenderName?: string };
+      return legacy.owedTo ? legacy : { ...legacy, owedTo: legacy.lenderName || '' };
+    });
+    return parsed;
   }
 
   private static saveData(data: FinancialData): void {
@@ -129,10 +138,11 @@ export class FinancialInfoService {
 
   static getTotalAnnualPremiums(): number {
     return this.getInsurance().reduce((sum, ins) => {
+      const premium = ins.premium ?? 0;
       switch (ins.premiumFrequency) {
-        case 'monthly': return sum + (ins.premium * 12);
-        case 'quarterly': return sum + (ins.premium * 4);
-        case 'annual': return sum + ins.premium;
+        case 'monthly': return sum + (premium * 12);
+        case 'quarterly': return sum + (premium * 4);
+        case 'annual': return sum + premium;
         default: return sum;
       }
     }, 0);
@@ -167,6 +177,14 @@ export class FinancialInfoService {
     const data = this.getData();
     data.superannuation = data.superannuation.filter(s => s.id !== id);
     this.saveData(data);
+  }
+
+  static getTotalDebt(): number {
+    return this.getDebts().reduce((sum, d) => sum + (d.approximateBalance || 0), 0);
+  }
+
+  static getTotalIncome(): number {
+    return this.getIncome().reduce((sum, i) => sum + (i.approximateAmount || 0), 0);
   }
 
   static getTotalSuperBalance(): number {
@@ -308,7 +326,7 @@ export class FinancialInfoService {
       debts: [
         {
           id: crypto.randomUUID(),
-          lenderName: 'Commonwealth Bank',
+          owedTo: 'Commonwealth Bank',
           type: 'mortgage',
           approximateBalance: 415000,
           notes: 'Refinanced 2024, autopay from checking',

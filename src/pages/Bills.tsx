@@ -160,7 +160,7 @@ const Bills = () => {
           </Link>
           {' · '}
           <Link to="/financial" className="hover:text-foreground underline-offset-2 hover:underline">
-            {superCount} super {superCount === 1 ? 'account' : 'accounts'}
+            {superCount} savings &amp; retirement {superCount === 1 ? 'account' : 'accounts'}
           </Link>
         </p>
 

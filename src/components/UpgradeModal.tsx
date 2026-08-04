@@ -23,7 +23,7 @@ const UPGRADE_REASONS = {
   },
   financial: {
     title: "Unlock Financial Snapshot",
-    description: "Keep insurance, superannuation, income and debts in one place — what a spouse, advisor or bank would need to know.",
+    description: "Keep insurance, savings & retirement, income and debts in one place — what a spouse, advisor or bank would need to know.",
     icon: BarChart3,
   },
   share: {
@@ -46,7 +46,7 @@ const UPGRADE_REASONS = {
 const FEATURES = [
   "Unlimited bills",
   "Unlimited events",
-  "Financial Snapshot - Insurance, super, income & debts",
+  "Financial Snapshot - Insurance, savings & retirement, income & debts",
   "Share with partners & accountants",
   "Export as PDF, CSV, JSON",
   "Advanced analytics",
