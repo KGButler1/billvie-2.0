@@ -54,5 +54,27 @@ export class CustomBillOptionsService {
     localStorage.setItem(CUSTOM_PAYMENT_METHODS_KEY, JSON.stringify(methods));
   }
 
+  // Event Categories — household-defined, no app presets
+  static getEventCategories(): CustomOption[] {
+    const data = localStorage.getItem(CUSTOM_EVENT_CATEGORIES_KEY);
+    return data ? JSON.parse(data) : [];
+  }
+
+  static addEventCategory(label: string): CustomOption {
+    const categories = this.getEventCategories();
+    const trimmed = label.trim();
+    const existing = categories.find(c => c.label.toLowerCase() === trimmed.toLowerCase());
+    if (existing) return existing;
+    const newCategory: CustomOption = { id: generateId(), label: trimmed };
+    categories.push(newCategory);
+    localStorage.setItem(CUSTOM_EVENT_CATEGORIES_KEY, JSON.stringify(categories));
+    return newCategory;
+  }
+
+  static deleteEventCategory(id: string): void {
+    const categories = this.getEventCategories().filter(c => c.id !== id);
+    localStorage.setItem(CUSTOM_EVENT_CATEGORIES_KEY, JSON.stringify(categories));
+  }
 }
+
 
