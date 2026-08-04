@@ -28,12 +28,18 @@ import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOpt
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { DocumentService } from '@/services/DocumentService';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
+import TaxRelevanceFields, {
+  TaxRelevanceValue,
+  emptyTaxRelevance,
+} from '@/components/tax/TaxRelevanceFields';
+import { TaxTagService } from '@/services/TaxTagService';
 
 
 interface QuickAddBillProps {
   onAdd: (
     bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
-    linkedDocumentId?: string
+    linkedDocumentId?: string,
+    tax?: TaxRelevanceValue
   ) => void;
   onClose: () => void;
   /** When provided with mode="edit", the form pre-fills and saves back to this bill. */
@@ -63,6 +69,20 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
   const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>(
     initialBill?.taggedPersonIds ?? []
   );
+
+  const [tax, setTax] = useState<TaxRelevanceValue>(() => {
+    const base = emptyTaxRelevance(initialBill?.dueDate);
+    if (!initialBill) return base;
+    const existing = TaxTagService.getTagForItem(initialBill.id, 'bill', base.taxYear);
+    return existing
+      ? {
+          enabled: true,
+          taxYear: existing.taxYear,
+          taxType: existing.taxType ?? 'personal',
+          businessName: existing.businessName,
+        }
+      : base;
+  });
 
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(() => {
     if (!initialBill) return null;
@@ -169,7 +189,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
       category: category || undefined,
       notes: notes.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
-    }, !isEdit ? linkedDocument?.id : undefined);
+    }, !isEdit ? linkedDocument?.id : undefined, tax);
   };
 
   // Helper to get display label for custom options
@@ -455,6 +475,14 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
             </p>
           </div>
 
+
+          {/* Tax relevance */}
+          <div className="space-y-2">
+            <TaxRelevanceFields value={tax} onChange={setTax} />
+            <p className="text-xs text-muted-foreground">
+              This shows up in Tax Documents for that year — the bill itself doesn't change.
+            </p>
+          </div>
 
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between py-2">
