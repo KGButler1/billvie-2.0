@@ -24,14 +24,23 @@ export const DocumentLinkService = {
     return readLinks().filter((l) => !l.unlinkedAt);
   },
 
+  // Absent sourceType means 'document' — keeps every pre-existing record working.
+  sourceOf(link: DocumentLink): 'document' | 'tax_document' {
+    return link.sourceType ?? 'document';
+  },
+
   // ---- Document -> Bill (one active bill-link per document) ----
 
   getLinkedBillId(documentId: string): string | undefined {
-    return this.getActiveLinks().find((l) => l.documentId === documentId && l.linkType === 'bill')?.targetId;
+    return this.getActiveLinks().find(
+      (l) => l.documentId === documentId && l.linkType === 'bill' && this.sourceOf(l) === 'document'
+    )?.targetId;
   },
 
   getLinkedDocumentIdForBill(billId: string): string | undefined {
-    return this.getActiveLinks().find((l) => l.linkType === 'bill' && l.targetId === billId)?.documentId;
+    return this.getActiveLinks().find(
+      (l) => l.linkType === 'bill' && l.targetId === billId && this.sourceOf(l) === 'document'
+    )?.documentId;
   },
 
   linkToBill(documentId: string, billId: string): DocumentLink {
