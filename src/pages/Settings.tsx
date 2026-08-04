@@ -211,6 +211,37 @@ const Settings = () => {
           </div>
         </section>
 
+        {/* Tax year Section */}
+        <section className="mb-8">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Tax Year</h2>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <Label className="font-medium">Your tax year starts in</Label>
+            <p className="text-sm text-muted-foreground mb-3">
+              Used to work out which year a bill or document belongs to.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 1, label: 'January' },
+                { value: 7, label: 'July' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setSettings(UserService.saveSettings({ taxYearStartMonth: option.value as 1 | 7 }))}
+                  className={cn(
+                    'p-3 rounded-lg border text-sm transition-colors',
+                    (settings.taxYearStartMonth ?? 1) === option.value
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border hover:bg-muted'
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+
         {/* Data Section */}
         <section className="mb-8">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Data</h2>
