@@ -610,3 +610,168 @@ const TaxDocuments = () => {
     </div>
   );
 };
+// Add Tax Document Modal
+interface AddTaxDocumentModalProps {
+  onClose: () => void;
+  onSave: () => void;
+}
+
+const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
+  const [name, setName] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<TaxCategory[]>(['other']);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [amount, setAmount] = useState('');
+  const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState<FileAttachment | undefined>(undefined);
+
+  const allCategories = TaxDocumentService.getCategories();
+  const availableYears = TaxDocumentService.getAvailableYears();
+
+  const toggleCategory = (catId: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(catId)) {
+        // Don't allow removing the last category
+        if (prev.length === 1) return prev;
+        return prev.filter(c => c !== catId);
+      }
+      return [...prev, catId];
+    });
+  };
+
+  const handleSave = () => {
+    if (!name.trim() || selectedCategories.length === 0) return;
+
+    TaxDocumentService.createDocument({
+      name: name.trim(),
+      categories: selectedCategories,
+      year,
+      amount: amount ? parseFloat(amount) : undefined,
+      notes: notes.trim() || undefined,
+      attachment,
+      isTaxRelevant: true,
+    });
+
+    onSave();
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold">Add Tax Document</h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Document Name *</Label>
+            <Input
+              id="name"
+              placeholder="e.g., Red Cross Donation Receipt"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Categories (select one or more) *</Label>
+            <div className="flex flex-wrap gap-2">
+              {allCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => toggleCategory(cat.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors",
+                    selectedCategories.includes(cat.id)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  )}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tax Year</Label>
+            <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount (optional)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pl-7"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (optional)</Label>
+            <Textarea
+              id="notes"
+              placeholder="Additional details..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Attach File (optional)</Label>
+            <FileAttachmentInput
+              attachment={attachment}
+              onAttach={setAttachment}
+              onRemove={() => setAttachment(undefined)}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button variant="outline" onClick={onClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={!name.trim() || selectedCategories.length === 0} className="flex-1">
+              Save Document
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default TaxDocuments;
