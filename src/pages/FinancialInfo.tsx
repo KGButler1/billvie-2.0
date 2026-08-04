@@ -125,12 +125,15 @@ const FinancialInfo = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-5 mb-6">
-            <TabsTrigger value="insurance">Insurance</TabsTrigger>
-            <TabsTrigger value="super">Savings &amp; Retirement</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="debts">Debts</TabsTrigger>
-            <TabsTrigger value="misc">Other</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-5 mb-6 text-xs sm:text-sm">
+            <TabsTrigger value="insurance" className="px-1">Insurance</TabsTrigger>
+            <TabsTrigger value="super" className="px-1">
+              <span className="lg:hidden">Savings</span>
+              <span className="hidden lg:inline">Savings &amp; Retirement</span>
+            </TabsTrigger>
+            <TabsTrigger value="income" className="px-1">Income</TabsTrigger>
+            <TabsTrigger value="debts" className="px-1">Debts</TabsTrigger>
+            <TabsTrigger value="misc" className="px-1">Other</TabsTrigger>
           </TabsList>
 
           {/* Insurance Tab */}
