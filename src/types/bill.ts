@@ -85,6 +85,8 @@ export interface UserSettings {
   hasSeenOnboarding: boolean;
   hasEventsAccess: boolean;
   theme: 'light' | 'dark' | 'system';
+  // Only used to pre-select a sensible default tax year. 7 = July (AU financial year).
+  taxYearStartMonth?: 1 | 7;
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

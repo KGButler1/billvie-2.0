@@ -187,11 +187,13 @@ export const DocumentLinkService = {
   // Finds the active link record between a document and a specific bill or document
   // target, so the UI can pass its id to unlink().
   findActiveLinkId(documentId: string, targetId: string): string | undefined {
-    return this.getActiveLinks().find(
-      (l) =>
-        (l.documentId === documentId && l.targetId === targetId) ||
-        (l.linkType === 'document' && l.documentId === targetId && l.targetId === documentId)
-    )?.id;
+    return this.getActiveLinks()
+      .filter((l) => this.sourceOf(l) === 'document')
+      .find(
+        (l) =>
+          (l.documentId === documentId && l.targetId === targetId) ||
+          (l.linkType === 'document' && l.documentId === targetId && l.targetId === documentId)
+      )?.id;
   },
 
   // ---- History (same shape as AccessService.getHistoryForPerson) ----
