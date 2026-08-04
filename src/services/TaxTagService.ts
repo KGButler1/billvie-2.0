@@ -94,11 +94,11 @@ export const TaxTagService = {
   carryForwardIfNeeded(taxYear: number): void {
     if (this.getActiveTags(taxYear).length > 0) return;
 
-    const priorYears = Array.from(
-      new Set(this.getActiveTags().map((t) => t.taxYear).filter((y) => y < taxYear))
+    const priorYears: number[] = Array.from(
+      new Set<number>(this.getActiveTags().map((t: TaxTag) => t.taxYear).filter((y: number) => y < taxYear))
     ).sort((a, b) => b - a);
 
-    const source = priorYears[0];
+    const source: number | undefined = priorYears[0];
     if (source === undefined) return;
 
     const tags = readTags();
@@ -131,6 +131,6 @@ export const TaxTagService = {
   },
 
   getYearsWithTags(): number[] {
-    return Array.from(new Set(this.getActiveTags().map((t) => t.taxYear))).sort((a, b) => b - a);
+    return Array.from(new Set<number>(this.getActiveTags().map((t: TaxTag) => t.taxYear))).sort((a, b) => b - a);
   },
 };
