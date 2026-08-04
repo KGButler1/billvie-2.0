@@ -124,6 +124,26 @@ export const TaxTagService = {
     if (changed) writeTags(tags);
   },
 
+  // Convenience for the bill/document forms: reconciles a single checkbox +
+  // year into tags, clearing any stale tag on a different year for that item.
+  setTag(
+    itemId: string,
+    itemType: TaxItemType,
+    value: { enabled: boolean; taxYear: number; taxType?: 'personal' | 'business'; businessName?: string }
+  ): void {
+    this.getActiveTags()
+      .filter((t: TaxTag) => t.itemId === itemId && t.itemType === itemType)
+      .filter((t: TaxTag) => !value.enabled || t.taxYear !== value.taxYear)
+      .forEach((t: TaxTag) => this.untagItem(t.itemId, t.itemType, t.taxYear));
+
+    if (value.enabled) {
+      this.tagItem(itemId, itemType, value.taxYear, {
+        taxType: value.taxType,
+        businessName: value.taxType === 'business' ? value.businessName : undefined,
+      });
+    }
+  },
+
   getResolvedItemsForYear(taxYear: number): { item: Bill | HouseholdDocument; tag: TaxTag }[] {
     return this.getActiveTags(taxYear)
       .map((tag) => ({ item: resolveItem(tag.itemId, tag.itemType), tag }))
