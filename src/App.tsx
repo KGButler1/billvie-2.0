@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Bills from "./pages/Bills";
 import Events from "./pages/Events";
@@ -27,50 +28,67 @@ import GlobalSearch from "./components/search/GlobalSearch";
 
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { session, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+  return <>{children}</>;
+};
+
 const App = () => {
-  // Initialize theme on app load
   useEffect(() => {
     UserService.initializeTheme();
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/bills" element={<Bills />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/events/:id" element={<EventDetail />} />
-            <Route path="/events/compare" element={<EventComparison />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/more" element={<More />} />
-            <Route path="/financial" element={<FinancialInfo />} />
-            <Route path="/tax-documents" element={<TaxDocuments />} />
-            <Route path="/accountant" element={<AccountantPortal />} />
-            <Route path="/documents" element={<Documents />} />
-            <Route path="/people" element={<People />} />
-            <Route path="/advisor" element={<Navigate to="/people" replace />} />
-            <Route path="/export/summary" element={<HouseholdSummary />} />
-            <Route path="/shared/:token" element={<SharedView />} />
-            <Route path="/recently-deleted" element={<RecentlyDeleted />} />
-            <Route path="/key-people" element={<KeyPeople />} />
-            <Route path="/readiness" element={<Readiness />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <GlobalSearch />
-        </BrowserRouter>
-
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+              <Route path="/events/compare" element={<ProtectedRoute><EventComparison /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
+              <Route path="/financial" element={<ProtectedRoute><FinancialInfo /></ProtectedRoute>} />
+              <Route path="/tax-documents" element={<ProtectedRoute><TaxDocuments /></ProtectedRoute>} />
+              <Route path="/accountant" element={<ProtectedRoute><AccountantPortal /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
+              <Route path="/advisor" element={<Navigate to="/people" replace />} />
+              <Route path="/export/summary" element={<ProtectedRoute><HouseholdSummary /></ProtectedRoute>} />
+              <Route path="/shared/:token" element={<SharedView />} />
+              <Route path="/recently-deleted" element={<ProtectedRoute><RecentlyDeleted /></ProtectedRoute>} />
+              <Route path="/key-people" element={<ProtectedRoute><KeyPeople /></ProtectedRoute>} />
+              <Route path="/readiness" element={<ProtectedRoute><Readiness /></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <GlobalSearch />
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AuthProvider>
   );
 };
 
