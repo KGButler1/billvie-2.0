@@ -46,6 +46,8 @@ import {
   DEBT_TYPE_LABELS
 } from '@/services/FinancialInfoService';
 import BottomNav from '@/components/BottomNav';
+import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
+import { BillService } from '@/services/BillService';
 import { cn } from '@/lib/utils';
 
 const FinancialInfo = () => {
@@ -80,11 +82,11 @@ const FinancialInfo = () => {
     setDebts(FinancialInfoService.getDebts());
   };
 
-  const totalAnnualPremiums = FinancialInfoService.getTotalAnnualPremiums();
-  const totalSuperBalance = FinancialInfoService.getTotalSuperBalance();
+  const totalDebt = FinancialInfoService.getTotalDebt();
+  const totalIncome = FinancialInfoService.getTotalIncome();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 lg:pt-16">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center gap-4">
@@ -95,24 +97,29 @@ const FinancialInfo = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-20">
+      <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
+        <h1 className="text-2xl font-semibold hidden lg:block mb-4">Financial Snapshot</h1>
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">Insurance</span>
+              <Landmark className="w-4 h-4 text-primary" />
+              <span className="text-sm text-muted-foreground">Owed</span>
             </div>
-            <p className="text-xl font-bold">${totalAnnualPremiums.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">/year total premiums</p>
+            <p className="text-xl font-bold">${totalDebt.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">
+              across {debts.length} {debts.length === 1 ? 'entry' : 'entries'}
+            </p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Wallet className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">Superannuation</span>
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <span className="text-sm text-muted-foreground">Income sources</span>
             </div>
-            <p className="text-xl font-bold">${totalSuperBalance.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">estimated balance</p>
+            <p className="text-xl font-bold">${totalIncome.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">
+              from {income.length} {income.length === 1 ? 'source' : 'sources'}
+            </p>
           </div>
         </div>
 
@@ -120,7 +127,7 @@ const FinancialInfo = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-5 mb-6">
             <TabsTrigger value="insurance">Insurance</TabsTrigger>
-            <TabsTrigger value="super">Super</TabsTrigger>
+            <TabsTrigger value="super">Savings &amp; Retirement</TabsTrigger>
             <TabsTrigger value="income">Income</TabsTrigger>
             <TabsTrigger value="debts">Debts</TabsTrigger>
             <TabsTrigger value="misc">Other</TabsTrigger>
@@ -187,7 +194,7 @@ const FinancialInfo = () => {
               {superannuation.length === 0 && (
                 <EmptyState 
                   icon={Wallet}
-                  title="No superannuation funds"
+                  title="Nothing recorded yet"
                   description="Track your retirement savings"
                 />
               )}
@@ -201,7 +208,7 @@ const FinancialInfo = () => {
                 variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Superannuation
+                Add Savings or Retirement
               </Button>
             </div>
           </TabsContent>
@@ -254,7 +261,7 @@ const FinancialInfo = () => {
               {debts.map((entry) => (
                 <SimpleCard
                   key={entry.id}
-                  title={entry.lenderName}
+                  title={entry.owedTo}
                   badge={DEBT_TYPE_LABELS[entry.type]}
                   amountLabel={`$${entry.approximateBalance.toLocaleString()} approx. balance`}
                   notes={entry.notes}
@@ -781,7 +788,7 @@ const SuperModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editingId ? 'Edit' : 'Add'} Superannuation</DialogTitle>
+          <DialogTitle>{editingId ? 'Edit' : 'Add'} Savings &amp; Retirement</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -864,7 +871,7 @@ const MiscModal = ({
         <div className="space-y-4">
           <div>
             <Label>Label</Label>
-            <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g., Tax File Number" />
+            <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g., Storage unit access code" />
           </div>
           <div>
             <Label>Value</Label>
