@@ -6,10 +6,7 @@ import { AccessScope, ACCESS_SCOPE_LABELS, PERSON_ROLE_LABELS } from '@/types/pe
 import { PeopleService } from '@/services/PeopleService';
 import { AccessService } from '@/services/AccessService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
-import { DocumentService } from '@/services/DocumentService';
-import { EventService } from '@/services/EventService';
-import { TaxDocumentService } from '@/services/TaxDocumentService';
-import { BillService } from '@/services/BillService';
+import { allItemIds, scopeAccessLabel } from '@/utils/scopeItems';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 
 const firstName = (name: string) => name.trim().split(' ')[0] || name;
@@ -19,25 +16,6 @@ const joinNames = (names: string[]) => {
   if (names.length === 1) return names[0];
   if (names.length <= 3) return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   return `${names.slice(0, 3).join(', ')} and ${names.length - 3} others`;
-};
-
-// Every item currently in a scope — used when narrowing someone from
-// whole-scope access down to individual items.
-const allItemIds = (scope: AccessScope): string[] => {
-  switch (scope) {
-    case 'documents':
-      return DocumentService.getAll().map((d) => d.id);
-    case 'key_people':
-      return KeyPeopleService.getAllKeyPeople().map((p) => p.id);
-    case 'events':
-      return EventService.getAllEvents().map((e) => e.id);
-    case 'tax_documents':
-      return TaxDocumentService.getAllDocuments().map((d) => d.id);
-    case 'bills':
-      return BillService.getAllBills().map((b) => b.id);
-    default:
-      return [];
-  }
 };
 
 export interface AccessPickerProps {
@@ -68,8 +46,7 @@ const AccessPicker = ({ scope, itemId, roleFilter, selectedPersonIds, onChange }
     const relationship = kp
       ? KEY_PERSON_RELATIONSHIP_LABELS[kp.relationship as KeyPersonRelationship] || String(kp.relationship)
       : PERSON_ROLE_LABELS[role as keyof typeof PERSON_ROLE_LABELS];
-    const whole = AccessService.hasWholeScope(personId, scope);
-    return [relationship, whole ? `Sees all your ${scopeLabel}` : undefined].filter(Boolean).join(' · ');
+    return [relationship, scopeAccessLabel(personId, scope, scopeLabel)].filter(Boolean).join(' · ');
   };
 
   if (people.length === 0) {

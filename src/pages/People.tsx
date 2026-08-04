@@ -21,6 +21,7 @@ import { AccessService } from '@/services/AccessService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { UserService } from '@/services/UserService';
 import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole } from '@/types/people';
+import { scopeAccessSummary } from '@/utils/scopeItems';
 import { KeyPerson } from '@/types/keyPerson';
 import InvitePersonModal from '@/components/people/InvitePersonModal';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
@@ -219,7 +220,19 @@ const People = () => {
                             key={scope}
                             className="flex items-center justify-between min-h-[44px] gap-4 cursor-pointer"
                           >
-                            <span className="text-sm">{ACCESS_SCOPE_LABELS[scope]}</span>
+                            <span className="text-sm min-w-0">
+                              {ACCESS_SCOPE_LABELS[scope]}
+                              {(() => {
+                                if (!entry.trustedPersonId) return null;
+                                const s = scopeAccessSummary(entry.trustedPersonId, scope);
+                                if (s.kind !== 'partial') return null;
+                                return (
+                                  <span className="block text-xs text-muted-foreground">
+                                    Sees {s.seen} of {s.total} — new ones aren't shared automatically
+                                  </span>
+                                );
+                              })()}
+                            </span>
                             <Switch
                               checked={entry.scopes.includes(scope)}
                               onCheckedChange={(v) => toggleScope(entry, scope, v)}

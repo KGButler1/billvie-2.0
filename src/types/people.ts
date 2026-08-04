@@ -16,7 +16,13 @@ export interface TrustedPerson {
   updatedAt: string;
 }
 
-export type AccessScope = 'bills' | 'documents' | 'events' | 'tax_documents' | 'key_people';
+export type AccessScope =
+  | 'bills'
+  | 'documents'
+  | 'events'
+  | 'tax_documents'
+  | 'key_people'
+  | 'financial_info';
 
 export interface AccessGrant {
   id: string;
@@ -33,6 +39,7 @@ export const ACCESS_SCOPE_LABELS: Record<AccessScope, string> = {
   events: 'Events',
   tax_documents: 'Tax documents',
   key_people: 'Key contacts',
+  financial_info: 'Financial snapshot',
 };
 
 export const ACCESS_SCOPES: AccessScope[] = [
@@ -41,6 +48,7 @@ export const ACCESS_SCOPES: AccessScope[] = [
   'events',
   'tax_documents',
   'key_people',
+  'financial_info',
 ];
 
 export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {

@@ -6,6 +6,7 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { DocumentService } from '@/services/DocumentService';
+import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { AccessService } from '@/services/AccessService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
@@ -289,6 +290,88 @@ const EventsContent = ({ eventId }: { eventId?: string }) => {
   );
 };
 
+const FinancialInfoContent = ({ personId }: { personId?: string }) => {
+  const visible = !personId || AccessService.canSee(personId, 'financial_info');
+  const data = useMemo(
+    () => ({
+      insurance: FinancialInfoService.getInsurance(),
+      superannuation: FinancialInfoService.getSuperannuation(),
+      income: FinancialInfoService.getIncome(),
+      debts: FinancialInfoService.getDebts(),
+      misc: FinancialInfoService.getMisc(),
+    }),
+    []
+  );
+
+  if (!visible) return <p className="text-muted-foreground">Nothing has been shared here yet.</p>;
+
+  const total =
+    data.insurance.length + data.superannuation.length + data.income.length + data.debts.length + data.misc.length;
+  if (total === 0) {
+    return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
+  }
+
+  const Row = ({ title, sub, amount }: { title: string; sub?: string; amount?: number }) => (
+    <div className="p-4 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="font-medium truncate">{title}</p>
+        {sub && <p className="text-sm text-muted-foreground mt-0.5">{sub}</p>}
+      </div>
+      {amount !== undefined && <p className="font-semibold shrink-0">{formatMoney(amount)}</p>}
+    </div>
+  );
+
+  return (
+    <>
+      {data.insurance.length > 0 && (
+        <SectionCard title="Insurance">
+          {data.insurance.map((i) => (
+            <Row
+              key={i.id}
+              title={i.provider}
+              sub={[i.type, i.policyNumber, i.contactInfo].filter(Boolean).join(' · ')}
+              amount={i.premium}
+            />
+          ))}
+        </SectionCard>
+      )}
+      {data.superannuation.length > 0 && (
+        <SectionCard title="Savings & retirement">
+          {data.superannuation.map((s) => (
+            <Row
+              key={s.id}
+              title={s.fundName}
+              sub={[s.accountNumber, s.contactInfo].filter(Boolean).join(' · ')}
+              amount={s.estimatedBalance}
+            />
+          ))}
+        </SectionCard>
+      )}
+      {data.income.length > 0 && (
+        <SectionCard title="Income">
+          {data.income.map((i) => (
+            <Row key={i.id} title={i.sourceName} sub={i.notes} amount={i.approximateAmount} />
+          ))}
+        </SectionCard>
+      )}
+      {data.debts.length > 0 && (
+        <SectionCard title="Owed">
+          {data.debts.map((d) => (
+            <Row key={d.id} title={d.owedTo} sub={[d.type, d.notes].filter(Boolean).join(' · ')} amount={d.approximateBalance} />
+          ))}
+        </SectionCard>
+      )}
+      {data.misc.length > 0 && (
+        <SectionCard title="Other">
+          {data.misc.map((m) => (
+            <Row key={m.id} title={m.key} sub={[m.value, m.notes].filter(Boolean).join(' · ')} />
+          ))}
+        </SectionCard>
+      )}
+    </>
+  );
+};
+
 interface ShareContentPreviewProps {
   scope: AccessScope;
   personId?: string;
@@ -310,6 +393,7 @@ const ShareContentPreview = ({
     return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} documentId={resourceId} />;
   if (scope === 'documents') return <DocumentsContent personId={personId} />;
   if (scope === 'key_people') return <KeyPeopleContent personId={personId} />;
+  if (scope === 'financial_info') return <FinancialInfoContent personId={personId} />;
   return null;
 };
 
