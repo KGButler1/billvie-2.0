@@ -109,6 +109,10 @@ const Events = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        <p className="text-sm text-muted-foreground mb-6">
+          Track big one-off commitments — trips, weddings, renovations — so your household knows
+          what's planned, what's paid, and what can still change.
+        </p>
         {/* Advanced Features Bar */}
         {events.length > 0 && (
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
