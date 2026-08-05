@@ -27,6 +27,8 @@ import ProgressiveHints from '@/components/ProgressiveHints';
 import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
+import BillsWidget from '@/components/BillsWidget';
+import AccessWidget from '@/components/AccessWidget';
 import FinancialSnapshotWidget from '@/components/FinancialSnapshotWidget';
 import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
@@ -246,6 +248,8 @@ const Dashboard = () => {
           Only you and people you invite can see this
         </p>
 
+        <AccessWidget />
+
         {/* Household setup */}
         <HouseholdSetupWidget />
 
@@ -270,6 +274,8 @@ const Dashboard = () => {
 
         {/* Advisor Widget */}
         <AdvisorWidget />
+
+        <BillsWidget />
 
         {/* Bills needing attention */}
         <BillList
