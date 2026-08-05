@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, FileText, Home, Users } from 'lucide-react';
+import { X, User, FileText, Chrome as Home, Users, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { OnboardingService } from '@/services/OnboardingService';
+import { getReadinessChecks } from '@/utils/readiness';
 
 interface Nudge {
   id: string;
@@ -38,8 +40,24 @@ const NUDGES: Nudge[] = [
   },
 ];
 
+const NUDGE_TO_CHECK: Record<string, string> = {
+  add_contact: 'people',
+  upload_document: 'documents',
+  add_another_bill: 'bills',
+  invite_someone: 'access',
+};
+
+function getActionPath(nudgeId: string): string {
+  const checkId = NUDGE_TO_CHECK[nudgeId];
+  if (!checkId) return '/';
+  const checks = getReadinessChecks();
+  const check = checks.find(c => c.id === checkId);
+  return check?.actionPath ?? '/';
+}
+
 const FirstWeekNudges = () => {
   const [activeNudge, setActiveNudge] = useState<Nudge | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const state = OnboardingService.getNudgeState();
@@ -62,6 +80,12 @@ const FirstWeekNudges = () => {
     setActiveNudge(null);
   };
 
+  const handleCTA = (nudgeId: string) => {
+    const path = getActionPath(nudgeId);
+    dismiss(nudgeId);
+    navigate(path);
+  };
+
   if (!activeNudge) return null;
 
   const Icon = activeNudge.icon;
@@ -72,7 +96,7 @@ const FirstWeekNudges = () => {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
-        className="fixed bottom-28 left-4 right-4 z-40 md:left-auto md:right-6 md:max-w-sm"
+        className="fixed bottom-28 left-4 right-4 z-40 md:right-auto md:max-w-sm"
       >
         <div className="bg-card border border-border rounded-xl shadow-lg p-4">
           <div className="flex items-start gap-3">
@@ -91,6 +115,14 @@ const FirstWeekNudges = () => {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{activeNudge.description}</p>
               <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={() => handleCTA(activeNudge.id)}
+                  className="gap-1.5"
+                >
+                  Do it now
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => dismiss(activeNudge.id)}>
                   Not now
                 </Button>

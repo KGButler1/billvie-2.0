@@ -49,6 +49,67 @@ interface QuickAddBillProps {
 
 const ADD_NEW_VALUE = '__add_new__';
 
+const MONTHS = [
+  { value: 0, label: 'January' },
+  { value: 1, label: 'February' },
+  { value: 2, label: 'March' },
+  { value: 3, label: 'April' },
+  { value: 4, label: 'May' },
+  { value: 5, label: 'June' },
+  { value: 6, label: 'July' },
+  { value: 7, label: 'August' },
+  { value: 8, label: 'September' },
+  { value: 9, label: 'October' },
+  { value: 10, label: 'November' },
+  { value: 11, label: 'December' },
+];
+
+function computeRecurringDueDate(
+  interval: RecurringInterval,
+  dayOfMonth: number,
+  month?: number,
+): string | undefined {
+  const now = new Date();
+  const year = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const today = now.getDate();
+
+  const clampDay = (y: number, m: number, d: number) => {
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    return Math.min(d, lastDay);
+  };
+
+  if (interval === 'monthly') {
+    // Roll forward to next month if the day has passed this month
+    let targetMonth = currentMonth;
+    let targetYear = year;
+    if (dayOfMonth < today) {
+      targetMonth = currentMonth + 1;
+      if (targetMonth > 11) {
+        targetMonth = 0;
+        targetYear++;
+      }
+    }
+    const d = clampDay(targetYear, targetMonth, dayOfMonth);
+    return new Date(targetYear, targetMonth, d).toISOString().slice(0, 10);
+  }
+
+  if (interval === 'quarterly' || interval === 'yearly') {
+    if (month === undefined) return undefined;
+    let targetYear = year;
+    // If the target month/day has already passed this year, roll to next year
+    const d = clampDay(year, month, dayOfMonth);
+    const targetDate = new Date(year, month, d);
+    if (targetDate < now) {
+      targetYear = year + 1;
+    }
+    const d2 = clampDay(targetYear, month, dayOfMonth);
+    return new Date(targetYear, month, d2).toISOString().slice(0, 10);
+  }
+
+  return undefined;
+}
+
 const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBillProps) => {
   const isEdit = mode === 'edit';
   const [name, setName] = useState(initialBill?.name ?? '');
@@ -56,7 +117,15 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
     initialBill?.amount !== undefined ? String(initialBill.amount) : ''
   );
   const [dueDate, setDueDate] = useState(initialBill?.dueDate?.slice(0, 10) ?? '');
-  const [isRecurring, setIsRecurring] = useState(initialBill?.isRecurring ?? false);
+  const [recurringDay, setRecurringDay] = useState(() => {
+    if (initialBill?.dueDate) return new Date(initialBill.dueDate).getDate();
+    return new Date().getDate();
+  });
+  const [recurringMonth, setRecurringMonth] = useState<number | undefined>(() => {
+    if (initialBill?.dueDate) return new Date(initialBill.dueDate).getMonth();
+    return undefined;
+  });
+  const [isRecurring, setIsRecurring] = useState(initialBill?.isRecurring ?? !isEdit);
   const [recurringInterval, setRecurringInterval] = useState<RecurringInterval>(
     initialBill?.recurringInterval ?? 'monthly'
   );
@@ -179,10 +248,16 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
     
     if (!name.trim()) return;
 
+    // Compute the actual dueDate from the recurring inputs when applicable
+    let computedDueDate = dueDate || undefined;
+    if (isRecurring && (recurringInterval === 'monthly' || recurringInterval === 'quarterly' || recurringInterval === 'yearly')) {
+      computedDueDate = computeRecurringDueDate(recurringInterval, recurringDay, recurringMonth);
+    }
+
     onAdd({
       name: name.trim(),
       amount: amount ? parseFloat(amount) : undefined,
-      dueDate: dueDate || undefined,
+      dueDate: computedDueDate,
       isRecurring,
       recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
@@ -255,39 +330,26 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
             />
           </div>
 
-          {/* Amount and Due Date - Side by side */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="h-12 pl-7"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+          {/* Amount */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                $
+              </span>
               <Input
-                id="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="h-12"
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-12 pl-7"
               />
             </div>
           </div>
 
-          {/* Recurring Toggle — right after Amount/Due Date */}
+          {/* Recurring Toggle */}
           <div className="flex items-center justify-between py-2">
             <Label htmlFor="recurring" className="cursor-pointer">
               This repeats regularly
@@ -299,22 +361,76 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
             />
           </div>
 
-          {/* Recurring Interval — only relevant when toggle is on */}
+          {/* Frequency — comes first when recurring, replaces the full date picker */}
           {isRecurring && (
+            <>
+              <div className="space-y-2">
+                <Label>Frequency</Label>
+                <Select value={recurringInterval} onValueChange={(v) => setRecurringInterval(v as RecurringInterval)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(RECURRING_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Collapsed date entry for recurring bills */}
+              {(recurringInterval === 'monthly' || recurringInterval === 'quarterly' || recurringInterval === 'yearly') && (
+                <div className={recurringInterval === 'monthly' ? 'space-y-2' : 'grid grid-cols-2 gap-4'}>
+                  <div className="space-y-2">
+                    <Label htmlFor="recurring-day">Day of month</Label>
+                    <Input
+                      id="recurring-day"
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={recurringDay}
+                      onChange={(e) => setRecurringDay(Math.max(1, Math.min(31, parseInt(e.target.value) || 1)))}
+                      className="h-12"
+                    />
+                  </div>
+                  {(recurringInterval === 'quarterly' || recurringInterval === 'yearly') && (
+                    <div className="space-y-2">
+                      <Label>Month</Label>
+                      <Select
+                        value={String(recurringMonth ?? 0)}
+                        onValueChange={(v) => setRecurringMonth(parseInt(v))}
+                      >
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONTHS.map((m) => (
+                            <SelectItem key={m.value} value={String(m.value)}>
+                              {m.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Full date picker — only for one-time bills */}
+          {!isRecurring && (
             <div className="space-y-2">
-              <Label>Frequency</Label>
-              <Select value={recurringInterval} onValueChange={(v) => setRecurringInterval(v as RecurringInterval)}>
-                <SelectTrigger className="h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(RECURRING_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-12"
+              />
             </div>
           )}
 

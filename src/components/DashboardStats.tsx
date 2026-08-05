@@ -1,4 +1,4 @@
-import { DollarSign, AlertTriangle, Calendar } from 'lucide-react';
+import { Wallet, TriangleAlert as AlertTriangle, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,7 @@ const DashboardStats = ({ upcomingTotal, dueSoonCount, overdueCount, isFamilyVie
     <div className="grid grid-cols-3 gap-3 mb-6">
       <Card className="bg-card">
         <CardContent className="p-4 text-center">
-          <DollarSign className="w-5 h-5 mx-auto mb-1 text-primary" />
+          <Wallet className="w-5 h-5 mx-auto mb-1 text-primary" />
           <p className="text-lg font-bold text-foreground">
             ${upcomingTotal.toLocaleString()}
           </p>

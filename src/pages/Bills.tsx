@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { BillService } from '@/services/BillService';
+import { MilestoneService } from '@/services/MilestoneService';
+import { showMilestoneToast } from '@/components/MilestoneToast';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { TaxTagService } from '@/services/TaxTagService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
@@ -116,6 +118,8 @@ const Bills = () => {
     const created = await BillService.addBill(billData);
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     if (tax) TaxTagService.setTag(created.id, 'bill', tax);
+    const msg = MilestoneService.recordMilestone('bills');
+    if (msg) showMilestoneToast(msg);
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);

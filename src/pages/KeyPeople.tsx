@@ -4,6 +4,8 @@ import { Plus, Users, Phone, Pencil, Trash2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
+import { MilestoneService } from '@/services/MilestoneService';
+import { showMilestoneToast } from '@/components/MilestoneToast';
 import { PeopleService } from '@/services/PeopleService';
 import { AccessService } from '@/services/AccessService';
 import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
@@ -33,6 +35,8 @@ const KeyPeople = () => {
     } else {
       const created = await KeyPeopleService.addKeyPerson(data);
       id = created.id;
+      const msg = MilestoneService.recordMilestone('people');
+      if (msg) showMilestoneToast(msg);
     }
     const household = PeopleService.getAll().filter((p) => p.role === 'household');
     await Promise.all(household.map((p) =>

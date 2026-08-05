@@ -234,9 +234,12 @@ export class BillService {
 
     bills.forEach((bill) => {
       if (bill.amount) {
-        const cat = (bill.category || 'other') as BillCategory;
-        if (spending[cat]) spending[cat] += bill.amount;
-        else spending.other += bill.amount;
+        const cat = bill.category as BillCategory | string | undefined;
+        if (cat && cat in spending) {
+          spending[cat as BillCategory] += bill.amount;
+        } else {
+          spending.other += bill.amount;
+        }
       }
     });
 

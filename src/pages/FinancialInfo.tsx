@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
+import {
   FinancialInfoService, 
   InsuranceEntry, 
   SuperannuationEntry, 
@@ -35,6 +35,8 @@ import {
   INSURANCE_TYPE_LABELS,
   DEBT_TYPE_LABELS
 } from '@/services/FinancialInfoService';
+import { MilestoneService } from '@/services/MilestoneService';
+import { showMilestoneToast } from '@/components/MilestoneToast';
 import BottomNav from '@/components/BottomNav';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import { BillService } from '@/services/BillService';
@@ -715,6 +717,8 @@ const InsuranceModal = ({
       await FinancialInfoService.updateInsurance(editingId, data);
     } else {
       await FinancialInfoService.addInsurance(data);
+      const msg = MilestoneService.recordMilestone('financial');
+      if (msg) showMilestoneToast(msg);
     }
     onSave();
   };
@@ -884,6 +888,8 @@ const SuperModal = ({
       await FinancialInfoService.updateSuperannuation(editingId, data);
     } else {
       await FinancialInfoService.addSuperannuation(data);
+      const msg = MilestoneService.recordMilestone('financial');
+      if (msg) showMilestoneToast(msg);
     }
     onSave();
   };
@@ -970,6 +976,8 @@ const MiscModal = ({
       await FinancialInfoService.updateMisc(editingId, data);
     } else {
       await FinancialInfoService.addMisc(data);
+      const msg = MilestoneService.recordMilestone('financial');
+      if (msg) showMilestoneToast(msg);
     }
     onSave();
   };
@@ -1042,6 +1050,8 @@ const IncomeModal = ({
       await FinancialInfoService.updateIncome(editingId, data);
     } else {
       await FinancialInfoService.addIncome(data);
+      const msg = MilestoneService.recordMilestone('financial');
+      if (msg) showMilestoneToast(msg);
     }
     onSave();
   };
@@ -1118,6 +1128,8 @@ const DebtModal = ({
       await FinancialInfoService.updateDebt(editingId, data);
     } else {
       await FinancialInfoService.addDebt(data);
+      const msg = MilestoneService.recordMilestone('financial');
+      if (msg) showMilestoneToast(msg);
     }
     onSave();
   };

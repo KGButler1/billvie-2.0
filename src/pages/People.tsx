@@ -17,6 +17,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PeopleService, DirectoryEntry } from '@/services/PeopleService';
+import { MilestoneService } from '@/services/MilestoneService';
+import { showMilestoneToast } from '@/components/MilestoneToast';
 import { AccessService } from '@/services/AccessService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { UserService } from '@/services/UserService';
@@ -117,6 +119,8 @@ const People = () => {
     try {
       if (next) {
         await AccessService.grant(entry.trustedPersonId, scope);
+        const msg = MilestoneService.recordMilestone('access');
+        if (msg) showMilestoneToast(msg);
         toast({ description: `${entry.name} can now see your ${ACCESS_SCOPE_LABELS[scope].toLowerCase()}` });
       } else {
         const grant = AccessService.getGrantsForPerson(entry.trustedPersonId).find((g) => g.scope === scope);

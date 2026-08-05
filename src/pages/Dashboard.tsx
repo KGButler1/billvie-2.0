@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Scan, Shield } from 'lucide-react';
+import { Plus, Scan, Shield, Eye, EyeOff } from 'lucide-react';
 import { BillService } from '@/services/BillService';
+import { MilestoneService } from '@/services/MilestoneService';
+import { showMilestoneToast } from '@/components/MilestoneToast';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
 import { refreshAllData } from '@/services/loadAllData';
+import { AccessService } from '@/services/AccessService';
 import { Bill } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
 import BillList from '@/components/bills/BillList';
@@ -96,6 +99,8 @@ const Dashboard = () => {
   ) => {
     const created = await BillService.addBill(billData);
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
+    const msg = MilestoneService.recordMilestone('bills');
+    if (msg) showMilestoneToast(msg);
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);
@@ -158,7 +163,7 @@ const Dashboard = () => {
   const overdueBills = bills.filter(b => b.status === 'overdue');
   const dueSoonBills = bills.filter(b => b.status === 'due_soon');
 
-  const hasSampleBills = bills.some(b => b.isSample);
+  const hasSampleBills = bills.some(b => b.isSample) || activeEvents.some(e => e.isSample);
 
   // Jan-Apr: tax records matter more, so lift that widget up the stack
   const isTaxSeason = new Date().getMonth() <= 3;
@@ -167,7 +172,10 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background pb-24">
       <DashboardHeader 
         onClearSamples={async () => {
-          await BillService.clearSampleBills();
+          await Promise.all([
+            BillService.clearSampleBills(),
+            EventService.clearSampleEvents(),
+          ]);
           loadBills();
         }}
         hasSampleBills={hasSampleBills}
@@ -181,7 +189,10 @@ const Dashboard = () => {
           {hasSampleBills && (
             <button
               onClick={async () => {
-                await BillService.clearSampleBills();
+                await Promise.all([
+                  BillService.clearSampleBills(),
+                  EventService.clearSampleEvents(),
+                ]);
                 loadBills();
               }}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -191,12 +202,13 @@ const Dashboard = () => {
           )}
           <button
             onClick={() => setIsFamilyView(!isFamilyView)}
-            className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+            className={`text-sm px-3 py-1.5 rounded-md border transition-colors flex items-center gap-1.5 ${
               isFamilyView
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'border-border hover:bg-muted'
             }`}
           >
+            {isFamilyView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {isFamilyView ? 'Exit Family View' : 'Family View'}
           </button>
         </div>
@@ -209,9 +221,14 @@ const Dashboard = () => {
             className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2"
           >
             <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-            <p className="text-sm text-foreground">
+            <div className="text-sm text-foreground">
               <strong>Family View</strong> — Here's what needs to be handled if you're stepping in
-            </p>
+              {AccessService.getActivePeople().length === 0 && (
+                <span className="block text-muted-foreground mt-0.5">
+                  Once you add someone with access, this view will show exactly what they'd see.
+                </span>
+              )}
+            </div>
           </motion.div>
         )}
 

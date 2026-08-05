@@ -19,9 +19,17 @@ const SpendingChart = ({ spending }: SpendingChartProps) => {
       .sort((a, b) => b.amount - a.amount);
   }, [spending]);
 
-  if (data.length === 0) {
-    return null;
-  }
+  // When there's no real spending data, show all built-in categories as
+  // low-opacity placeholder rows so the card doesn't disappear.
+  const placeholderData = useMemo(() => {
+    return (Object.keys(CATEGORY_LABELS) as BillCategory[]).map((category) => ({
+      category: CATEGORY_LABELS[category],
+      amount: 0,
+      color: CATEGORY_COLORS[category],
+    }));
+  }, []);
+
+  const chartData = data.length > 0 ? data : placeholderData;
 
   return (
     <Card className="mb-6">
@@ -31,18 +39,18 @@ const SpendingChart = ({ spending }: SpendingChartProps) => {
       <CardContent>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical" margin={{ left: 0, right: 20 }}>
-              <XAxis type="number" hide />
-              <YAxis 
-                type="category" 
-                dataKey="category" 
+            <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 20 }}>
+              <XAxis type="number" hide domain={[0, 'auto']} />
+              <YAxis
+                type="category"
+                dataKey="category"
                 width={90}
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Amount']}
+              <Tooltip
+                formatter={(value: number) => [`${value.toFixed(2)}`, 'Amount']}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -50,8 +58,8 @@ const SpendingChart = ({ spending }: SpendingChartProps) => {
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
               />
-              <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
-                {data.map((entry, index) => (
+              <Bar dataKey="amount" radius={[0, 4, 4, 0]} opacity={data.length === 0 ? 0.25 : 1}>
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Bar>

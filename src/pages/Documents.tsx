@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, FolderOpen, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentService } from '@/services/DocumentService';
+import { MilestoneService } from '@/services/MilestoneService';
+import { showMilestoneToast } from '@/components/MilestoneToast';
 import { AccessService } from '@/services/AccessService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { TaxTagService } from '@/services/TaxTagService';
@@ -39,6 +41,8 @@ const Documents = () => {
     await Promise.all(personIds.map((pid) => AccessService.grantItem(pid, 'documents', created.id)));
     if (linkedBillId) await DocumentLinkService.linkToBill(created.id, linkedBillId);
     if (tax) await TaxTagService.setTag(created.id, 'document', tax);
+    const msg = MilestoneService.recordMilestone('documents');
+    if (msg) showMilestoneToast(msg);
     reload();
     setIsAdding(false);
     setAttachingId(created.id);
