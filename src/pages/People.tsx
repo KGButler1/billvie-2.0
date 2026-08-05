@@ -154,6 +154,7 @@ const People = () => {
   };
 
   const renderSecondLine = (entry: DirectoryEntry) => {
+    if (entry.isOwner) return 'This is you — you can always see everything';
     if (entry.role === 'contact') {
       const kp = entry.keyPersonId
         ? KeyPeopleService.getAllKeyPeople().find((k) => k.id === entry.keyPersonId)
@@ -189,11 +190,15 @@ const People = () => {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-medium truncate">{entry.name}</span>
-              {entry.hasAccess && (
+              {entry.isOwner ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                  Owner
+                </span>
+              ) : entry.hasAccess ? (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
                   Has access
                 </span>
-              )}
+              ) : null}
             </div>
             <p className="text-sm text-muted-foreground truncate">{renderSecondLine(entry)}</p>
           </div>
@@ -215,6 +220,12 @@ const People = () => {
             >
               <div className="p-4 space-y-4">
                 {entry.trustedPersonId ? (
+                  entry.isOwner ? (
+                    <p className="text-sm text-muted-foreground">
+                      This is your own account. You'll always see everything in the
+                      household, so there's nothing to turn on or off here.
+                    </p>
+                  ) : (
                   <>
                     <div>
                       <p className="text-sm font-medium mb-2">What {firstName(entry.name)} can see</p>
@@ -312,6 +323,7 @@ const People = () => {
                       Stop sharing with {firstName(entry.name)}
                     </button>
                   </>
+                  )
                 ) : entry.email ? (
                   <button
                     type="button"

@@ -157,7 +157,10 @@ export const AccessService = {
   getActivePeople(): TrustedPerson[] {
     const grants = this.getGrants();
     return PeopleService.getAll().filter(
-      (p) => p.status === 'active' && grants.some((g) => g.personId === p.id)
+      (p) =>
+        p.status === 'active' &&
+        p.accessLevel !== 'owner' &&
+        grants.some((g) => g.personId === p.id)
     );
   },
 };

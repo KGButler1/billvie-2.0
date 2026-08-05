@@ -21,6 +21,7 @@ function rowToPerson(row: Record<string, unknown>): TrustedPerson {
     email: row.email as string,
     role: (row.role as PersonRole) || 'household',
     status: (row.status as TrustedPersonStatus) || 'invited',
+    accessLevel: (row.access_level as 'owner') || undefined,
     inviteToken: (row.invite_token as string) || undefined,
     keyPersonId: (row.key_person_id as string) || undefined,
     invitedAt: (row.invited_at as string) || undefined,
@@ -41,6 +42,7 @@ export interface DirectoryEntry {
   relationship?: string;
   role: PersonRole | 'contact';
   hasAccess: boolean;
+  isOwner?: boolean;
   trustedPersonId?: string;
   keyPersonId?: string;
   scopes: AccessScope[];
@@ -184,6 +186,7 @@ export const PeopleService = {
           : undefined,
         role: p.role,
         hasAccess: scopes.length > 0,
+        isOwner: p.accessLevel === 'owner',
         trustedPersonId: p.id,
         keyPersonId: p.keyPersonId,
         scopes: Array.from(new Set(scopes)),

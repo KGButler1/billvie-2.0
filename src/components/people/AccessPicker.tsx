@@ -33,7 +33,9 @@ const AccessPicker = ({ scope, itemId, roleFilter, selectedPersonIds, onChange }
   const people = useMemo(
     () =>
       PeopleService.getAll().filter((p) =>
-        roleFilter === 'household' ? p.role === 'household' : p.role === 'advisor' || p.role === 'accountant'
+        roleFilter === 'household'
+          ? p.role === 'household' && p.accessLevel !== 'owner'
+          : p.role === 'advisor' || p.role === 'accountant'
       ),
     [roleFilter]
   );
