@@ -50,8 +50,8 @@ const SharedView = () => {
     );
   }
 
-  const handleAccept = () => {
-    const updated = PeopleService.activate(person.id);
+  const handleAccept = async () => {
+    const updated = await PeopleService.activate(person.id);
     if (updated) setPerson(updated);
     setAccepted(true);
   };

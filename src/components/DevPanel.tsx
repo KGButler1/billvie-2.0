@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Database, User, Trash2, Plus, Eye, Building } from 'lucide-react';
+import { X, Database, User, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserService } from '@/services/UserService';
-import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
+import { BillService } from '@/services/BillService';
 import { UserSettings } from '@/types/bill';
 import {
   Select,
@@ -31,32 +31,21 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
   };
 
   const handleToggleEvents = () => {
-    const newSettings = UserService.saveSettings({ 
-      hasEventsAccess: !settings.hasEventsAccess 
+    const newSettings = UserService.saveSettings({
+      hasEventsAccess: !settings.hasEventsAccess
     });
     setSettings(newSettings);
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     UserService.clearAllData();
-    EventService.clearAllEvents();
-    FinancialInfoService.clearAll();
+    await Promise.all([
+      EventService.clearAllEvents(),
+      FinancialInfoService.clearAll(),
+      BillService.clearAllBills(),
+    ]);
     setSettings(UserService.getSettings());
     onDataChange();
-  };
-
-  const handleInjectBills = () => {
-    BillService.injectTestBills(5);
-    onDataChange();
-  };
-
-  const handleInjectEvents = () => {
-    EventService.injectTestEvents(2);
-    onDataChange();
-  };
-
-  const handleInjectFinancial = () => {
-    FinancialInfoService.injectTestData();
   };
 
   const storageState = UserService.getLocalStorageState();
@@ -113,58 +102,6 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
           </Button>
         </div>
 
-        {/* Inject Test Bills */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleInjectBills}
-          className="w-full"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Inject 5 Test Bills
-        </Button>
-
-        {/* Inject Test Events */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleInjectEvents}
-          className="w-full"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Inject 2 Test Events
-        </Button>
-
-
-        {/* Inject Financial Data */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleInjectFinancial}
-          className="w-full"
-        >
-          <Building className="w-4 h-4 mr-2" />
-          Inject Financial Data
-        </Button>
-
-        {/* Re-run access migration */}
-        <div className="space-y-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              localStorage.removeItem('billvie_grants_migrated_v2');
-              window.location.reload();
-            }}
-            className="w-full"
-          >
-            Re-run access migration
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Reads billvie_shares and rebuilds grants. Legacy data is never deleted.
-          </p>
-        </div>
-
         {/* View Storage State */}
         <Button
           variant="outline"
@@ -175,7 +112,6 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
           <Eye className="w-4 h-4 mr-2" />
           {showStorage ? 'Hide' : 'View'} localStorage
         </Button>
-
 
         {showStorage && (
           <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-40">

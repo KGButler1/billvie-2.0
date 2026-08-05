@@ -1,26 +1,44 @@
 import { AccessGrant, AccessScope, TrustedPerson } from '@/types/people';
 import { PeopleService } from './PeopleService';
-
-const GRANTS_KEY = 'billvie_access_grants';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
 const now = () => new Date().toISOString();
 
-const readGrants = (): AccessGrant[] => {
-  const data = localStorage.getItem(GRANTS_KEY);
-  return data ? JSON.parse(data) : [];
-};
+function rowToGrant(row: Record<string, unknown>): AccessGrant {
+  return {
+    id: row.id as string,
+    personId: row.person_id as string,
+    scope: row.scope as AccessScope,
+    itemId: (row.item_id as string) || undefined,
+    grantedAt: row.granted_at as string,
+    revokedAt: (row.revoked_at as string) || undefined,
+  };
+}
 
-const writeGrants = (grants: AccessGrant[]) => {
-  localStorage.setItem(GRANTS_KEY, JSON.stringify(grants));
-};
+let cache: AccessGrant[] = [];
+let loaded = false;
 
 export const AccessService = {
+  async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('access_grants')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('granted_at', { ascending: true });
+
+    if (error) throw error;
+    cache = (data || []).map(rowToGrant);
+    loaded = true;
+  },
+
   getRawGrants(): AccessGrant[] {
-    return readGrants();
+    return loaded ? cache : [];
   },
 
   getGrants(): AccessGrant[] {
-    return readGrants().filter((g) => !g.revokedAt);
+    return this.getRawGrants().filter((g) => !g.revokedAt);
   },
 
   getGrantsForPerson(personId: string): AccessGrant[] {
@@ -59,66 +77,79 @@ export const AccessService = {
 
   // ---- Writes. Nothing here ever deletes a grant. ----
 
-  grant(personId: string, scope: AccessScope, itemId?: string): AccessGrant {
-    const grants = readGrants();
-    const existing = grants.find(
-      (g) => g.personId === personId && g.scope === scope && g.itemId === itemId && !g.revokedAt
+  async grant(personId: string, scope: AccessScope, itemId?: string): Promise<AccessGrant> {
+    const existing = this.getGrants().find(
+      (g) => g.personId === personId && g.scope === scope && g.itemId === itemId
     );
     if (existing) return existing;
 
-    const created: AccessGrant = {
-      id: `ag_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-      personId,
+    const householdId = await getHouseholdId();
+    const row = {
+      household_id: householdId,
+      person_id: personId,
       scope,
-      itemId,
-      grantedAt: now(),
+      item_id: itemId || null,
     };
-    grants.push(created);
-    writeGrants(grants);
+    const { data, error } = await supabase
+      .from('access_grants')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    const created = rowToGrant(data);
+    cache.push(created);
     return created;
   },
 
-  // Whole-scope supersedes any item grants in that scope.
-  grantWholeScope(personId: string, scope: AccessScope): AccessGrant {
-    this.getGrants()
-      .filter((g) => g.personId === personId && g.scope === scope && g.itemId)
-      .forEach((g) => this.revoke(g.id));
+  async grantWholeScope(personId: string, scope: AccessScope): Promise<AccessGrant> {
+    const itemGrants = this.getGrants()
+      .filter((g) => g.personId === personId && g.scope === scope && g.itemId);
+    for (const g of itemGrants) {
+      await this.revoke(g.id);
+    }
     return this.grant(personId, scope);
   },
 
-  // No-op when the person already sees the whole scope.
-  grantItem(personId: string, scope: AccessScope, itemId: string): AccessGrant {
+  async grantItem(personId: string, scope: AccessScope, itemId: string): Promise<AccessGrant> {
     const whole = this.getGrants().find((g) => g.personId === personId && g.scope === scope && !g.itemId);
     if (whole) return whole;
     return this.grant(personId, scope, itemId);
   },
 
-  // Single call so the UI can never leave a person half-converted.
-  narrowToItems(personId: string, scope: AccessScope, itemIds: string[]): void {
-    this.getGrants()
-      .filter((g) => g.personId === personId && g.scope === scope && !g.itemId)
-      .forEach((g) => this.revoke(g.id));
-    itemIds.forEach((id) => this.grant(personId, scope, id));
+  async narrowToItems(personId: string, scope: AccessScope, itemIds: string[]): Promise<void> {
+    const wholeGrants = this.getGrants()
+      .filter((g) => g.personId === personId && g.scope === scope && !g.itemId);
+    for (const g of wholeGrants) {
+      await this.revoke(g.id);
+    }
+    for (const id of itemIds) {
+      await this.grant(personId, scope, id);
+    }
   },
 
-  // Sets revokedAt. Never deletes — the history is the point. Tolerates
-  // an already-revoked or missing grant so migrations stay idempotent.
-  revoke(grantId: string): void {
-    const grants = readGrants();
-    const idx = grants.findIndex((g) => g.id === grantId);
-    if (idx === -1 || grants[idx].revokedAt) return;
-    grants[idx] = { ...grants[idx], revokedAt: now() };
-    writeGrants(grants);
+  async revoke(grantId: string): Promise<void> {
+    const existing = cache.find((g) => g.id === grantId);
+    if (!existing || existing.revokedAt) return;
+
+    const { error } = await supabase
+      .from('access_grants')
+      .update({ revoked_at: now() })
+      .eq('id', grantId);
+    if (error) throw error;
+    const idx = cache.findIndex((g) => g.id === grantId);
+    if (idx !== -1) cache[idx] = { ...cache[idx], revokedAt: now() };
   },
 
-  revokeScopeForPerson(personId: string, scope: AccessScope, itemId?: string): void {
-    this.getGrants()
-      .filter((g) => g.personId === personId && g.scope === scope && g.itemId === itemId)
-      .forEach((g) => this.revoke(g.id));
+  async revokeScopeForPerson(personId: string, scope: AccessScope, itemId?: string): Promise<void> {
+    const grants = this.getGrants()
+      .filter((g) => g.personId === personId && g.scope === scope && g.itemId === itemId);
+    for (const g of grants) {
+      await this.revoke(g.id);
+    }
   },
 
   getHistoryForPerson(personId: string): AccessGrant[] {
-    return readGrants()
+    return this.getRawGrants()
       .filter((g) => g.personId === personId && g.revokedAt)
       .sort((a, b) => (b.revokedAt || '').localeCompare(a.revokedAt || ''));
   },

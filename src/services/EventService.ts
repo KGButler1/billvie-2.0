@@ -1,215 +1,192 @@
 import { Event, EventExpense, EventType, EventStatus } from '@/types/bill';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
-const STORAGE_KEY = 'billvie_events';
-const SAMPLE_DATA_SHOWN_KEY = 'billvie_events_sample_shown';
+function rowToEvent(row: Record<string, unknown>, expenses: EventExpense[]): Event {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    type: (row.type as EventType) || 'custom',
+    budget: row.budget != null ? Number(row.budget) : undefined,
+    startDate: (row.start_date as string) || undefined,
+    endDate: (row.end_date as string) || undefined,
+    status: (row.status as EventStatus) || 'planning',
+    expenses,
+    isSample: row.is_sample as boolean | undefined,
+    deletedAt: (row.deleted_at as string) || undefined,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
 
-const generateId = (): string => {
-  return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+function eventToRow(event: Partial<Event>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  if (event.name !== undefined) row.name = event.name;
+  if (event.type !== undefined) row.type = event.type;
+  if (event.budget !== undefined) row.budget = event.budget;
+  if (event.startDate !== undefined) row.start_date = event.startDate || null;
+  if (event.endDate !== undefined) row.end_date = event.endDate || null;
+  if (event.status !== undefined) row.status = event.status;
+  if (event.isSample !== undefined) row.is_sample = event.isSample;
+  if (event.deletedAt !== undefined) row.deleted_at = event.deletedAt || null;
+  return row;
+}
 
-const generateExpenseId = (): string => {
-  return `expense_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+function expenseRowToExpense(row: Record<string, unknown>): EventExpense {
+  return {
+    id: row.id as string,
+    eventId: row.event_id as string,
+    name: row.name as string,
+    amount: Number(row.amount) || 0,
+    category: (row.category as string) || 'General',
+    isPaid: row.is_paid as boolean,
+    paidDate: (row.paid_date as string) || undefined,
+    createdAt: row.created_at as string,
+  };
+}
 
-// Template category structures for different event types
-// DEPRECATED: categories are now household-defined via
-// CustomBillOptionsService.getEventCategories(). Kept only until a cleanup pass
-// confirms no remaining callers.
-const EVENT_TEMPLATES: Record<EventType, string[]> = {
-  travel: ['Flights', 'Accommodation', 'Transportation', 'Food & Dining', 'Activities', 'Shopping', 'Other'],
-  wedding: ['Venue', 'Catering', 'Photography', 'Attire', 'Flowers', 'Entertainment', 'Invitations', 'Other'],
-  moving: ['Moving Company', 'Packing Supplies', 'Deposits', 'Utilities Setup', 'Furniture', 'Repairs', 'Other'],
-  renovation: ['Materials', 'Labor', 'Permits', 'Design', 'Appliances', 'Fixtures', 'Other'],
-  birthday: ['Venue', 'Food & Drinks', 'Decorations', 'Entertainment', 'Cake', 'Gifts', 'Other'],
-  custom: ['General', 'Other'],
-};
-
-const getSampleEvents = (): Event[] => {
-  const today = new Date();
-  const twoWeeksFromNow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
-  const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
-  
-  const hawaiiEventId = generateId();
-  const birthdayEventId = generateId();
-  
-  return [
-    {
-      id: hawaiiEventId,
-      name: 'Sample Family Trip to Hawaii',
-      type: 'travel',
-      budget: 5000,
-      startDate: twoWeeksFromNow.toISOString(),
-      endDate: new Date(twoWeeksFromNow.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      status: 'active',
-      isSample: true,
-      expenses: [
-        { id: generateExpenseId(), eventId: hawaiiEventId, name: 'Round-trip flights', amount: 1200, category: 'Flights', isPaid: true, paidDate: new Date().toISOString(), createdAt: new Date().toISOString() },
-        { id: generateExpenseId(), eventId: hawaiiEventId, name: 'Beach Resort (7 nights)', amount: 1800, category: 'Accommodation', isPaid: true, paidDate: new Date().toISOString(), createdAt: new Date().toISOString() },
-        { id: generateExpenseId(), eventId: hawaiiEventId, name: 'Rental car', amount: 350, category: 'Transportation', isPaid: false, createdAt: new Date().toISOString() },
-        { id: generateExpenseId(), eventId: hawaiiEventId, name: 'Snorkeling tour', amount: 200, category: 'Activities', isPaid: false, createdAt: new Date().toISOString() },
-        { id: generateExpenseId(), eventId: hawaiiEventId, name: 'Luau dinner', amount: 150, category: 'Food & Dining', isPaid: false, createdAt: new Date().toISOString() },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: birthdayEventId,
-      name: 'Sample Birthday Party',
-      type: 'birthday',
-      budget: 500,
-      startDate: threeMonthsAgo.toISOString(),
-      endDate: threeMonthsAgo.toISOString(),
-      status: 'completed',
-      isSample: true,
-      expenses: [
-        { id: generateExpenseId(), eventId: birthdayEventId, name: 'Party venue rental', amount: 150, category: 'Venue', isPaid: true, paidDate: threeMonthsAgo.toISOString(), createdAt: threeMonthsAgo.toISOString() },
-        { id: generateExpenseId(), eventId: birthdayEventId, name: 'Cake', amount: 75, category: 'Cake', isPaid: true, paidDate: threeMonthsAgo.toISOString(), createdAt: threeMonthsAgo.toISOString() },
-        { id: generateExpenseId(), eventId: birthdayEventId, name: 'Decorations', amount: 50, category: 'Decorations', isPaid: true, paidDate: threeMonthsAgo.toISOString(), createdAt: threeMonthsAgo.toISOString() },
-      ],
-      createdAt: threeMonthsAgo.toISOString(),
-      updatedAt: threeMonthsAgo.toISOString(),
-    },
-  ];
-};
+let cache: Event[] = [];
+let loaded = false;
 
 export class EventService {
-  static initialize(): void {
-    const sampleShown = localStorage.getItem(SAMPLE_DATA_SHOWN_KEY);
-    if (!sampleShown) {
-      const existingEvents = this.getAllEvents();
-      if (existingEvents.length === 0) {
-        const sampleEvents = getSampleEvents();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleEvents));
-        localStorage.setItem(SAMPLE_DATA_SHOWN_KEY, 'true');
-      }
-    }
+  static async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const [eventsRes, expensesRes] = await Promise.all([
+      supabase.from('events').select('*').eq('household_id', householdId).order('created_at', { ascending: false }),
+      supabase.from('event_expenses').select('*').eq('household_id', householdId).order('created_at', { ascending: true }),
+    ]);
+
+    if (eventsRes.error) throw eventsRes.error;
+    if (expensesRes.error) throw expensesRes.error;
+
+    const expenses = (expensesRes.data || []).map(expenseRowToExpense);
+    const expensesByEvent = new Map<string, EventExpense[]>();
+    expenses.forEach((e) => {
+      if (!expensesByEvent.has(e.eventId)) expensesByEvent.set(e.eventId, []);
+      expensesByEvent.get(e.eventId)!.push(e);
+    });
+
+    cache = (eventsRes.data || []).map((row) => rowToEvent(row, expensesByEvent.get(row.id) || []));
+    loaded = true;
   }
 
-  // Raw getter — includes soft-deleted events. All read-modify-write cycles
-  // must use this, never getAllEvents().
-  private static getRawEvents(): Event[] {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return [];
-    const events: Event[] = JSON.parse(data);
-
-    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const kept = events.filter(e => !e.deletedAt || new Date(e.deletedAt).getTime() > cutoff);
-    if (kept.length !== events.length) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
-    }
-    return kept;
+  private static ensureLoaded(): Event[] {
+    return loaded ? cache : [];
   }
 
   static getAllEvents(): Event[] {
-    return this.getRawEvents().filter(e => !e.deletedAt);
+    return this.ensureLoaded().filter((e) => !e.deletedAt);
   }
 
   static getEventById(id: string): Event | undefined {
-    const events = this.getAllEvents();
-    return events.find(event => event.id === id);
+    return this.getAllEvents().find((event) => event.id === id);
   }
 
   static getActiveEvents(): Event[] {
-    return this.getAllEvents().filter(e => e.status === 'active' || e.status === 'planning');
+    return this.getAllEvents().filter((e) => e.status === 'active' || e.status === 'planning');
   }
 
-  /** @deprecated Unused — event categories are household-defined now. */
-  static getTemplateCategories(type: EventType): string[] {
-    return EVENT_TEMPLATES[type] || EVENT_TEMPLATES.custom;
-  }
+  static async createEvent(eventData: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>): Promise<Event> {
+    const householdId = await getHouseholdId();
+    const row = { ...eventToRow(eventData), household_id: householdId };
 
-  static createEvent(eventData: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>): Event {
-    const now = new Date().toISOString();
-    const newEvent: Event = {
-      ...eventData,
-      id: generateId(),
-      expenses: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    const events = this.getRawEvents();
-    events.push(newEvent);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-    
+    const { data, error } = await supabase
+      .from('events')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const newEvent = rowToEvent(data, []);
+    cache.push(newEvent);
     return newEvent;
   }
 
-  static updateEvent(id: string, updates: Partial<Event>): Event | undefined {
-    const events = this.getRawEvents();
-    const index = events.findIndex(event => event.id === id);
-    
-    if (index === -1) return undefined;
-    
-    const updatedEvent: Event = {
-      ...events[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    events[index] = updatedEvent;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-    
+  static async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {
+    // Don't write expenses to the events table — they're in event_expenses
+    const { expenses: _expenses, ...rest } = updates;
+    const row = { ...eventToRow(rest), updated_at: new Date().toISOString() };
+
+    const { data, error } = await supabase
+      .from('events')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const updatedEvent = rowToEvent(data, this.getEventById(id)?.expenses || []);
+    const index = cache.findIndex((e) => e.id === id);
+    if (index !== -1) cache[index] = updatedEvent;
     return updatedEvent;
   }
 
-  // Soft-delete (recoverable for 30 days)
-  static deleteEvent(id: string): boolean {
-    const events = this.getRawEvents();
-    const index = events.findIndex(event => event.id === id);
-
-    if (index === -1) return false;
-
-    events[index] = { ...events[index], deletedAt: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  static async deleteEvent(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('events')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    const index = cache.findIndex((e) => e.id === id);
+    if (index !== -1) cache[index] = { ...cache[index], deletedAt: new Date().toISOString() };
     return true;
   }
 
   static getDeletedEvents(): Event[] {
-    return this.getRawEvents().filter(e => !!e.deletedAt);
+    return this.ensureLoaded().filter((e) => !!e.deletedAt);
   }
 
-  static restoreEvent(id: string): boolean {
-    const events = this.getRawEvents();
-    const index = events.findIndex(event => event.id === id);
-
-    if (index === -1) return false;
-
-    events[index] = { ...events[index], deletedAt: undefined };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  static async restoreEvent(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('events')
+      .update({ deleted_at: null })
+      .eq('id', id);
+    if (error) throw error;
+    const index = cache.findIndex((e) => e.id === id);
+    if (index !== -1) cache[index] = { ...cache[index], deletedAt: undefined };
     return true;
   }
 
-  static permanentlyDeleteEvent(id: string): void {
-    const events = this.getRawEvents().filter(event => event.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  static async permanentlyDeleteEvent(id: string): Promise<void> {
+    const { error } = await supabase.from('events').delete().eq('id', id);
+    if (error) throw error;
+    cache = cache.filter((e) => e.id !== id);
   }
 
-  static addExpense(eventId: string, expenseData: Omit<EventExpense, 'id' | 'eventId' | 'createdAt'>): EventExpense | undefined {
-    const event = this.getEventById(eventId);
-    if (!event) return undefined;
-    
-    const newExpense: EventExpense = {
-      ...expenseData,
-      id: generateExpenseId(),
-      eventId,
-      createdAt: new Date().toISOString(),
+  static async addExpense(eventId: string, expenseData: Omit<EventExpense, 'id' | 'eventId' | 'createdAt'>): Promise<EventExpense | undefined> {
+    const householdId = await getHouseholdId();
+    const row: Record<string, unknown> = {
+      event_id: eventId,
+      household_id: householdId,
+      name: expenseData.name,
+      amount: expenseData.amount,
+      category: expenseData.category,
+      is_paid: expenseData.isPaid,
+      paid_date: expenseData.paidDate || null,
     };
-    
-    event.expenses.push(newExpense);
-    this.updateEvent(eventId, { expenses: event.expenses });
-    
+
+    const { data, error } = await supabase
+      .from('event_expenses')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const newExpense = expenseRowToExpense(data);
+    const event = this.getEventById(eventId);
+    if (event) {
+      event.expenses.push(newExpense);
+    }
     return newExpense;
   }
 
-  static deleteExpense(eventId: string, expenseId: string): boolean {
+  static async deleteExpense(eventId: string, expenseId: string): Promise<boolean> {
+    const { error } = await supabase.from('event_expenses').delete().eq('id', expenseId);
+    if (error) throw error;
     const event = this.getEventById(eventId);
-    if (!event) return false;
-    
-    const filteredExpenses = event.expenses.filter(e => e.id !== expenseId);
-    if (filteredExpenses.length === event.expenses.length) return false;
-    
-    this.updateEvent(eventId, { expenses: filteredExpenses });
+    if (event) {
+      event.expenses = event.expenses.filter((e) => e.id !== expenseId);
+    }
     return true;
   }
 
@@ -221,40 +198,25 @@ export class EventService {
     return event.expenses.reduce((sum, e) => sum + e.amount, 0);
   }
 
-  static clearSampleEvents(): void {
-    const events = this.getRawEvents().filter(event => !event.isSample);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  static async clearSampleEvents(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('household_id', householdId)
+      .eq('is_sample', true);
+    if (error) throw error;
+    cache = cache.filter((e) => !e.isSample);
   }
 
-  static clearAllEvents(): void {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SAMPLE_DATA_SHOWN_KEY);
+  static async clearAllEvents(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { error } = await supabase.from('events').delete().eq('household_id', householdId);
+    if (error) throw error;
+    cache = [];
   }
 
   static getEventCount(): number {
-    return this.getAllEvents().filter(e => !e.isSample).length;
-  }
-
-  static injectTestEvents(count: number = 2): void {
-    const testEvents: Event[] = [];
-    const types: EventType[] = ['travel', 'wedding', 'moving', 'renovation', 'birthday'];
-    
-    for (let i = 0; i < count; i++) {
-      const type = types[i % types.length];
-      const eventId = generateId();
-      testEvents.push({
-        id: eventId,
-        name: `Test ${EVENT_TEMPLATES[type] ? type.charAt(0).toUpperCase() + type.slice(1) : 'Event'} ${i + 1}`,
-        type,
-        budget: Math.floor(Math.random() * 5000) + 500,
-        status: 'planning',
-        expenses: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    }
-    
-    const existingEvents = this.getRawEvents();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingEvents, ...testEvents]));
+    return this.getAllEvents().filter((e) => !e.isSample).length;
   }
 }

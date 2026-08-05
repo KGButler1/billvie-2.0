@@ -1,88 +1,133 @@
 import { HouseholdDocument, DocumentType } from '@/types/document';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
-const STORAGE_KEY = 'billvie_documents';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
+function rowToDoc(row: Record<string, unknown>): HouseholdDocument {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    provider: (row.provider as string) || '',
+    type: (row.type as DocumentType) || 'other',
+    keyDetail: (row.key_detail as string) || undefined,
+    notes: (row.notes as string) || undefined,
+    externalLink: (row.external_link as string) || undefined,
+    physicalLocation: (row.physical_location as string) || undefined,
+    importantDate: (row.important_date as string) || undefined,
+    importantDateLabel: (row.important_date_label as string) || undefined,
+    deletedAt: (row.deleted_at as string) || undefined,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+function docToRow(doc: Partial<HouseholdDocument>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  if (doc.title !== undefined) row.title = doc.title;
+  if (doc.provider !== undefined) row.provider = doc.provider || '';
+  if (doc.type !== undefined) row.type = doc.type;
+  if (doc.keyDetail !== undefined) row.key_detail = doc.keyDetail || null;
+  if (doc.notes !== undefined) row.notes = doc.notes || null;
+  if (doc.externalLink !== undefined) row.external_link = doc.externalLink || null;
+  if (doc.physicalLocation !== undefined) row.physical_location = doc.physicalLocation || null;
+  if (doc.importantDate !== undefined) row.important_date = doc.importantDate || null;
+  if (doc.importantDateLabel !== undefined) row.important_date_label = doc.importantDateLabel || null;
+  if (doc.deletedAt !== undefined) row.deleted_at = doc.deletedAt || null;
+  return row;
+}
+
+let cache: HouseholdDocument[] = [];
+let loaded = false;
+
 export const DocumentService = {
-  // Raw getter — includes soft-deleted documents. Every read-modify-write cycle
-  // must use this, never getAll(), or soft-deleted items would be erased on the
-  // next write.
+  async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    cache = (data || []).map(rowToDoc);
+    loaded = true;
+  },
+
+  ensureLoaded(): HouseholdDocument[] {
+    return loaded ? cache : [];
+  },
+
   getRaw(): HouseholdDocument[] {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const docs: HouseholdDocument[] = data ? JSON.parse(data) : [];
-
-    // Self-cleaning: purge anything deleted more than 30 days ago
-    const cutoff = Date.now() - THIRTY_DAYS_MS;
-    const kept = docs.filter(d => !d.deletedAt || new Date(d.deletedAt).getTime() > cutoff);
-    if (kept.length !== docs.length) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
-    }
-
-    return kept;
+    return this.ensureLoaded();
   },
 
   getAll(): HouseholdDocument[] {
-    return this.getRaw().filter(d => !d.deletedAt);
+    return this.ensureLoaded().filter((d) => !d.deletedAt);
   },
 
-  save(docs: HouseholdDocument[]) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-    } catch {
-      throw new Error('STORAGE_FULL');
-    }
-  },
+  async add(doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>): Promise<HouseholdDocument> {
+    const householdId = await getHouseholdId();
+    const row = { ...docToRow(doc), household_id: householdId };
 
+    const { data, error } = await supabase
+      .from('documents')
+      .insert(row)
+      .select()
+      .single();
 
-  add(doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>): HouseholdDocument {
-    const docs = this.getRaw();
-    const newDoc: HouseholdDocument = {
-      ...doc,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    docs.push(newDoc);
-    this.save(docs);
+    if (error) throw error;
+    const newDoc = rowToDoc(data);
+    cache.push(newDoc);
     return newDoc;
   },
 
-  update(id: string, updates: Partial<HouseholdDocument>) {
-    const docs = this.getRaw();
-    const idx = docs.findIndex(d => d.id === id);
-    if (idx !== -1) {
-      docs[idx] = { ...docs[idx], ...updates, updatedAt: new Date().toISOString() };
-      this.save(docs);
-    }
+  async update(id: string, updates: Partial<HouseholdDocument>): Promise<void> {
+    const row = { ...docToRow(updates), updated_at: new Date().toISOString() };
+    const { data, error } = await supabase
+      .from('documents')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const updated = rowToDoc(data);
+    const idx = cache.findIndex((d) => d.id === id);
+    if (idx !== -1) cache[idx] = updated;
   },
 
-  // Soft delete — recoverable from Recently Deleted for 30 days
-  delete(id: string) {
-    const docs = this.getRaw();
-    const idx = docs.findIndex(d => d.id === id);
-    if (idx === -1) return;
-    docs[idx] = { ...docs[idx], deletedAt: new Date().toISOString() };
-    this.save(docs);
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('documents')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    const idx = cache.findIndex((d) => d.id === id);
+    if (idx !== -1) cache[idx] = { ...cache[idx], deletedAt: new Date().toISOString() };
   },
 
   getDeleted(): HouseholdDocument[] {
-    return this.getRaw().filter(d => !!d.deletedAt);
+    return this.ensureLoaded().filter((d) => !!d.deletedAt);
   },
 
-  restore(id: string) {
-    const docs = this.getRaw();
-    const idx = docs.findIndex(d => d.id === id);
-    if (idx === -1) return;
-    docs[idx] = { ...docs[idx], deletedAt: undefined };
-    this.save(docs);
+  async restore(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('documents')
+      .update({ deleted_at: null })
+      .eq('id', id);
+    if (error) throw error;
+    const idx = cache.findIndex((d) => d.id === id);
+    if (idx !== -1) cache[idx] = { ...cache[idx], deletedAt: undefined };
   },
 
-  permanentlyDelete(id: string) {
-    this.save(this.getRaw().filter(d => d.id !== id));
+  async permanentlyDelete(id: string): Promise<void> {
+    const { error } = await supabase.from('documents').delete().eq('id', id);
+    if (error) throw error;
+    cache = cache.filter((d) => d.id !== id);
   },
 
   getRecent(count = 3): HouseholdDocument[] {
-
     return this.getAll()
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, count);

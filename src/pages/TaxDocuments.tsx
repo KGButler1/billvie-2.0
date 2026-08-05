@@ -90,7 +90,7 @@ const TaxDocuments = () => {
   };
 
   useEffect(() => {
-    loadDocuments();
+    TaxDocumentService.refresh().then(loadDocuments).catch(console.error);
   }, []);
 
   // Carrying forward means nobody has to re-tag a year from scratch. It only
@@ -191,9 +191,9 @@ const TaxDocuments = () => {
   const personalTotal = rows.filter((r) => r.taxType === 'personal').reduce((s, r) => s + (r.amount ?? 0), 0);
   const businessTotal = rows.filter((r) => r.taxType === 'business').reduce((s, r) => s + (r.amount ?? 0), 0);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) {
-      TaxDocumentService.deleteDocument(id);
+      await TaxDocumentService.deleteDocument(id);
       loadDocuments();
     }
   };
@@ -638,10 +638,10 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || selectedCategories.length === 0) return;
 
-    TaxDocumentService.createDocument({
+    await TaxDocumentService.createDocument({
       name: name.trim(),
       categories: selectedCategories,
       year,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, Phone, Pencil, Trash2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
@@ -21,22 +21,33 @@ const KeyPeople = () => {
 
   const reload = () => setPeople(KeyPeopleService.getAllKeyPeople());
 
-  const handleSave = (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>, personIds: string[]) => {
-    const id = editing ? (KeyPeopleService.updateKeyPerson(editing.id, data), editing.id)
-                       : KeyPeopleService.addKeyPerson(data).id;
+  useEffect(() => {
+    KeyPeopleService.refresh().then(reload).catch(console.error);
+  }, []);
+
+  const handleSave = async (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>, personIds: string[]) => {
+    let id: string;
+    if (editing) {
+      await KeyPeopleService.updateKeyPerson(editing.id, data);
+      id = editing.id;
+    } else {
+      const created = await KeyPeopleService.addKeyPerson(data);
+      id = created.id;
+    }
     const household = PeopleService.getAll().filter((p) => p.role === 'household');
-    household.forEach((p) => {
-      if (personIds.includes(p.id)) AccessService.grantItem(p.id, 'key_people', id);
-      else AccessService.revokeScopeForPerson(p.id, 'key_people', id);
-    });
+    await Promise.all(household.map((p) =>
+      personIds.includes(p.id)
+        ? AccessService.grantItem(p.id, 'key_people', id)
+        : AccessService.revokeScopeForPerson(p.id, 'key_people', id)
+    ));
     reload();
     setIsAdding(false);
     setEditing(null);
   };
 
-  const handleDelete = (person: KeyPerson) => {
+  const handleDelete = async (person: KeyPerson) => {
     if (confirm(`Remove ${person.name} from your key people?`)) {
-      KeyPeopleService.deleteKeyPerson(person.id);
+      await KeyPeopleService.deleteKeyPerson(person.id);
       reload();
     }
   };

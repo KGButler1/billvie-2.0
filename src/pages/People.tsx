@@ -86,7 +86,7 @@ const People = () => {
   const reload = useCallback(() => setDirectory(PeopleService.getDirectory()), []);
 
   useEffect(() => {
-    reload();
+    PeopleService.refresh().then(reload).catch(console.error);
   }, [reload]);
 
   useEffect(() => {
@@ -112,15 +112,15 @@ const People = () => {
 
   const showFreeNote = !isPaid && householdRows.length >= 1;
 
-  const toggleScope = (entry: DirectoryEntry, scope: AccessScope, next: boolean) => {
+  const toggleScope = async (entry: DirectoryEntry, scope: AccessScope, next: boolean) => {
     if (!entry.trustedPersonId) return;
     try {
       if (next) {
-        AccessService.grant(entry.trustedPersonId, scope);
+        await AccessService.grant(entry.trustedPersonId, scope);
         toast({ description: `${entry.name} can now see your ${ACCESS_SCOPE_LABELS[scope].toLowerCase()}` });
       } else {
         const grant = AccessService.getGrantsForPerson(entry.trustedPersonId).find((g) => g.scope === scope);
-        if (grant) AccessService.revoke(grant.id);
+        if (grant) await AccessService.revoke(grant.id);
       }
     } catch {
       toast({ description: "That didn't save. Nothing has changed.", variant: 'destructive' });
@@ -128,22 +128,22 @@ const People = () => {
     reload();
   };
 
-  const handleStopSharing = () => {
+  const handleStopSharing = async () => {
     if (!confirmRemove?.trustedPersonId) return;
-    PeopleService.remove(confirmRemove.trustedPersonId);
+    await PeopleService.remove(confirmRemove.trustedPersonId);
     setConfirmRemove(null);
     setExpanded(null);
     reload();
   };
 
-  const saveKeyPerson = (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const saveKeyPerson = async (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => {
     const state = keyPersonState;
     if (!state) return;
     if (state.person) {
-      KeyPeopleService.updateKeyPerson(state.person.id, data);
+      await KeyPeopleService.updateKeyPerson(state.person.id, data);
     } else {
-      const created = KeyPeopleService.addKeyPerson(data);
-      if (state.linkTo) PeopleService.linkToKeyPerson(state.linkTo, created.id);
+      const created = await KeyPeopleService.addKeyPerson(data);
+      if (state.linkTo) await PeopleService.linkToKeyPerson(state.linkTo, created.id);
     }
     setKeyPersonState(null);
     reload();

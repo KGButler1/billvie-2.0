@@ -32,9 +32,9 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
     onCategoriesChanged();
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newLabel.trim()) return;
-    TaxDocumentService.addCategory(newLabel.trim(), newIcon);
+    await TaxDocumentService.addCategory(newLabel.trim(), newIcon);
     setNewLabel('');
     setNewIcon('📁');
     setIsAdding(false);
@@ -47,19 +47,19 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
     setEditIcon(cat.icon);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingId || !editLabel.trim()) return;
-    TaxDocumentService.updateCategory(editingId, { label: editLabel.trim(), icon: editIcon });
+    await TaxDocumentService.updateCategory(editingId, { label: editLabel.trim(), icon: editIcon });
     setEditingId(null);
     refreshCategories();
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const cat = categories.find(c => c.id === id);
     if (!cat || cat.isDefault) return;
     
     if (confirm(`Delete category "${cat.label}"? Documents using this category will be moved to "Other".`)) {
-      TaxDocumentService.deleteCategory(id);
+      await TaxDocumentService.deleteCategory(id);
       refreshCategories();
     }
   };

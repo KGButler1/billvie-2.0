@@ -1,19 +1,12 @@
 import { Bill, BillStatus, BillCategory, RecurringInterval } from '@/types/bill';
-import { differenceInDays, parseISO, startOfDay, addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import { differenceInDays, parseISO, startOfDay, addWeeks, addMonths, addYears } from 'date-fns';
 import { categorizeByName } from '@/utils/billCategorizer';
-
-const STORAGE_KEY = 'billvie_bills';
-const SAMPLE_DATA_SHOWN_KEY = 'billvie_sample_shown';
-
-// Generate unique ID
-const generateId = (): string => {
-  return `bill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
 // Calculate bill status based on due date and payment status.
 // Auto-debited bills that have passed their due date are treated as pending
 // rather than overdue — the bill pays itself, so it doesn't need attention.
-// The caller (e.g. BillList) can still surface them if the linked card is expired.
 export const calculateBillStatus = (bill: Bill): BillStatus => {
   if (bill.status === 'paid') return 'paid';
 
@@ -31,7 +24,7 @@ export const calculateBillStatus = (bill: Bill): BillStatus => {
 // Calculate next due date based on recurring interval
 export const calculateNextDueDate = (currentDueDate: string, interval: RecurringInterval): string => {
   const date = parseISO(currentDueDate);
-  
+
   switch (interval) {
     case 'weekly':
       return addWeeks(date, 1).toISOString();
@@ -48,265 +41,138 @@ export const calculateNextDueDate = (currentDueDate: string, interval: Recurring
   }
 };
 
-// Get sample bills for first-time users
-const getSampleBills = (): Bill[] => {
-  const today = new Date();
-  
-  return [
-    {
-      id: generateId(),
-      name: 'Electric Bill',
-      amount: 142.50,
-      dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5).toISOString(),
-      isRecurring: true,
-      recurringInterval: 'monthly',
-      paymentMethod: 'direct_debit',
-      category: 'utilities',
-      status: 'due_soon',
-      isSample: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      name: 'Internet Service',
-      amount: 79.99,
-      dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 12).toISOString(),
-      isRecurring: true,
-      recurringInterval: 'monthly',
-      paymentMethod: 'credit_card',
-      category: 'services',
-      status: 'pending',
-      isSample: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      name: 'Phone Plan',
-      amount: 45.00,
-      dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2).toISOString(),
-      isRecurring: true,
-      recurringInterval: 'monthly',
-      paymentMethod: 'credit_card',
-      category: 'services',
-      status: 'overdue',
-      isSample: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      name: 'Netflix',
-      amount: 15.99,
-      dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 20).toISOString(),
-      isRecurring: true,
-      recurringInterval: 'monthly',
-      paymentMethod: 'credit_card',
-      category: 'subscriptions',
-      status: 'pending',
-      isSample: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      name: 'Car Insurance',
-      amount: 180.00,
-      dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3).toISOString(),
-      isRecurring: true,
-      recurringInterval: 'monthly',
-      paymentMethod: 'transfer',
-      category: 'insurance',
-      status: 'due_soon',
-      isSample: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: generateId(),
-      name: 'Rent',
-      amount: 1500.00,
-      dueDate: new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString(),
-      isRecurring: true,
-      recurringInterval: 'monthly',
-      paymentMethod: 'transfer',
-      category: 'rent_mortgage',
-      status: 'paid',
-      paidDate: new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString(),
-      isSample: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
-};
+// Convert a DB row (snake_case) to a Bill (camelCase)
+function rowToBill(row: Record<string, unknown>): Bill {
+  const bill = {
+    id: row.id as string,
+    name: row.name as string,
+    amount: row.amount != null ? Number(row.amount) : undefined,
+    dueDate: row.due_date as string | undefined,
+    isRecurring: row.is_recurring as boolean,
+    recurringInterval: row.recurring_interval as RecurringInterval | undefined,
+    paymentMethod: row.payment_method as string | undefined,
+    paymentCardId: row.payment_card_id as string | undefined,
+    category: row.category as BillCategory | string | undefined,
+    notes: row.notes as string | undefined,
+    isAutoDebited: row.is_auto_debited as boolean | undefined,
+    status: row.status as BillStatus,
+    paidDate: row.paid_date as string | undefined,
+    isSample: row.is_sample as boolean | undefined,
+    deletedAt: row.deleted_at as string | undefined,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  } as Bill;
+  bill.status = calculateBillStatus(bill);
+  return bill;
+}
 
-// Retired `responsibleParty` → notes. Runs once, guarded by a key, wrapped in
-// try/catch, legacy localStorage keys deliberately left in place.
-const RESPONSIBLE_MIGRATED_KEY = 'billvie_bill_responsible_migrated_v1';
-const LEGACY_CUSTOM_PARTIES_KEY = 'billvie_custom_responsible_parties';
-const LEGACY_PARTY_LABELS: Record<string, string> = {
-  me: 'Me',
-  partner: 'Partner',
-  roommate: 'Roommate',
-  parent: 'Parent',
-  other: 'Other',
-};
+// Convert a Bill (camelCase) to DB columns (snake_case), excluding id/createdAt/updatedAt
+function billToRow(bill: Partial<Bill>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  if (bill.name !== undefined) row.name = bill.name;
+  if (bill.amount !== undefined) row.amount = bill.amount;
+  if (bill.dueDate !== undefined) row.due_date = bill.dueDate;
+  if (bill.isRecurring !== undefined) row.is_recurring = bill.isRecurring;
+  if (bill.recurringInterval !== undefined) row.recurring_interval = bill.recurringInterval;
+  if (bill.paymentMethod !== undefined) row.payment_method = bill.paymentMethod || null;
+  if (bill.paymentCardId !== undefined) row.payment_card_id = bill.paymentCardId || null;
+  if (bill.category !== undefined) row.category = bill.category || null;
+  if (bill.notes !== undefined) row.notes = bill.notes || null;
+  if (bill.isAutoDebited !== undefined) row.is_auto_debited = bill.isAutoDebited;
+  if (bill.status !== undefined) row.status = bill.status;
+  if (bill.paidDate !== undefined) row.paid_date = bill.paidDate || null;
+  if (bill.isSample !== undefined) row.is_sample = bill.isSample;
+  if (bill.deletedAt !== undefined) row.deleted_at = bill.deletedAt || null;
+  return row;
+}
 
-const runResponsiblePartyMigration = (): void => {
-  if (localStorage.getItem(RESPONSIBLE_MIGRATED_KEY) === 'true') return;
-
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const bills: Bill[] = data ? JSON.parse(data) : [];
-
-    let customOptions: { id: string; label: string }[] = [];
-    try {
-      const rawCustom = localStorage.getItem(LEGACY_CUSTOM_PARTIES_KEY);
-      customOptions = rawCustom ? JSON.parse(rawCustom) : [];
-    } catch {
-      customOptions = [];
-    }
-
-    bills.forEach((bill) => {
-      const record = bill as unknown as Record<string, unknown>;
-      const value = record.responsibleParty;
-      if (typeof value !== 'string' || !value.trim()) {
-        delete record.responsibleParty;
-        return;
-      }
-
-      const label =
-        LEGACY_PARTY_LABELS[value] ||
-        customOptions.find((o) => o.id === value)?.label ||
-        value;
-
-      const line = `Previously marked as: ${label}`;
-      bill.notes = bill.notes && bill.notes.trim() ? `${bill.notes}\n\n${line}` : line;
-      delete record.responsibleParty;
-    });
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
-  } catch {
-    // A broken payload must never block the app.
-  }
-
-  localStorage.setItem(RESPONSIBLE_MIGRATED_KEY, 'true');
-};
+// In-memory cache — populated by refresh(), read by the synchronous getters.
+let cache: Bill[] = [];
+let loaded = false;
 
 export class BillService {
-  // Initialize with sample data if first visit
-  static initialize(): void {
-    runResponsiblePartyMigration();
+  // Fetch all bills from Supabase and populate the cache. Pages call this on
+  // mount and after mutations, then read from the synchronous getters.
+  static async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('bills')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('due_date', { ascending: true });
 
-    const sampleShown = localStorage.getItem(SAMPLE_DATA_SHOWN_KEY);
-    if (!sampleShown) {
-      const existingBills = this.getAllBills();
-      if (existingBills.length === 0) {
-        const sampleBills = getSampleBills();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleBills));
-        localStorage.setItem(SAMPLE_DATA_SHOWN_KEY, 'true');
-      }
-    }
+    if (error) throw error;
+    cache = (data || []).map(rowToBill);
+    loaded = true;
   }
 
-
-  // Raw getter — includes soft-deleted bills. Every read-modify-write cycle
-  // in this service MUST use this, never getAllBills(), or soft-deleted bills
-  // would be silently erased on the next write.
-  private static getRawBills(): Bill[] {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return [];
-
-    const bills: Bill[] = JSON.parse(data);
-
-    // Self-cleaning: purge anything deleted more than 30 days ago
-    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const kept = bills.filter(b => !b.deletedAt || new Date(b.deletedAt).getTime() > cutoff);
-    if (kept.length !== bills.length) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
-    }
-
-    // Recalculate status for each bill
-    return kept.map(bill => ({
-      ...bill,
-      status: calculateBillStatus(bill),
-    }));
+  // Ensures cache is populated. Called by the synchronous getters as a
+  // fallback — if refresh hasn't completed yet, returns empty.
+  private static ensureLoaded(): Bill[] {
+    return loaded ? cache : [];
   }
 
-  // Get all bills (excludes soft-deleted)
   static getAllBills(): Bill[] {
-    return this.getRawBills().filter(b => !b.deletedAt);
+    return this.ensureLoaded().filter((b) => !b.deletedAt);
   }
 
-  // Get bill by ID
   static getBillById(id: string): Bill | undefined {
-    const bills = this.getAllBills();
-    return bills.find(bill => bill.id === id);
+    return this.getAllBills().find((bill) => bill.id === id);
   }
 
-  // Add new bill
-  static addBill(billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Bill {
-    const now = new Date().toISOString();
-    
-    // Auto-categorize if no category provided
+  static async addBill(billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<Bill> {
+    const householdId = await getHouseholdId();
     const category = billData.category || categorizeByName(billData.name);
-    
-    const newBill: Bill = {
-      ...billData,
-      id: generateId(),
+
+    const row = {
+      ...billToRow(billData),
+      household_id: householdId,
       category,
       status: 'pending',
-      createdAt: now,
-      updatedAt: now,
     };
-    
-    // Calculate actual status
-    newBill.status = calculateBillStatus(newBill);
-    
-    const bills = this.getRawBills();
-    bills.push(newBill);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
-    
+
+    const { data, error } = await supabase
+      .from('bills')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const newBill = rowToBill(data);
+    cache.push(newBill);
     return newBill;
   }
 
-  // Update bill
-  static updateBill(id: string, updates: Partial<Bill>): Bill | undefined {
-    const bills = this.getRawBills();
-    const index = bills.findIndex(bill => bill.id === id);
-    
-    if (index === -1) return undefined;
-    
-    const updatedBill: Bill = {
-      ...bills[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    // Recalculate status
-    updatedBill.status = calculateBillStatus(updatedBill);
-    
-    bills[index] = updatedBill;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
-    
+  static async updateBill(id: string, updates: Partial<Bill>): Promise<Bill | undefined> {
+    const row = billToRow(updates);
+    row.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('bills')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const updatedBill = rowToBill(data);
+    const index = cache.findIndex((b) => b.id === id);
+    if (index !== -1) cache[index] = updatedBill;
     return updatedBill;
   }
 
-  // Mark bill as paid
-  static markAsPaid(id: string, createNextRecurrence: boolean = false): Bill | undefined {
+  static async markAsPaid(id: string, createNextRecurrence = false): Promise<Bill | undefined> {
     const bill = this.getBillById(id);
     if (!bill) return undefined;
-    
-    const updatedBill = this.updateBill(id, {
+
+    const updatedBill = await this.updateBill(id, {
       status: 'paid',
       paidDate: new Date().toISOString(),
     });
-    
-    // If recurring and should create next occurrence
+
     if (createNextRecurrence && bill.isRecurring && bill.dueDate && bill.recurringInterval && bill.recurringInterval !== 'one_time') {
       const nextDueDate = calculateNextDueDate(bill.dueDate, bill.recurringInterval);
-      this.addBill({
+      await this.addBill({
         name: bill.name,
         amount: bill.amount,
         dueDate: nextDueDate,
@@ -315,36 +181,26 @@ export class BillService {
         paymentMethod: bill.paymentMethod,
         category: bill.category,
         notes: bill.notes,
-        taggedPersonIds: bill.taggedPersonIds,
-
         isAutoDebited: bill.isAutoDebited,
       });
     }
-    
+
     return updatedBill;
   }
 
-  // Mark bill as unpaid
-  static markAsUnpaid(id: string): Bill | undefined {
-    const bill = this.getBillById(id);
-    if (!bill) return undefined;
-    
-    const updatedBill = this.updateBill(id, {
+  static async markAsUnpaid(id: string): Promise<Bill | undefined> {
+    return this.updateBill(id, {
       status: 'pending',
       paidDate: undefined,
     });
-    
-    return updatedBill;
   }
 
-  // Set auto-debit status
-  static setAutoDebit(id: string, isAutoDebited: boolean): Bill | undefined {
+  static async setAutoDebit(id: string, isAutoDebited: boolean): Promise<Bill | undefined> {
     return this.updateBill(id, { isAutoDebited });
   }
 
-  // Get bills by category
   static getBillsByCategory(): Record<BillCategory, Bill[]> {
-    const bills = this.getAllBills().filter(b => b.status !== 'paid');
+    const bills = this.getAllBills().filter((b) => b.status !== 'paid');
     const categories: Record<BillCategory, Bill[]> = {
       utilities: [],
       subscriptions: [],
@@ -354,16 +210,16 @@ export class BillService {
       services: [],
       other: [],
     };
-    
-    bills.forEach(bill => {
-      const cat = bill.category || 'other';
-      categories[cat].push(bill);
+
+    bills.forEach((bill) => {
+      const cat = (bill.category || 'other') as BillCategory;
+      if (categories[cat]) categories[cat].push(bill);
+      else categories.other.push(bill);
     });
-    
+
     return categories;
   }
 
-  // Get spending by category for current month
   static getSpendingByCategory(): Record<BillCategory, number> {
     const bills = this.getAllBills();
     const spending: Record<BillCategory, number> = {
@@ -375,91 +231,94 @@ export class BillService {
       services: 0,
       other: 0,
     };
-    
-    bills.forEach(bill => {
+
+    bills.forEach((bill) => {
       if (bill.amount) {
-        const cat = bill.category || 'other';
-        spending[cat] += bill.amount;
+        const cat = (bill.category || 'other') as BillCategory;
+        if (spending[cat]) spending[cat] += bill.amount;
+        else spending.other += bill.amount;
       }
     });
-    
+
     return spending;
   }
 
-  // Get upcoming total
   static getUpcomingTotal(): number {
     return this.getUpcomingBills().reduce((sum, bill) => sum + (bill.amount || 0), 0);
   }
 
-  // Get due soon bills (within 7 days)
   static getDueSoonBills(): Bill[] {
-    return this.getAllBills().filter(b => b.status === 'due_soon');
+    return this.getAllBills().filter((b) => b.status === 'due_soon');
   }
 
-  // Soft-delete bill (recoverable from Recently Deleted for 30 days)
-  static deleteBill(id: string): boolean {
-    const bills = this.getRawBills();
-    const index = bills.findIndex(bill => bill.id === id);
+  static async deleteBill(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('bills')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
 
-    if (index === -1) return false;
-
-    bills[index] = { ...bills[index], deletedAt: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
+    if (error) throw error;
+    const index = cache.findIndex((b) => b.id === id);
+    if (index !== -1) cache[index] = { ...cache[index], deletedAt: new Date().toISOString() };
     return true;
   }
 
-  // Get soft-deleted bills
   static getDeletedBills(): Bill[] {
-    return this.getRawBills().filter(b => !!b.deletedAt);
+    return this.ensureLoaded().filter((b) => !!b.deletedAt);
   }
 
-  // Restore a soft-deleted bill
-  static restoreBill(id: string): boolean {
-    const bills = this.getRawBills();
-    const index = bills.findIndex(bill => bill.id === id);
+  static async restoreBill(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('bills')
+      .update({ deleted_at: null })
+      .eq('id', id);
 
-    if (index === -1) return false;
-
-    bills[index] = { ...bills[index], deletedAt: undefined };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
+    if (error) throw error;
+    const index = cache.findIndex((b) => b.id === id);
+    if (index !== -1) cache[index] = { ...cache[index], deletedAt: undefined };
     return true;
   }
 
-  // Permanently remove a bill
-  static permanentlyDeleteBill(id: string): void {
-    const bills = this.getRawBills().filter(bill => bill.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
+  static async permanentlyDeleteBill(id: string): Promise<void> {
+    const { error } = await supabase.from('bills').delete().eq('id', id);
+    if (error) throw error;
+    cache = cache.filter((b) => b.id !== id);
   }
 
-  // Clear sample bills
-  static clearSampleBills(): void {
-    const bills = this.getRawBills().filter(bill => !bill.isSample);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bills));
+  static async clearSampleBills(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { error } = await supabase
+      .from('bills')
+      .delete()
+      .eq('household_id', householdId)
+      .eq('is_sample', true);
+
+    if (error) throw error;
+    cache = cache.filter((b) => !b.isSample);
   }
 
-  // Clear all bills
-  static clearAllBills(): void {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SAMPLE_DATA_SHOWN_KEY);
+  static async clearAllBills(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { error } = await supabase.from('bills').delete().eq('household_id', householdId);
+    if (error) throw error;
+    cache = [];
   }
 
-  // Get bills grouped by status
   static getBillsByStatus(): Record<BillStatus, Bill[]> {
     const bills = this.getAllBills();
-    
+
     return {
-      overdue: bills.filter(b => b.status === 'overdue'),
-      due_soon: bills.filter(b => b.status === 'due_soon'),
-      pending: bills.filter(b => b.status === 'pending'),
-      paid: bills.filter(b => b.status === 'paid'),
+      overdue: bills.filter((b) => b.status === 'overdue'),
+      due_soon: bills.filter((b) => b.status === 'due_soon'),
+      pending: bills.filter((b) => b.status === 'pending'),
+      paid: bills.filter((b) => b.status === 'paid'),
     };
   }
 
-  // Get upcoming bills (next 30 days, unpaid)
   static getUpcomingBills(): Bill[] {
     const bills = this.getAllBills();
     return bills
-      .filter(b => b.status !== 'paid')
+      .filter((b) => b.status !== 'paid')
       .sort((a, b) => {
         if (!a.dueDate) return 1;
         if (!b.dueDate) return -1;
@@ -467,35 +326,7 @@ export class BillService {
       });
   }
 
-  // Get bill count
   static getBillCount(): number {
-    return this.getAllBills().filter(b => !b.isSample).length;
-  }
-
-  // Inject test bills (for dev panel)
-  static injectTestBills(count: number = 5): void {
-    const today = new Date();
-    const testBills: Bill[] = [];
-    
-    const names = ['Water Bill', 'Gas Bill', 'Gym Membership', 'Spotify', 'Hulu', 'Adobe CC', 'AWS', 'Notion', 'Figma', 'Slack'];
-    
-    for (let i = 0; i < count; i++) {
-      const randomDays = Math.floor(Math.random() * 60) - 15; // -15 to +45 days
-      testBills.push({
-        id: generateId(),
-        name: names[i % names.length],
-        amount: Math.floor(Math.random() * 200) + 10,
-        dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + randomDays).toISOString(),
-        isRecurring: Math.random() > 0.3,
-        recurringInterval: 'monthly',
-        paymentMethod: 'credit_card',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    }
-    
-    const existingBills = this.getRawBills();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingBills, ...testBills]));
+    return this.getAllBills().filter((b) => !b.isSample).length;
   }
 }

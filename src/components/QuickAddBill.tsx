@@ -97,24 +97,24 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
     []
   );
 
-  const handleLinkedDocumentChange = (option: LinkPickerOption | null) => {
+  const handleLinkedDocumentChange = async (option: LinkPickerOption | null) => {
     setLinkedDocument(option);
     if (!initialBill) return; // create mode: applied after save via onAdd instead
 
     if (option) {
-      DocumentLinkService.linkToBill(option.id, initialBill.id);
+      await DocumentLinkService.linkToBill(option.id, initialBill.id);
     } else {
       const currentDocId = DocumentLinkService.getLinkedDocumentIdForBill(initialBill.id);
       if (currentDocId) {
         const linkId = DocumentLinkService.findActiveLinkId(currentDocId, initialBill.id);
-        if (linkId) DocumentLinkService.unlink(linkId);
+        if (linkId) await DocumentLinkService.unlink(linkId);
       }
     }
   };
 
-  const handleCreateDocument = (docName: string): LinkPickerOption => {
+  const handleCreateDocument = async (docName: string): Promise<LinkPickerOption> => {
     const type = category === 'insurance' ? 'insurance' : 'other';
-    const created = DocumentService.add({ title: docName, provider: '', type });
+    const created = await DocumentService.add({ title: docName, provider: '', type });
     return { id: created.id, label: created.title };
   };
 
@@ -153,9 +153,9 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
   };
 
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
-      const newOption = CustomBillOptionsService.addCustomCategory(newCategoryName);
+      const newOption = await CustomBillOptionsService.addCustomCategory(newCategoryName);
       setCustomCategories(CustomBillOptionsService.getCustomCategories());
       setCategory(newOption.id);
       setNewCategoryName('');
@@ -163,9 +163,9 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
     }
   };
 
-  const handleAddPaymentMethod = () => {
+  const handleAddPaymentMethod = async () => {
     if (newPaymentMethodName.trim()) {
-      const newOption = CustomBillOptionsService.addCustomPaymentMethod(newPaymentMethodName);
+      const newOption = await CustomBillOptionsService.addCustomPaymentMethod(newPaymentMethodName);
       setCustomPaymentMethods(CustomBillOptionsService.getCustomPaymentMethods());
       setPaymentMethod(newOption.id);
       setNewPaymentMethodName('');

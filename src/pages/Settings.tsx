@@ -38,18 +38,22 @@ const Settings = () => {
     setSettings(updated);
   };
 
-  const handleClearSampleData = () => {
-    BillService.clearSampleBills();
-    EventService.clearSampleEvents();
-    // Refresh to show changes
+  const handleClearSampleData = async () => {
+    await Promise.all([
+      BillService.clearSampleBills(),
+      EventService.clearSampleEvents(),
+    ]);
     window.location.reload();
   };
 
-  const handleClearAllData = () => {
+  const handleClearAllData = async () => {
     if (confirm('This will delete ALL your data including bills, events, and financial info. Are you sure?')) {
       UserService.clearAllData();
-      EventService.clearAllEvents();
-      FinancialInfoService.clearAll();
+      await Promise.all([
+        EventService.clearAllEvents(),
+        FinancialInfoService.clearAll(),
+        BillService.clearAllBills(),
+      ]);
       window.location.href = '/';
     }
   };

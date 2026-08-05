@@ -29,24 +29,24 @@ const Documents = () => {
 
   const reload = () => setDocuments(DocumentService.getAll());
 
-  const handleAdd = (
+  const handleAdd = async (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
     linkedBillId?: string,
     tax?: TaxRelevanceValue
   ) => {
-    const created = DocumentService.add(doc);
-    personIds.forEach((pid) => AccessService.grantItem(pid, 'documents', created.id));
-    if (linkedBillId) DocumentLinkService.linkToBill(created.id, linkedBillId);
-    if (tax) TaxTagService.setTag(created.id, 'document', tax);
+    const created = await DocumentService.add(doc);
+    await Promise.all(personIds.map((pid) => AccessService.grantItem(pid, 'documents', created.id)));
+    if (linkedBillId) await DocumentLinkService.linkToBill(created.id, linkedBillId);
+    if (tax) await TaxTagService.setTag(created.id, 'document', tax);
     reload();
     setIsAdding(false);
     setAttachingId(created.id);
   };
 
-  const handleEditSave = (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => {
-    DocumentService.update(id, updates);
-    if (tax) TaxTagService.setTag(id, 'document', tax);
+  const handleEditSave = async (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => {
+    await DocumentService.update(id, updates);
+    if (tax) await TaxTagService.setTag(id, 'document', tax);
     reload();
     setEditingId(null);
   };
@@ -106,9 +106,9 @@ const Documents = () => {
                   onEditAccess={(id) => setAccessId(id)}
                   onLinks={(id) => setLinkingId(id)}
                   onEdit={(id) => setEditingId(id)}
-                  onDelete={(id) => {
+                  onDelete={async (id) => {
                     if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
-                    DocumentService.delete(id);
+                    await DocumentService.delete(id);
                     reload();
                   }}
                 />

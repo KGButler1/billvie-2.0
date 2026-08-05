@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, MoreVertical, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, MoveVertical as MoreVertical, CreditCard as Edit2, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Event, EventStatus, EVENT_TYPE_LABELS } from '@/types/bill';
 import { EventService } from '@/services/EventService';
@@ -39,27 +39,27 @@ const EventHeader = ({ event, onUpdate }: EventHeaderProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(event.name);
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     if (editedName.trim() && editedName !== event.name) {
-      EventService.updateEvent(event.id, { name: editedName.trim() });
+      await EventService.updateEvent(event.id, { name: editedName.trim() });
       onUpdate();
     }
     setIsEditingName(false);
   };
 
-  const handleStatusChange = (status: EventStatus) => {
+  const handleStatusChange = async (status: EventStatus) => {
     if (status === 'archived') {
       // Could show confirmation dialog here
-      EventService.updateEvent(event.id, { status });
+      await EventService.updateEvent(event.id, { status });
     } else {
-      EventService.updateEvent(event.id, { status });
+      await EventService.updateEvent(event.id, { status });
     }
     onUpdate();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Delete this event? You can restore it from Recently Deleted within 30 days.')) {
-      EventService.deleteEvent(event.id);
+      await EventService.deleteEvent(event.id);
       navigate('/events');
     }
   };

@@ -1,352 +1,261 @@
 import { TaxDocument, TaxCategory, CustomTaxCategory, DEFAULT_TAX_CATEGORIES, TAX_CATEGORY_LABELS, TAX_CATEGORY_ICONS } from '@/types/sharing';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
-const STORAGE_KEY = 'billvie_tax_documents';
 const CATEGORIES_KEY = 'billvie_tax_categories';
 const CUSTOM_YEARS_KEY = 'billvie_tax_custom_years';
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-const generateId = (): string => {
-  return `tax_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+function rowToDoc(row: Record<string, unknown>): TaxDocument {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    categories: (row.categories as string[]) || [],
+    year: row.year as number,
+    amount: row.amount != null ? Number(row.amount) : undefined,
+    notes: (row.notes as string) || undefined,
+    isTaxRelevant: row.is_tax_relevant as boolean,
+    deletedAt: (row.deleted_at as string) || undefined,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+let cache: TaxDocument[] = [];
+let loaded = false;
 
 export class TaxDocumentService {
-  // ============ DOCUMENT METHODS ============
+  static async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('tax_documents')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('created_at', { ascending: false });
 
-  // Raw getter — includes soft-deleted documents. All read-modify-write cycles
-  // must use this, never getAllDocuments().
+    if (error) throw error;
+    cache = (data || []).map(rowToDoc);
+    loaded = true;
+  }
+
+  private static ensureLoaded(): TaxDocument[] {
+    return loaded ? cache : [];
+  }
+
   private static getRawDocuments(): TaxDocument[] {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return [];
-    
-    const documents: TaxDocument[] = JSON.parse(data);
-    
-    // Migrate old documents with single 'category' to 'categories' array
-    let needsMigration = false;
-    const migrated = documents.map(doc => {
-      if ('category' in doc && !('categories' in doc)) {
-        needsMigration = true;
-        const { category, ...rest } = doc as any;
-        return { ...rest, categories: [category] };
-      }
-      return doc;
-    });
-    
-    // Self-cleaning: purge anything deleted more than 30 days ago
-    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const kept = migrated.filter(d => !d.deletedAt || new Date(d.deletedAt).getTime() > cutoff);
-
-    if (needsMigration || kept.length !== migrated.length) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(kept));
-    }
-
-    return kept;
+    return this.ensureLoaded();
   }
 
-  // Get all tax documents (excludes soft-deleted)
   static getAllDocuments(): TaxDocument[] {
-    return this.getRawDocuments().filter(d => !d.deletedAt);
+    return this.getRawDocuments().filter((d) => !d.deletedAt);
   }
 
-  // Get documents by year
   static getDocumentsByYear(year: number): TaxDocument[] {
-    return this.getAllDocuments().filter(d => d.year === year);
+    return this.getAllDocuments().filter((d) => d.year === year);
   }
 
-  // Get documents by category (matches any document containing the category)
   static getDocumentsByCategory(category: TaxCategory): TaxDocument[] {
-    return this.getAllDocuments().filter(d => d.categories.includes(category));
+    return this.getAllDocuments().filter((d) => d.categories.includes(category));
   }
 
-  // Get tax-relevant documents only
   static getTaxRelevantDocuments(): TaxDocument[] {
-    return this.getAllDocuments().filter(d => d.isTaxRelevant);
+    return this.getAllDocuments().filter((d) => d.isTaxRelevant);
   }
 
-  // Persist documents, surfacing browser storage limits as STORAGE_FULL
-  private static save(documents: TaxDocument[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
-    } catch {
-      throw new Error('STORAGE_FULL');
-    }
-  }
-
-  // Create a new document
-  static createDocument(
-    data: Omit<TaxDocument, 'id' | 'createdAt' | 'updatedAt'>
-  ): TaxDocument {
-    const now = new Date().toISOString();
-    const document: TaxDocument = {
-      ...data,
-      id: generateId(),
-      createdAt: now,
-      updatedAt: now,
+  static async createDocument(data: Omit<TaxDocument, 'id' | 'createdAt' | 'updatedAt'>): Promise<TaxDocument> {
+    const householdId = await getHouseholdId();
+    const row = {
+      household_id: householdId,
+      name: data.name,
+      categories: data.categories || [],
+      year: data.year,
+      amount: data.amount ?? null,
+      notes: data.notes || null,
+      is_tax_relevant: data.isTaxRelevant,
     };
 
-    const documents = this.getRawDocuments();
-    documents.push(document);
-    this.save(documents);
+    const { data: result, error } = await supabase
+      .from('tax_documents')
+      .insert(row)
+      .select()
+      .single();
 
-    return document;
+    if (error) throw error;
+    const newDoc = rowToDoc(result);
+    cache.push(newDoc);
+    return newDoc;
   }
 
-  // Update a document
-  static updateDocument(id: string, updates: Partial<TaxDocument>): TaxDocument | undefined {
-    const documents = this.getRawDocuments();
-    const index = documents.findIndex(d => d.id === id);
-    if (index === -1) return undefined;
+  static async updateDocument(id: string, updates: Partial<TaxDocument>): Promise<TaxDocument | undefined> {
+    const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (updates.name !== undefined) row.name = updates.name;
+    if (updates.categories !== undefined) row.categories = updates.categories;
+    if (updates.year !== undefined) row.year = updates.year;
+    if (updates.amount !== undefined) row.amount = updates.amount;
+    if (updates.notes !== undefined) row.notes = updates.notes || null;
+    if (updates.isTaxRelevant !== undefined) row.is_tax_relevant = updates.isTaxRelevant;
 
-    documents[index] = {
-      ...documents[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
+    const { data, error } = await supabase
+      .from('tax_documents')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
 
-    this.save(documents);
-    return documents[index];
+    if (error) throw error;
+    const updated = rowToDoc(data);
+    const idx = cache.findIndex((d) => d.id === id);
+    if (idx !== -1) cache[idx] = updated;
+    return updated;
   }
 
-  // Soft-delete a document (recoverable for 30 days)
-  static deleteDocument(id: string): boolean {
-    const documents = this.getRawDocuments();
-    const index = documents.findIndex(d => d.id === id);
-
-    if (index === -1) return false;
-
-    documents[index] = { ...documents[index], deletedAt: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+  static async deleteDocument(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tax_documents')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    const idx = cache.findIndex((d) => d.id === id);
+    if (idx !== -1) cache[idx] = { ...cache[idx], deletedAt: new Date().toISOString() };
     return true;
   }
 
   static getDeletedDocuments(): TaxDocument[] {
-    return this.getRawDocuments().filter(d => !!d.deletedAt);
+    return this.getRawDocuments().filter((d) => !!d.deletedAt);
   }
 
-  static restoreDocument(id: string): boolean {
-    const documents = this.getRawDocuments();
-    const index = documents.findIndex(d => d.id === id);
-
-    if (index === -1) return false;
-
-    documents[index] = { ...documents[index], deletedAt: undefined };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+  static async restoreDocument(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tax_documents')
+      .update({ deleted_at: null })
+      .eq('id', id);
+    if (error) throw error;
+    const idx = cache.findIndex((d) => d.id === id);
+    if (idx !== -1) cache[idx] = { ...cache[idx], deletedAt: undefined };
     return true;
   }
 
-  static permanentlyDeleteDocument(id: string): void {
-    const documents = this.getRawDocuments().filter(d => d.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+  static async permanentlyDeleteDocument(id: string): Promise<void> {
+    const { error } = await supabase.from('tax_documents').delete().eq('id', id);
+    if (error) throw error;
+    cache = cache.filter((d) => d.id !== id);
   }
 
-  // Get available years from documents + custom years
   static getAvailableYears(): number[] {
     const documents = this.getAllDocuments();
-    const docYears = documents.map(d => d.year);
+    const docYears = documents.map((d) => d.year);
     const customYears = this.getCustomYears();
     const currentYear = new Date().getFullYear();
     const defaultYears = [currentYear, currentYear - 1, currentYear - 2];
-    
     const allYears = [...new Set([...docYears, ...customYears, ...defaultYears])];
     return allYears.sort((a, b) => b - a);
   }
 
-  // Get summary by category for a year
   static getCategorySummary(year: number): Record<string, { count: number; total: number }> {
     const documents = this.getDocumentsByYear(year);
     const allCategories = this.getCategories();
-    
     const summary: Record<string, { count: number; total: number }> = {};
-    
-    // Initialize all categories
-    allCategories.forEach(cat => {
-      summary[cat.id] = { count: 0, total: 0 };
-    });
-
-    documents.forEach(doc => {
-      doc.categories.forEach(catId => {
-        if (!summary[catId]) {
-          summary[catId] = { count: 0, total: 0 };
-        }
+    allCategories.forEach((cat) => { summary[cat.id] = { count: 0, total: 0 }; });
+    documents.forEach((doc) => {
+      doc.categories.forEach((catId) => {
+        if (!summary[catId]) summary[catId] = { count: 0, total: 0 };
         summary[catId].count++;
         summary[catId].total += doc.amount || 0;
       });
     });
-
     return summary;
   }
 
-  // Search documents
   static searchDocuments(query: string): TaxDocument[] {
     const lowerQuery = query.toLowerCase();
-    return this.getAllDocuments().filter(d =>
+    return this.getAllDocuments().filter((d) =>
       d.name.toLowerCase().includes(lowerQuery) ||
       d.notes?.toLowerCase().includes(lowerQuery)
     );
   }
 
-  // Clear all
-  static clearAll(): void {
-    localStorage.removeItem(STORAGE_KEY);
+  static async clearAll(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { error } = await supabase.from('tax_documents').delete().eq('household_id', householdId);
+    if (error) throw error;
+    cache = [];
   }
 
-  // Inject sample documents
-  static injectSampleDocuments(): void {
-    const currentYear = new Date().getFullYear();
-    const samples: TaxDocument[] = [
-      {
-        id: 'tax_sample_1',
-        name: 'Red Cross Donation',
-        categories: ['charity'],
-        year: currentYear,
-        amount: 500,
-        notes: 'Annual donation receipt',
-        isTaxRelevant: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'tax_sample_2',
-        name: 'Conference Registration',
-        categories: ['work_expenses', 'education'],
-        year: currentYear,
-        amount: 250,
-        notes: 'Tech conference for work',
-        isTaxRelevant: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'tax_sample_3',
-        name: 'Medical Checkup',
-        categories: ['medical'],
-        year: currentYear,
-        amount: 150,
-        notes: 'Annual physical',
-        isTaxRelevant: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(samples));
-  }
-
-  // ============ CATEGORY MANAGEMENT ============
-
-  // Get all categories (default + custom)
+  // Category management — stays on localStorage (per-device picklist config)
   static getCategories(): CustomTaxCategory[] {
-    // Default categories
-    const defaults: CustomTaxCategory[] = DEFAULT_TAX_CATEGORIES.map(id => ({
-      id,
-      label: TAX_CATEGORY_LABELS[id],
-      icon: TAX_CATEGORY_ICONS[id],
-      isDefault: true,
+    const defaults: CustomTaxCategory[] = DEFAULT_TAX_CATEGORIES.map((id) => ({
+      id, label: TAX_CATEGORY_LABELS[id], icon: TAX_CATEGORY_ICONS[id], isDefault: true,
     }));
-
-    // Custom categories
     const customData = localStorage.getItem(CATEGORIES_KEY);
     const customs: CustomTaxCategory[] = customData ? JSON.parse(customData) : [];
-
     return [...defaults, ...customs];
   }
 
-  // Get category by ID
   static getCategoryById(id: string): CustomTaxCategory | undefined {
-    return this.getCategories().find(c => c.id === id);
+    return this.getCategories().find((c) => c.id === id);
   }
 
-  // Add custom category
-  static addCategory(label: string, icon: string = '📁'): CustomTaxCategory {
+  static addCategory(label: string, icon = '📁'): CustomTaxCategory {
     const customData = localStorage.getItem(CATEGORIES_KEY);
     const customs: CustomTaxCategory[] = customData ? JSON.parse(customData) : [];
-    
     const newCategory: CustomTaxCategory = {
       id: `custom_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      label,
-      icon,
-      isDefault: false,
+      label, icon, isDefault: false,
     };
-
     customs.push(newCategory);
     localStorage.setItem(CATEGORIES_KEY, JSON.stringify(customs));
-    
     return newCategory;
   }
 
-  // Update custom category
   static updateCategory(id: string, updates: { label?: string; icon?: string }): boolean {
     const customData = localStorage.getItem(CATEGORIES_KEY);
     const customs: CustomTaxCategory[] = customData ? JSON.parse(customData) : [];
-    
-    const index = customs.findIndex(c => c.id === id);
+    const index = customs.findIndex((c) => c.id === id);
     if (index === -1) return false;
-
     customs[index] = { ...customs[index], ...updates };
     localStorage.setItem(CATEGORIES_KEY, JSON.stringify(customs));
-    
     return true;
   }
 
-  // Delete custom category
   static deleteCategory(id: string): { success: boolean; documentsAffected: number } {
-    // Check if any documents use this category
     const documents = this.getAllDocuments();
-    const affectedDocs = documents.filter(d => d.categories.includes(id));
-    
+    const affectedDocs = documents.filter((d) => d.categories.includes(id));
     if (affectedDocs.length > 0) {
-      // Remove category from affected documents
-      affectedDocs.forEach(doc => {
-        const newCategories = doc.categories.filter(c => c !== id);
-        // Ensure at least one category remains
-        if (newCategories.length === 0) {
-          newCategories.push('other');
-        }
+      affectedDocs.forEach((doc) => {
+        const newCategories = doc.categories.filter((c) => c !== id);
+        if (newCategories.length === 0) newCategories.push('other');
         this.updateDocument(doc.id, { categories: newCategories });
       });
     }
-
-    // Remove the custom category
     const customData = localStorage.getItem(CATEGORIES_KEY);
     const customs: CustomTaxCategory[] = customData ? JSON.parse(customData) : [];
-    const filtered = customs.filter(c => c.id !== id);
+    const filtered = customs.filter((c) => c.id !== id);
     localStorage.setItem(CATEGORIES_KEY, JSON.stringify(filtered));
-
     return { success: true, documentsAffected: affectedDocs.length };
   }
 
-  // ============ YEAR MANAGEMENT ============
-
-  // Get custom years
+  // Year management — stays on localStorage
   static getCustomYears(): number[] {
     const data = localStorage.getItem(CUSTOM_YEARS_KEY);
     return data ? JSON.parse(data) : [];
   }
 
-  // Add custom year
   static addCustomYear(year: number): boolean {
     const years = this.getCustomYears();
     if (years.includes(year)) return false;
-    
     years.push(year);
     years.sort((a, b) => b - a);
     localStorage.setItem(CUSTOM_YEARS_KEY, JSON.stringify(years));
-    
     return true;
   }
 
-  // Remove custom year
   static removeCustomYear(year: number): { success: boolean; documentsExist: boolean } {
-    // Check if any documents use this year
     const documents = this.getAllDocuments();
-    const docsWithYear = documents.filter(d => d.year === year);
-    
-    if (docsWithYear.length > 0) {
-      return { success: false, documentsExist: true };
-    }
-
+    const docsWithYear = documents.filter((d) => d.year === year);
+    if (docsWithYear.length > 0) return { success: false, documentsExist: true };
     const years = this.getCustomYears();
-    const filtered = years.filter(y => y !== year);
+    const filtered = years.filter((y) => y !== year);
     localStorage.setItem(CUSTOM_YEARS_KEY, JSON.stringify(filtered));
-    
     return { success: true, documentsExist: false };
   }
 }

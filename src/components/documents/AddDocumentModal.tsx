@@ -73,23 +73,23 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
     []
   );
 
-  const handleLinkedBillChange = (option: LinkPickerOption | null) => {
+  const handleLinkedBillChange = async (option: LinkPickerOption | null) => {
     setLinkedBill(option);
     if (!document) return; // create mode: applied after save via onAdd instead
 
     if (option) {
-      DocumentLinkService.linkToBill(document.id, option.id);
+      await DocumentLinkService.linkToBill(document.id, option.id);
     } else {
       const currentBillId = DocumentLinkService.getLinkedBillId(document.id);
       if (currentBillId) {
         const linkId = DocumentLinkService.findActiveLinkId(document.id, currentBillId);
-        if (linkId) DocumentLinkService.unlink(linkId);
+        if (linkId) await DocumentLinkService.unlink(linkId);
       }
     }
   };
 
-  const handleCreateBill = (name: string): LinkPickerOption => {
-    const created = BillService.addBill({ name, isRecurring: false });
+  const handleCreateBill = async (name: string): Promise<LinkPickerOption> => {
+    const created = await BillService.addBill({ name, isRecurring: false });
     return { id: created.id, label: created.name };
   };
 

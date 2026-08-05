@@ -46,9 +46,9 @@ const InvitePersonModal = ({
 
   const canSubmit = name.trim().length > 0 && /^\S+@\S+\.\S+$/.test(email.trim());
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit || blockedReason) return;
-    const person = PeopleService.invite({ name: name.trim(), email: email.trim(), role, keyPersonId });
+    const person = await PeopleService.invite({ name: name.trim(), email: email.trim(), role, keyPersonId });
     onInvited(person);
   };
 

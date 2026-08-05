@@ -14,8 +14,8 @@ interface DeletedRow {
   id: string;
   name: string;
   deletedAt?: string;
-  restore: () => void;
-  purge: () => void;
+  restore: () => Promise<void> | void;
+  purge: () => Promise<void> | void;
 }
 
 const RecentlyDeleted = () => {
@@ -77,14 +77,14 @@ const RecentlyDeleted = () => {
   const visibleSections = sections.filter(s => s.rows.length > 0);
   const totalCount = visibleSections.reduce((sum, s) => sum + s.rows.length, 0);
 
-  const handleRestore = (row: DeletedRow) => {
-    row.restore();
+  const handleRestore = async (row: DeletedRow) => {
+    await row.restore();
     reload();
   };
 
-  const handlePurge = (row: DeletedRow) => {
+  const handlePurge = async (row: DeletedRow) => {
     if (confirm(`Permanently delete "${row.name}"? This can't be undone.`)) {
-      row.purge();
+      await row.purge();
       reload();
     }
   };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, CreditCard, Pencil, Archive, ArchiveRestore, AlertTriangle } from 'lucide-react';
+import { X, CreditCard, Pencil, Archive, ArchiveRestore, TriangleAlert as AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +33,9 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
     setArchived(PaymentCardService.getArchived());
   };
 
-  useEffect(refresh, []);
+  useEffect(() => {
+    PaymentCardService.refresh().then(refresh).catch(console.error);
+  }, []);
 
   const startEdit = (card: PaymentCard) =>
     setDraft({
@@ -44,7 +46,7 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
       notes: card.notes ?? '',
     });
 
-  const save = () => {
+  const save = async () => {
     if (!draft?.nickname.trim()) return;
     const m = draft.month ? parseInt(draft.month, 10) : undefined;
     const y = draft.year ? parseInt(draft.year, 10) : undefined;
@@ -54,8 +56,8 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
       expiryYear: y && y > 1900 ? y : undefined,
       notes: draft.notes.trim() || undefined,
     };
-    if (draft.id) PaymentCardService.update(draft.id, payload);
-    else PaymentCardService.add(payload);
+    if (draft.id) await PaymentCardService.update(draft.id, payload);
+    else await PaymentCardService.add(payload);
     setDraft(null);
     refresh();
   };
@@ -178,8 +180,8 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
                       variant="ghost"
                       size="sm"
                       className="text-muted-foreground"
-                      onClick={() => {
-                        PaymentCardService.remove(card.id);
+                      onClick={async () => {
+                        await PaymentCardService.remove(card.id);
                         refresh();
                       }}
                     >
@@ -214,8 +216,8 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          PaymentCardService.restore(card.id);
+                        onClick={async () => {
+                          await PaymentCardService.restore(card.id);
                           refresh();
                         }}
                       >

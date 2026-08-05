@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, CalendarIcon } from 'lucide-react';
+import { X, Calendar as CalendarIcon } from 'lucide-react';
 import { Event, PAYMENT_METHOD_LABELS, PaymentMethod } from '@/types/bill';
 import { 
   EventExpenseExtended, 
@@ -73,7 +73,7 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
@@ -91,7 +91,7 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
       return;
     }
 
-    CustomBillOptionsService.addEventCategory(formData.category);
+    await CustomBillOptionsService.addEventCategory(formData.category);
 
     const expenseData: Omit<EventExpenseExtended, 'id' | 'eventId' | 'createdAt' | 'updatedAt'> = {
       name: formData.name.trim(),
@@ -111,9 +111,9 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
     };
 
     if (editingExpenseId) {
-      EventExpenseService.updateExpense(event.id, editingExpenseId, expenseData);
+      await EventExpenseService.updateExpense(event.id, editingExpenseId, expenseData);
     } else {
-      EventExpenseService.addExpense(event.id, expenseData);
+      await EventExpenseService.addExpense(event.id, expenseData);
     }
 
     onSave();

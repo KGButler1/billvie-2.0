@@ -1,104 +1,123 @@
-// Service to manage custom bill options (categories, payment methods, responsible parties)
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
-const CUSTOM_CATEGORIES_KEY = 'billvie_custom_categories';
-const CUSTOM_PAYMENT_METHODS_KEY = 'billvie_custom_payment_methods';
-const CUSTOM_EVENT_CATEGORIES_KEY = 'billvie_custom_event_categories';
-const CUSTOM_BUSINESS_NAMES_KEY = 'billvie_custom_business_names';
-// `billvie_custom_responsible_parties` is deliberately left unread — the field it
-// backed was retired and migrated into bill notes.
-
+export type CustomOptionType = 'bill_category' | 'payment_method' | 'event_category' | 'business_name';
 
 export interface CustomOption {
   id: string;
   label: string;
 }
 
-const generateId = (): string => {
-  return `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+let cache: Record<CustomOptionType, CustomOption[]> = {
+  bill_category: [],
+  payment_method: [],
+  event_category: [],
+  business_name: [],
 };
+let loaded = false;
 
 export class CustomBillOptionsService {
-  // Custom Categories
+  static async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('custom_options')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('label', { ascending: true });
+
+    if (error) throw error;
+
+    cache = {
+      bill_category: [],
+      payment_method: [],
+      event_category: [],
+      business_name: [],
+    };
+    (data || []).forEach((row) => {
+      const opt: CustomOption = { id: row.id, label: row.label };
+      const type = row.option_type as CustomOptionType;
+      if (cache[type]) cache[type].push(opt);
+    });
+    loaded = true;
+  }
+
+  private static ensureLoaded(type: CustomOptionType): CustomOption[] {
+    return loaded ? cache[type] : [];
+  }
+
   static getCustomCategories(): CustomOption[] {
-    const data = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
-    return data ? JSON.parse(data) : [];
+    return this.ensureLoaded('bill_category');
   }
 
-  static addCustomCategory(label: string): CustomOption {
-    const categories = this.getCustomCategories();
-    const newCategory: CustomOption = { id: generateId(), label: label.trim() };
-    categories.push(newCategory);
-    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
-    return newCategory;
+  static async addCustomCategory(label: string): Promise<CustomOption> {
+    return this.addOption('bill_category', label);
   }
 
-  static deleteCustomCategory(id: string): void {
-    const categories = this.getCustomCategories().filter(c => c.id !== id);
-    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
+  static async deleteCustomCategory(id: string): Promise<void> {
+    return this.deleteOption(id);
   }
 
-  // Custom Payment Methods
   static getCustomPaymentMethods(): CustomOption[] {
-    const data = localStorage.getItem(CUSTOM_PAYMENT_METHODS_KEY);
-    return data ? JSON.parse(data) : [];
+    return this.ensureLoaded('payment_method');
   }
 
-  static addCustomPaymentMethod(label: string): CustomOption {
-    const methods = this.getCustomPaymentMethods();
-    const newMethod: CustomOption = { id: generateId(), label: label.trim() };
-    methods.push(newMethod);
-    localStorage.setItem(CUSTOM_PAYMENT_METHODS_KEY, JSON.stringify(methods));
-    return newMethod;
+  static async addCustomPaymentMethod(label: string): Promise<CustomOption> {
+    return this.addOption('payment_method', label);
   }
 
-  static deleteCustomPaymentMethod(id: string): void {
-    const methods = this.getCustomPaymentMethods().filter(m => m.id !== id);
-    localStorage.setItem(CUSTOM_PAYMENT_METHODS_KEY, JSON.stringify(methods));
+  static async deleteCustomPaymentMethod(id: string): Promise<void> {
+    return this.deleteOption(id);
   }
 
-  // Event Categories — household-defined, no app presets
   static getEventCategories(): CustomOption[] {
-    const data = localStorage.getItem(CUSTOM_EVENT_CATEGORIES_KEY);
-    return data ? JSON.parse(data) : [];
+    return this.ensureLoaded('event_category');
   }
 
-  static addEventCategory(label: string): CustomOption {
-    const categories = this.getEventCategories();
+  static async addEventCategory(label: string): Promise<CustomOption> {
     const trimmed = label.trim();
-    const existing = categories.find(c => c.label.toLowerCase() === trimmed.toLowerCase());
+    const existing = this.getEventCategories().find((c) => c.label.toLowerCase() === trimmed.toLowerCase());
     if (existing) return existing;
-    const newCategory: CustomOption = { id: generateId(), label: trimmed };
-    categories.push(newCategory);
-    localStorage.setItem(CUSTOM_EVENT_CATEGORIES_KEY, JSON.stringify(categories));
-    return newCategory;
+    return this.addOption('event_category', trimmed);
   }
 
-  static deleteEventCategory(id: string): void {
-    const categories = this.getEventCategories().filter(c => c.id !== id);
-    localStorage.setItem(CUSTOM_EVENT_CATEGORIES_KEY, JSON.stringify(categories));
+  static async deleteEventCategory(id: string): Promise<void> {
+    return this.deleteOption(id);
   }
 
-  // Business names — used when a bill or document is tagged as business-related for tax
   static getCustomBusinessNames(): CustomOption[] {
-    const data = localStorage.getItem(CUSTOM_BUSINESS_NAMES_KEY);
-    return data ? JSON.parse(data) : [];
+    return this.ensureLoaded('business_name');
   }
 
-  static addCustomBusinessName(label: string): CustomOption {
-    const names = this.getCustomBusinessNames();
+  static async addCustomBusinessName(label: string): Promise<CustomOption> {
     const trimmed = label.trim();
-    const existing = names.find(n => n.label.toLowerCase() === trimmed.toLowerCase());
+    const existing = this.getCustomBusinessNames().find((n) => n.label.toLowerCase() === trimmed.toLowerCase());
     if (existing) return existing;
-    const created: CustomOption = { id: generateId(), label: trimmed };
-    names.push(created);
-    localStorage.setItem(CUSTOM_BUSINESS_NAMES_KEY, JSON.stringify(names));
-    return created;
+    return this.addOption('business_name', trimmed);
   }
 
-  static deleteCustomBusinessName(id: string): void {
-    const names = this.getCustomBusinessNames().filter(n => n.id !== id);
-    localStorage.setItem(CUSTOM_BUSINESS_NAMES_KEY, JSON.stringify(names));
+  static async deleteCustomBusinessName(id: string): Promise<void> {
+    return this.deleteOption(id);
+  }
+
+  private static async addOption(type: CustomOptionType, label: string): Promise<CustomOption> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('custom_options')
+      .insert({ household_id: householdId, option_type: type, label: label.trim() })
+      .select()
+      .single();
+
+    if (error) throw error;
+    const opt: CustomOption = { id: data.id, label: data.label };
+    cache[type].push(opt);
+    return opt;
+  }
+
+  private static async deleteOption(id: string): Promise<void> {
+    const { error } = await supabase.from('custom_options').delete().eq('id', id);
+    if (error) throw error;
+    (Object.keys(cache) as CustomOptionType[]).forEach((type) => {
+      cache[type] = cache[type].filter((o) => o.id !== id);
+    });
   }
 }
-
-

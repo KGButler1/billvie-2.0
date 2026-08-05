@@ -67,9 +67,9 @@ const LinkItemsSheet = ({ document: doc, onClose }: LinkItemsSheetProps) => {
   const relatedDocs = allDocs.filter((d) => relatedIds.includes(d.id));
   const linkableDocs = allDocs.filter((d) => d.id !== doc.id && !relatedIds.includes(d.id));
 
-  const removeLink = (targetId: string) => {
+  const removeLink = async (targetId: string) => {
     const id = DocumentLinkService.findActiveLinkId(doc.id, targetId);
-    if (id) DocumentLinkService.unlink(id);
+    if (id) await DocumentLinkService.unlink(id);
     bump();
   };
 
@@ -124,8 +124,8 @@ const LinkItemsSheet = ({ document: doc, onClose }: LinkItemsSheetProps) => {
                     <CommandItem
                       key={bill.id}
                       value={bill.name}
-                      onSelect={() => {
-                        DocumentLinkService.linkToBill(doc.id, bill.id);
+                      onSelect={async () => {
+                        await DocumentLinkService.linkToBill(doc.id, bill.id);
                         bump();
                       }}
                     >
@@ -160,8 +160,8 @@ const LinkItemsSheet = ({ document: doc, onClose }: LinkItemsSheetProps) => {
                     <CommandItem
                       key={d.id}
                       value={d.title}
-                      onSelect={() => {
-                        DocumentLinkService.linkToDocument(doc.id, d.id);
+                      onSelect={async () => {
+                        await DocumentLinkService.linkToDocument(doc.id, d.id);
                         bump();
                       }}
                     >

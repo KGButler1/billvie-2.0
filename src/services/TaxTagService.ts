@@ -3,20 +3,29 @@ import { BillService } from '@/services/BillService';
 import { DocumentService } from '@/services/DocumentService';
 import { Bill } from '@/types/bill';
 import { HouseholdDocument } from '@/types/document';
-
-const TAGS_KEY = 'billvie_tax_tags';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
 const now = () => new Date().toISOString();
-const newId = () => `tt_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
-const readTags = (): TaxTag[] => {
-  const data = localStorage.getItem(TAGS_KEY);
-  return data ? JSON.parse(data) : [];
-};
+function rowToTag(row: Record<string, unknown>): TaxTag {
+  return {
+    id: row.id as string,
+    itemId: row.item_id as string,
+    itemType: row.item_type as TaxItemType,
+    taxYear: row.tax_year as number,
+    categories: (row.categories as string[]) || undefined,
+    taxType: (row.tax_type as 'personal' | 'business') || undefined,
+    businessName: (row.business_name as string) || undefined,
+    origin: (row.origin as 'direct' | 'carried') || 'direct',
+    carriedFromYear: (row.carried_from_year as number) || undefined,
+    taggedAt: row.tagged_at as string,
+    untaggedAt: (row.untagged_at as string) || undefined,
+  };
+}
 
-const writeTags = (tags: TaxTag[]) => {
-  localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
-};
+let cache: TaxTag[] = [];
+let loaded = false;
 
 const resolveItem = (itemId: string, itemType: TaxItemType) =>
   itemType === 'bill'
@@ -24,12 +33,25 @@ const resolveItem = (itemId: string, itemType: TaxItemType) =>
     : DocumentService.getAll().find((d) => d.id === itemId);
 
 export const TaxTagService = {
+  async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('tax_tags')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('tagged_at', { ascending: false });
+
+    if (error) throw error;
+    cache = (data || []).map(rowToTag);
+    loaded = true;
+  },
+
   getRawTags(): TaxTag[] {
-    return readTags();
+    return loaded ? cache : [];
   },
 
   getActiveTags(taxYear?: number): TaxTag[] {
-    return readTags().filter((t) => !t.untaggedAt && (taxYear === undefined || t.taxYear === taxYear));
+    return this.getRawTags().filter((t) => !t.untaggedAt && (taxYear === undefined || t.taxYear === taxYear));
   },
 
   getTagForItem(itemId: string, itemType: TaxItemType, taxYear: number): TaxTag | undefined {
@@ -40,104 +62,130 @@ export const TaxTagService = {
     return !!this.getTagForItem(itemId, itemType, taxYear);
   },
 
-  tagItem(
+  async tagItem(
     itemId: string,
     itemType: TaxItemType,
     taxYear: number,
     details?: { categories?: string[]; taxType?: 'personal' | 'business'; businessName?: string }
-  ): TaxTag {
-    const tags = readTags();
+  ): Promise<TaxTag> {
+    const householdId = await getHouseholdId();
 
-    // Reactivate (or update) any record for the same item + year, active or not.
-    const idx = tags.findIndex((t) => t.itemId === itemId && t.itemType === itemType && t.taxYear === taxYear);
-    if (idx !== -1) {
-      const updated: TaxTag = {
-        ...tags[idx],
-        untaggedAt: undefined,
-        categories: details?.categories ?? tags[idx].categories,
-        taxType: details?.taxType ?? tags[idx].taxType,
-        businessName: details?.businessName ?? tags[idx].businessName,
+    // Reactivate or update existing record for same item + year
+    const existing = cache.find(
+      (t) => t.itemId === itemId && t.itemType === itemType && t.taxYear === taxYear
+    );
+
+    if (existing) {
+      const row: Record<string, unknown> = {
+        untagged_at: null,
+        categories: details?.categories ?? existing.categories ?? [],
+        tax_type: details?.taxType ?? existing.taxType ?? null,
+        business_name: details?.businessName ?? existing.businessName ?? null,
+        updated_at: now(),
       };
-      tags[idx] = updated;
-      writeTags(tags);
+      const { data, error } = await supabase
+        .from('tax_tags')
+        .update(row)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      const updated = rowToTag(data);
+      const idx = cache.findIndex((t) => t.id === existing.id);
+      if (idx !== -1) cache[idx] = updated;
       return updated;
     }
 
-    const created: TaxTag = {
-      id: newId(),
-      itemId,
-      itemType,
-      taxYear,
-      categories: details?.categories,
-      taxType: details?.taxType,
-      businessName: details?.businessName,
+    const row = {
+      household_id: householdId,
+      item_id: itemId,
+      item_type: itemType,
+      tax_year: taxYear,
+      categories: details?.categories ?? [],
+      tax_type: details?.taxType ?? null,
+      business_name: details?.businessName ?? null,
       origin: 'direct',
-      taggedAt: now(),
     };
-    tags.push(created);
-    writeTags(tags);
+    const { data, error } = await supabase
+      .from('tax_tags')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    const created = rowToTag(data);
+    cache.push(created);
     return created;
   },
 
-  untagItem(itemId: string, itemType: TaxItemType, taxYear: number): void {
-    const tags = readTags();
-    const idx = tags.findIndex(
+  async untagItem(itemId: string, itemType: TaxItemType, taxYear: number): Promise<void> {
+    const tag = cache.find(
       (t) => t.itemId === itemId && t.itemType === itemType && t.taxYear === taxYear && !t.untaggedAt
     );
-    if (idx === -1) return;
-    tags[idx] = { ...tags[idx], untaggedAt: now() };
-    writeTags(tags);
+    if (!tag) return;
+
+    const { error } = await supabase
+      .from('tax_tags')
+      .update({ untagged_at: now() })
+      .eq('id', tag.id);
+    if (error) throw error;
+    const idx = cache.findIndex((t) => t.id === tag.id);
+    if (idx !== -1) cache[idx] = { ...cache[idx], untaggedAt: now() };
   },
 
-  // Only ever runs for a year that has no active tags yet. Copies the most
-  // recent prior year's tags forward so nobody has to re-tag from scratch.
-  carryForwardIfNeeded(taxYear: number): void {
+  async carryForwardIfNeeded(taxYear: number): Promise<void> {
     if (this.getActiveTags(taxYear).length > 0) return;
 
     const priorYears: number[] = Array.from(
-      new Set<number>(this.getActiveTags().map((t: TaxTag) => t.taxYear).filter((y: number) => y < taxYear))
+      new Set<number>(this.getActiveTags().map((t) => t.taxYear).filter((y) => y < taxYear))
     ).sort((a, b) => b - a);
 
-    const source: number | undefined = priorYears[0];
+    const source = priorYears[0];
     if (source === undefined) return;
 
-    const tags = readTags();
-    let changed = false;
+    const householdId = await getHouseholdId();
+    const sourceTags = this.getActiveTags(source);
 
-    this.getActiveTags(source).forEach((prev) => {
-      if (!resolveItem(prev.itemId, prev.itemType)) return; // underlying record is gone
-      tags.push({
-        id: newId(),
-        itemId: prev.itemId,
-        itemType: prev.itemType,
-        taxYear,
-        categories: prev.categories,
-        taxType: prev.taxType,
-        businessName: prev.businessName,
+    for (const prev of sourceTags) {
+      if (!resolveItem(prev.itemId, prev.itemType)) continue;
+      const row = {
+        household_id: householdId,
+        item_id: prev.itemId,
+        item_type: prev.itemType,
+        tax_year: taxYear,
+        categories: prev.categories ?? [],
+        tax_type: prev.taxType ?? null,
+        business_name: prev.businessName ?? null,
         origin: 'carried',
-        carriedFromYear: source,
-        taggedAt: now(),
-      });
-      changed = true;
-    });
-
-    if (changed) writeTags(tags);
+        carried_from_year: source,
+      };
+      const { data, error } = await supabase
+        .from('tax_tags')
+        .insert(row)
+        .select()
+        .single();
+      if (!error && data) {
+        cache.push(rowToTag(data));
+      }
+    }
   },
 
   // Convenience for the bill/document forms: reconciles a single checkbox +
   // year into tags, clearing any stale tag on a different year for that item.
-  setTag(
+  async setTag(
     itemId: string,
     itemType: TaxItemType,
     value: { enabled: boolean; taxYear: number; taxType?: 'personal' | 'business'; businessName?: string }
-  ): void {
-    this.getActiveTags()
-      .filter((t: TaxTag) => t.itemId === itemId && t.itemType === itemType)
-      .filter((t: TaxTag) => !value.enabled || t.taxYear !== value.taxYear)
-      .forEach((t: TaxTag) => this.untagItem(t.itemId, t.itemType, t.taxYear));
+  ): Promise<void> {
+    const stale = this.getActiveTags()
+      .filter((t) => t.itemId === itemId && t.itemType === itemType)
+      .filter((t) => !value.enabled || t.taxYear !== value.taxYear);
+
+    for (const t of stale) {
+      await this.untagItem(t.itemId, t.itemType, t.taxYear);
+    }
 
     if (value.enabled) {
-      this.tagItem(itemId, itemType, value.taxYear, {
+      await this.tagItem(itemId, itemType, value.taxYear, {
         taxType: value.taxType,
         businessName: value.taxType === 'business' ? value.businessName : undefined,
       });
@@ -151,6 +199,6 @@ export const TaxTagService = {
   },
 
   getYearsWithTags(): number[] {
-    return Array.from(new Set<number>(this.getActiveTags().map((t: TaxTag) => t.taxYear))).sort((a, b) => b - a);
+    return Array.from(new Set<number>(this.getActiveTags().map((t) => t.taxYear))).sort((a, b) => b - a);
   },
 };

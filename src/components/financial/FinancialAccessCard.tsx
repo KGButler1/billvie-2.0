@@ -16,13 +16,17 @@ const FinancialAccessCard = () => {
   const [householdIds, setHouseholdIds] = useState<string[]>(() => read('household'));
   const [professionalIds, setProfessionalIds] = useState<string[]>(() => read('professional'));
 
-  const apply = (previous: string[], next: string[]) => {
-    next
-      .filter((id) => !previous.includes(id))
-      .forEach((id) => AccessService.grantWholeScope(id, 'financial_info'));
-    previous
-      .filter((id) => !next.includes(id))
-      .forEach((id) => AccessService.revokeScopeForPerson(id, 'financial_info'));
+  const apply = async (previous: string[], next: string[]) => {
+    await Promise.all(
+      next
+        .filter((id) => !previous.includes(id))
+        .map((id) => AccessService.grantWholeScope(id, 'financial_info'))
+    );
+    await Promise.all(
+      previous
+        .filter((id) => !next.includes(id))
+        .map((id) => AccessService.revokeScopeForPerson(id, 'financial_info'))
+    );
   };
 
   return (

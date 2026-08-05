@@ -6,6 +6,7 @@ import { BillService } from '@/services/BillService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
+import { refreshAllData } from '@/services/loadAllData';
 import { Bill } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
 import BillList from '@/components/bills/BillList';
@@ -43,8 +44,7 @@ const Dashboard = () => {
   // Initialize data on mount
   useEffect(() => {
     UserService.initializeTheme();
-    BillService.initialize();
-    EventService.initialize();
+    refreshAllData().then(loadBills).catch(console.error);
     loadBills();
 
     // Dev panel keyboard shortcut
@@ -90,11 +90,11 @@ const Dashboard = () => {
     setShowFabMenu(false);
   };
 
-  const handleAddBill = (
+  const handleAddBill = async (
     billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
     linkedDocumentId?: string
   ) => {
-    const created = BillService.addBill(billData);
+    const created = await BillService.addBill(billData);
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     loadBills();
     setIsAddingBill(false);
@@ -106,27 +106,27 @@ const Dashboard = () => {
     setShowUpgradeModal(false);
   };
 
-  const handleUpdateBill = (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateBill = async (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
     if (!editingBill) return;
-    BillService.updateBill(editingBill.id, updates);
+    await BillService.updateBill(editingBill.id, updates);
     loadBills();
     setEditingBill(null);
     setDetailBill(null);
   };
 
-  const handleMarkPaid = (id: string) => {
-    BillService.markAsPaid(id);
+  const handleMarkPaid = async (id: string) => {
+    await BillService.markAsPaid(id);
     loadBills();
   };
 
-  const handleMarkUnpaid = (id: string) => {
-    BillService.markAsUnpaid(id);
+  const handleMarkUnpaid = async (id: string) => {
+    await BillService.markAsUnpaid(id);
     loadBills();
   };
 
-  const handleDeleteBill = (id: string) => {
+  const handleDeleteBill = async (id: string) => {
     if (!confirm('Delete this bill? You can restore it from Recently Deleted within 30 days.')) return;
-    BillService.deleteBill(id);
+    await BillService.deleteBill(id);
     loadBills();
   };
 
@@ -166,8 +166,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <DashboardHeader 
-        onClearSamples={() => {
-          BillService.clearSampleBills();
+        onClearSamples={async () => {
+          await BillService.clearSampleBills();
           loadBills();
         }}
         hasSampleBills={hasSampleBills}
@@ -180,8 +180,8 @@ const Dashboard = () => {
         <div className="hidden lg:flex items-center justify-end gap-2 mb-4">
           {hasSampleBills && (
             <button
-              onClick={() => {
-                BillService.clearSampleBills();
+              onClick={async () => {
+                await BillService.clearSampleBills();
                 loadBills();
               }}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"

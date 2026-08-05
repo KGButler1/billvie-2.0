@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, X, Check, AlertTriangle } from 'lucide-react';
+import { Plus, X, Check, TriangleAlert as AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,7 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
   const [year, setYear] = useState('');
 
   useEffect(() => {
-    setCards(PaymentCardService.getAll());
+    PaymentCardService.refresh().then(() => setCards(PaymentCardService.getAll())).catch(console.error);
   }, []);
 
   const reset = () => {
@@ -32,11 +32,11 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
     setIsAdding(false);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!nickname.trim()) return;
     const m = month ? parseInt(month, 10) : undefined;
     const y = year ? parseInt(year, 10) : undefined;
-    const card = PaymentCardService.add({
+    const card = await PaymentCardService.add({
       nickname: nickname.trim(),
       expiryMonth: m && m >= 1 && m <= 12 ? m : undefined,
       expiryYear: y && y > 1900 ? y : undefined,

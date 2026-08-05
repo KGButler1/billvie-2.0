@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, ChevronDown, Edit2, Trash2 } from 'lucide-react';
+import { Check, X, ChevronDown, CreditCard as Edit2, Trash2 } from 'lucide-react';
 import { EventExpenseExtended, EXPENSE_UNIT_LABELS } from '@/types/event';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { Button } from '@/components/ui/button';
@@ -17,18 +17,18 @@ interface ExpenseItemProps {
 const ExpenseItem = ({ expense, eventId, onUpdate, onEdit }: ExpenseItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleTogglePaid = () => {
+  const handleTogglePaid = async () => {
     if (expense.isPaid) {
-      EventExpenseService.markAsUnpaid(eventId, expense.id);
+      await EventExpenseService.markAsUnpaid(eventId, expense.id);
     } else {
-      EventExpenseService.markAsPaid(eventId, expense.id);
+      await EventExpenseService.markAsPaid(eventId, expense.id);
     }
     onUpdate();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Delete this expense?')) {
-      EventExpenseService.deleteExpense(eventId, expense.id);
+      await EventExpenseService.deleteExpense(eventId, expense.id);
       onUpdate();
     }
   };

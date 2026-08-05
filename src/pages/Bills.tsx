@@ -63,8 +63,7 @@ const Bills = () => {
   };
 
   useEffect(() => {
-    BillService.initialize();
-    loadBills();
+    BillService.refresh().then(loadBills).catch(console.error);
   }, []);
 
   const counts = useMemo(
@@ -109,12 +108,12 @@ const Bills = () => {
     else setShowUpgradeModal(true);
   };
 
-  const handleAddBill = (
+  const handleAddBill = async (
     billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
     linkedDocumentId?: string,
     tax?: TaxRelevanceValue
   ) => {
-    const created = BillService.addBill(billData);
+    const created = await BillService.addBill(billData);
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     if (tax) TaxTagService.setTag(created.id, 'bill', tax);
     loadBills();
@@ -122,30 +121,30 @@ const Bills = () => {
     setIsScanningBill(false);
   };
 
-  const handleUpdateBill = (
+  const handleUpdateBill = async (
     updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
     _linkedDocumentId?: string,
     tax?: TaxRelevanceValue
   ) => {
     if (!editingBill) return;
-    BillService.updateBill(editingBill.id, updates);
+    await BillService.updateBill(editingBill.id, updates);
     if (tax) TaxTagService.setTag(editingBill.id, 'bill', tax);
     loadBills();
     setEditingBill(null);
     setDetailBill(null);
   };
 
-  const handleMarkPaid = (id: string) => {
-    BillService.markAsPaid(id);
+  const handleMarkPaid = async (id: string) => {
+    await BillService.markAsPaid(id);
     loadBills();
   };
-  const handleMarkUnpaid = (id: string) => {
-    BillService.markAsUnpaid(id);
+  const handleMarkUnpaid = async (id: string) => {
+    await BillService.markAsUnpaid(id);
     loadBills();
   };
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Delete this bill? You can restore it from Recently Deleted within 30 days.')) return;
-    BillService.deleteBill(id);
+    await BillService.deleteBill(id);
     loadBills();
   };
 

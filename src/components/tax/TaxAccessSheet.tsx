@@ -28,15 +28,19 @@ const TaxAccessSheet = ({ itemId, title, onClose }: TaxAccessSheetProps) => {
   const [householdIds, setHouseholdIds] = useState<string[]>(() => read('household'));
   const [professionalIds, setProfessionalIds] = useState<string[]>(() => read('professional'));
 
-  const apply = (previous: string[], next: string[]) => {
-    next
-      .filter((id) => !previous.includes(id))
-      .forEach((id) =>
-        itemId ? AccessService.grantItem(id, SCOPE, itemId) : AccessService.grantWholeScope(id, SCOPE)
-      );
-    previous
-      .filter((id) => !next.includes(id))
-      .forEach((id) => AccessService.revokeScopeForPerson(id, SCOPE, itemId));
+  const apply = async (previous: string[], next: string[]) => {
+    await Promise.all(
+      next
+        .filter((id) => !previous.includes(id))
+        .map((id) =>
+          itemId ? AccessService.grantItem(id, SCOPE, itemId) : AccessService.grantWholeScope(id, SCOPE)
+        )
+    );
+    await Promise.all(
+      previous
+        .filter((id) => !next.includes(id))
+        .map((id) => AccessService.revokeScopeForPerson(id, SCOPE, itemId))
+    );
   };
 
   return (

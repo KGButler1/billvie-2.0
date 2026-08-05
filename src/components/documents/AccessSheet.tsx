@@ -25,11 +25,13 @@ const AccessSheet = ({ scope, itemId, onClose }: AccessSheetProps) => {
   const [householdIds, setHouseholdIds] = useState<string[]>(() => read('household'));
   const [professionalIds, setProfessionalIds] = useState<string[]>(() => read('professional'));
 
-  const apply = (previous: string[], next: string[]) => {
-    next.filter((id) => !previous.includes(id)).forEach((id) => AccessService.grantItem(id, scope, itemId));
-    previous
-      .filter((id) => !next.includes(id))
-      .forEach((id) => AccessService.revokeScopeForPerson(id, scope, itemId));
+  const apply = async (previous: string[], next: string[]) => {
+    await Promise.all(next.filter((id) => !previous.includes(id)).map((id) => AccessService.grantItem(id, scope, itemId)));
+    await Promise.all(
+      previous
+        .filter((id) => !next.includes(id))
+        .map((id) => AccessService.revokeScopeForPerson(id, scope, itemId))
+    );
   };
 
   return (

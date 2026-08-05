@@ -68,10 +68,10 @@ const Onboarding = () => {
 
   const goTo = (next: Step) => setStep(next);
 
-  const handleAddBill = () => {
+  const handleAddBill = async () => {
     if (!billName.trim()) return;
-    BillService.initialize();
-    BillService.addBill({
+    await BillService.refresh();
+    await BillService.addBill({
       name: billName.trim(),
       amount: billAmount ? parseFloat(billAmount) : undefined,
       dueDate: billDueDate || undefined,

@@ -83,9 +83,9 @@ const AccessPicker = ({ scope, itemId, roleFilter, selectedPersonIds, onChange }
     );
   };
 
-  const confirmNarrow = (personId: string) => {
+  const confirmNarrow = async (personId: string) => {
     const keep = allItemIds(scope).filter((id) => id !== itemId);
-    AccessService.narrowToItems(personId, scope, keep);
+    await AccessService.narrowToItems(personId, scope, keep);
     setNarrowing(null);
     onChange(selectedPersonIds.filter((id) => id !== personId));
   };

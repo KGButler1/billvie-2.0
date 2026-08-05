@@ -70,9 +70,9 @@ const LinkTaxItemsSheet = ({ taxDocument, onClose }: LinkTaxItemsSheetProps) => 
   const relatedDocs = allDocs.filter((d) => relatedIds.includes(d.id));
   const linkableDocs = allDocs.filter((d) => !relatedIds.includes(d.id));
 
-  const removeLink = (targetId: string) => {
+  const removeLink = async (targetId: string) => {
     const id = DocumentLinkService.findActiveTaxLinkId(taxDocument.id, targetId);
-    if (id) DocumentLinkService.unlink(id);
+    if (id) await DocumentLinkService.unlink(id);
     bump();
   };
 
@@ -128,8 +128,8 @@ const LinkTaxItemsSheet = ({ taxDocument, onClose }: LinkTaxItemsSheetProps) => 
                     <CommandItem
                       key={bill.id}
                       value={bill.name}
-                      onSelect={() => {
-                        DocumentLinkService.linkTaxToBill(taxDocument.id, bill.id);
+                      onSelect={async () => {
+                        await DocumentLinkService.linkTaxToBill(taxDocument.id, bill.id);
                         bump();
                       }}
                     >
@@ -164,8 +164,8 @@ const LinkTaxItemsSheet = ({ taxDocument, onClose }: LinkTaxItemsSheetProps) => 
                     <CommandItem
                       key={d.id}
                       value={d.title}
-                      onSelect={() => {
-                        DocumentLinkService.linkTaxToDocument(taxDocument.id, d.id);
+                      onSelect={async () => {
+                        await DocumentLinkService.linkTaxToDocument(taxDocument.id, d.id);
                         bump();
                       }}
                     >

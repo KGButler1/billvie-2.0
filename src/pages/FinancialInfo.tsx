@@ -1,18 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Shield,
-  Wallet,
-  FileText,
-  Trash2,
-  Edit2,
-  ExternalLink,
-  TrendingUp,
-  Landmark
-} from 'lucide-react';
+import { ArrowLeft, Plus, Shield, Wallet, FileText, Trash2, CreditCard as Edit2, ExternalLink, TrendingUp, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -149,8 +138,8 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowInsuranceModal(true);
                   }}
-                  onDelete={() => {
-                    FinancialInfoService.deleteInsurance(entry.id);
+                  onDelete={async () => {
+                    await FinancialInfoService.deleteInsurance(entry.id);
                     loadData();
                   }}
                 />
@@ -189,8 +178,8 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowSuperModal(true);
                   }}
-                  onDelete={() => {
-                    FinancialInfoService.deleteSuperannuation(entry.id);
+                  onDelete={async () => {
+                    await FinancialInfoService.deleteSuperannuation(entry.id);
                     loadData();
                   }}
                 />
@@ -231,8 +220,8 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowIncomeModal(true);
                   }}
-                  onDelete={() => {
-                    FinancialInfoService.deleteIncome(entry.id);
+                  onDelete={async () => {
+                    await FinancialInfoService.deleteIncome(entry.id);
                     loadData();
                   }}
                 />
@@ -274,8 +263,8 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowDebtModal(true);
                   }}
-                  onDelete={() => {
-                    FinancialInfoService.deleteDebt(entry.id);
+                  onDelete={async () => {
+                    await FinancialInfoService.deleteDebt(entry.id);
                     loadData();
                   }}
                 />
@@ -314,8 +303,8 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowMiscModal(true);
                   }}
-                  onDelete={() => {
-                    FinancialInfoService.deleteMisc(entry.id);
+                  onDelete={async () => {
+                    await FinancialInfoService.deleteMisc(entry.id);
                     loadData();
                   }}
                 />
@@ -707,7 +696,7 @@ const InsuranceModal = ({
     }
   }, [editingId, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!provider) return;
 
     const data = {
@@ -723,9 +712,9 @@ const InsuranceModal = ({
     };
 
     if (editingId) {
-      FinancialInfoService.updateInsurance(editingId, data);
+      await FinancialInfoService.updateInsurance(editingId, data);
     } else {
-      FinancialInfoService.addInsurance(data);
+      await FinancialInfoService.addInsurance(data);
     }
     onSave();
   };
@@ -767,8 +756,8 @@ const InsuranceModal = ({
               options={billOptions}
               value={linkedBill}
               onChange={setLinkedBill}
-              onCreate={(name) => {
-                const created = BillService.addBill({ name, isRecurring: false });
+              onCreate={async (name) => {
+                const created = await BillService.addBill({ name, isRecurring: false });
                 return { id: created.id, label: created.name };
               }}
             />
@@ -880,7 +869,7 @@ const SuperModal = ({
     }
   }, [editingId, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!fundName || !balance) return;
 
     const data = {
@@ -892,9 +881,9 @@ const SuperModal = ({
     };
 
     if (editingId) {
-      FinancialInfoService.updateSuperannuation(editingId, data);
+      await FinancialInfoService.updateSuperannuation(editingId, data);
     } else {
-      FinancialInfoService.addSuperannuation(data);
+      await FinancialInfoService.addSuperannuation(data);
     }
     onSave();
   };
@@ -968,7 +957,7 @@ const MiscModal = ({
     }
   }, [editingId, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!key || !value) return;
     
     const data = {
@@ -978,9 +967,9 @@ const MiscModal = ({
     };
 
     if (editingId) {
-      FinancialInfoService.updateMisc(editingId, data);
+      await FinancialInfoService.updateMisc(editingId, data);
     } else {
-      FinancialInfoService.addMisc(data);
+      await FinancialInfoService.addMisc(data);
     }
     onSave();
   };
@@ -1042,7 +1031,7 @@ const IncomeModal = ({
     }
   }, [editingId, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!sourceName || !amount) return;
     const data = {
       sourceName,
@@ -1050,9 +1039,9 @@ const IncomeModal = ({
       notes: notes || undefined,
     };
     if (editingId) {
-      FinancialInfoService.updateIncome(editingId, data);
+      await FinancialInfoService.updateIncome(editingId, data);
     } else {
-      FinancialInfoService.addIncome(data);
+      await FinancialInfoService.addIncome(data);
     }
     onSave();
   };
@@ -1117,7 +1106,7 @@ const DebtModal = ({
     }
   }, [editingId, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!owedTo || !balance) return;
     const data = {
       owedTo,
@@ -1126,9 +1115,9 @@ const DebtModal = ({
       notes: notes || undefined,
     };
     if (editingId) {
-      FinancialInfoService.updateDebt(editingId, data);
+      await FinancialInfoService.updateDebt(editingId, data);
     } else {
-      FinancialInfoService.addDebt(data);
+      await FinancialInfoService.addDebt(data);
     }
     onSave();
   };

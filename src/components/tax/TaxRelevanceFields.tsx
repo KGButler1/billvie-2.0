@@ -61,10 +61,10 @@ const TaxRelevanceFields = ({ value, onChange }: TaxRelevanceFieldsProps) => {
 
   const set = (patch: Partial<TaxRelevanceValue>) => onChange({ ...value, ...patch });
 
-  const handleAddBusiness = () => {
+  const handleAddBusiness = async () => {
     const trimmed = newBusinessName.trim();
     if (!trimmed) return;
-    const created = CustomBillOptionsService.addCustomBusinessName(trimmed);
+    const created = await CustomBillOptionsService.addCustomBusinessName(trimmed);
     setBusinessNames(CustomBillOptionsService.getCustomBusinessNames());
     set({ businessName: created.label });
     setNewBusinessName('');

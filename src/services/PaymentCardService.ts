@@ -1,85 +1,122 @@
 import { PaymentCard } from '@/types/paymentCard';
 import { BillService } from './BillService';
-
-const CARDS_KEY = 'billvie_payment_cards';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
 const now = () => new Date().toISOString();
 
-const generateId = (): string => `card_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+function rowToCard(row: Record<string, unknown>): PaymentCard {
+  return {
+    id: row.id as string,
+    nickname: row.nickname as string,
+    expiryMonth: row.expiry_month as number | undefined,
+    expiryYear: row.expiry_year as number | undefined,
+    notes: (row.notes as string) || undefined,
+    archivedAt: (row.archived_at as string) || undefined,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
 
-const read = (): PaymentCard[] => {
-  const data = localStorage.getItem(CARDS_KEY);
-  return data ? JSON.parse(data) : [];
-};
+function cardToRow(card: Partial<PaymentCard>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  if (card.nickname !== undefined) row.nickname = card.nickname;
+  if (card.expiryMonth !== undefined) row.expiry_month = card.expiryMonth;
+  if (card.expiryYear !== undefined) row.expiry_year = card.expiryYear;
+  if (card.notes !== undefined) row.notes = card.notes || null;
+  if (card.archivedAt !== undefined) row.archived_at = card.archivedAt || null;
+  return row;
+}
 
-const write = (cards: PaymentCard[]) => {
-  localStorage.setItem(CARDS_KEY, JSON.stringify(cards));
-};
+let cache: PaymentCard[] = [];
+let loaded = false;
 
 export const PaymentCardService = {
-  // Raw getter — includes archived cards. Every read-modify-write MUST use this.
+  async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('payment_cards')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    cache = (data || []).map(rowToCard);
+    loaded = true;
+  },
+
   getRaw(): PaymentCard[] {
-    return read();
+    return loaded ? cache : [];
   },
 
   getAll(): PaymentCard[] {
-    return read().filter((c) => !c.archivedAt);
+    return this.getRaw().filter((c) => !c.archivedAt);
   },
 
   getArchived(): PaymentCard[] {
-    return read().filter((c) => !!c.archivedAt);
+    return this.getRaw().filter((c) => !!c.archivedAt);
   },
 
   getById(id?: string): PaymentCard | undefined {
     if (!id) return undefined;
-    return read().find((c) => c.id === id);
+    return this.getRaw().find((c) => c.id === id);
   },
 
-  add(data: Pick<PaymentCard, 'nickname'> & Partial<PaymentCard>): PaymentCard {
-    const cards = read();
-    const card: PaymentCard = {
-      id: generateId(),
-      nickname: data.nickname.trim(),
-      expiryMonth: data.expiryMonth,
-      expiryYear: data.expiryYear,
-      notes: data.notes,
-      createdAt: now(),
-      updatedAt: now(),
+  async add(data: Pick<PaymentCard, 'nickname'> & Partial<PaymentCard>): Promise<PaymentCard> {
+    const householdId = await getHouseholdId();
+    const row = {
+      ...cardToRow(data),
+      household_id: householdId,
     };
-    cards.push(card);
-    write(cards);
-    return card;
+
+    const { data: result, error } = await supabase
+      .from('payment_cards')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const newCard = rowToCard(result);
+    cache.push(newCard);
+    return newCard;
   },
 
-  update(id: string, updates: Partial<PaymentCard>): PaymentCard | undefined {
-    const cards = read();
-    const index = cards.findIndex((c) => c.id === id);
-    if (index === -1) return undefined;
-    cards[index] = { ...cards[index], ...updates, id, updatedAt: now() };
-    write(cards);
-    return cards[index];
+  async update(id: string, updates: Partial<PaymentCard>): Promise<PaymentCard | undefined> {
+    const row = { ...cardToRow(updates), updated_at: now() };
+    const { data, error } = await supabase
+      .from('payment_cards')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const updated = rowToCard(data);
+    const index = cache.findIndex((c) => c.id === id);
+    if (index !== -1) cache[index] = updated;
+    return updated;
   },
 
-  // How many bills point at this card — drives the "fix once, fixes everything" copy.
   countLinkedBills(id: string): number {
     return BillService.getAllBills().filter((b) => b.paymentCardId === id).length;
   },
 
-  archive(id: string): void {
-    this.update(id, { archivedAt: now() });
+  async archive(id: string): Promise<void> {
+    await this.update(id, { archivedAt: now() });
   },
 
-  restore(id: string): void {
-    this.update(id, { archivedAt: undefined });
+  async restore(id: string): Promise<void> {
+    await this.update(id, { archivedAt: undefined });
   },
 
-  // Only ever a real delete when nothing references it — same instinct as elsewhere.
-  remove(id: string): 'deleted' | 'archived' {
+  async remove(id: string): Promise<'deleted' | 'archived'> {
     if (this.countLinkedBills(id) > 0) {
-      this.archive(id);
+      await this.archive(id);
       return 'archived';
     }
-    write(read().filter((c) => c.id !== id));
+    const { error } = await supabase.from('payment_cards').delete().eq('id', id);
+    if (error) throw error;
+    cache = cache.filter((c) => c.id !== id);
     return 'deleted';
   },
 };

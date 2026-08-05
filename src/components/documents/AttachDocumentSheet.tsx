@@ -54,9 +54,9 @@ const AttachDocumentSheet = ({ document: doc, onClose }: AttachDocumentSheetProp
     return () => window.document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const persist = (updates: Partial<HouseholdDocument>) => {
+  const persist = async (updates: Partial<HouseholdDocument>) => {
     try {
-      DocumentService.update(doc.id, updates);
+      await DocumentService.update(doc.id, updates);
       onClose();
     } catch (e) {
       if (e instanceof Error && e.message === 'STORAGE_FULL') {

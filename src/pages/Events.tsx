@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, BarChart3, Lock } from 'lucide-react';
+import { Plus, Calendar, ChartBar as BarChart3, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
@@ -22,8 +22,7 @@ const Events = () => {
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   useEffect(() => {
-    EventService.initialize();
-    loadEvents();
+    EventService.refresh().then(loadEvents).catch(console.error);
   }, []);
 
   const loadEvents = () => {
@@ -46,14 +45,14 @@ const Events = () => {
     }
   };
 
-  const handleCreateEvent = (eventData: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>) => {
-    EventService.createEvent(eventData);
+  const handleCreateEvent = async (eventData: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>) => {
+    await EventService.createEvent(eventData);
     loadEvents();
     setIsCreating(false);
   };
 
-  const handleDeleteEvent = (id: string) => {
-    EventService.deleteEvent(id);
+  const handleDeleteEvent = async (id: string) => {
+    await EventService.deleteEvent(id);
     loadEvents();
   };
 
@@ -95,8 +94,8 @@ const Events = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  EventService.clearSampleEvents();
+                onClick={async () => {
+                  await EventService.clearSampleEvents();
                   loadEvents();
                 }}
                 className="text-muted-foreground text-xs"

@@ -1,36 +1,51 @@
 import { DocumentLink } from '@/types/documentLink';
-
-const LINKS_KEY = 'billvie_document_links';
+import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from './supabaseData';
 
 const now = () => new Date().toISOString();
 
-const readLinks = (): DocumentLink[] => {
-  const data = localStorage.getItem(LINKS_KEY);
-  return data ? JSON.parse(data) : [];
-};
+function rowToLink(row: Record<string, unknown>): DocumentLink {
+  return {
+    id: row.id as string,
+    documentId: row.document_id as string,
+    sourceType: (row.source_type as 'document' | 'tax_document') || 'document',
+    linkType: row.link_type as 'bill' | 'document',
+    targetId: row.target_id as string,
+    linkedAt: row.linked_at as string,
+    unlinkedAt: (row.unlinked_at as string) || undefined,
+  };
+}
 
-const writeLinks = (links: DocumentLink[]) => {
-  localStorage.setItem(LINKS_KEY, JSON.stringify(links));
-};
-
-const newId = () => `dl_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+let cache: DocumentLink[] = [];
+let loaded = false;
 
 export const DocumentLinkService = {
+  async refresh(): Promise<void> {
+    const householdId = await getHouseholdId();
+    const { data, error } = await supabase
+      .from('document_links')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('linked_at', { ascending: true });
+
+    if (error) throw error;
+    cache = (data || []).map(rowToLink);
+    loaded = true;
+  },
+
   getRawLinks(): DocumentLink[] {
-    return readLinks();
+    return loaded ? cache : [];
   },
 
   getActiveLinks(): DocumentLink[] {
-    return readLinks().filter((l) => !l.unlinkedAt);
+    return this.getRawLinks().filter((l) => !l.unlinkedAt);
   },
 
-  // Absent sourceType means 'document' — keeps every pre-existing record working.
   sourceOf(link: DocumentLink): 'document' | 'tax_document' {
     return link.sourceType ?? 'document';
   },
 
-  // ---- Document -> Bill (one active bill-link per document) ----
-
+  // ---- Document -> Bill ----
   getLinkedBillId(documentId: string): string | undefined {
     return this.getActiveLinks().find(
       (l) => l.documentId === documentId && l.linkType === 'bill' && this.sourceOf(l) === 'document'
@@ -43,28 +58,24 @@ export const DocumentLinkService = {
     )?.documentId;
   },
 
-  linkToBill(documentId: string, billId: string): DocumentLink {
-    // One active bill-link per document — unlink any existing one first.
+  async linkToBill(documentId: string, billId: string): Promise<DocumentLink> {
     this.getActiveLinks()
       .filter((l) => l.documentId === documentId && l.linkType === 'bill' && this.sourceOf(l) === 'document')
       .forEach((l) => this.unlink(l.id));
 
-    const links = readLinks();
-    const created: DocumentLink = {
-      id: newId(),
-      documentId,
-      sourceType: 'document',
-      linkType: 'bill',
-      targetId: billId,
-      linkedAt: now(),
+    const householdId = await getHouseholdId();
+    const row = {
+      household_id: householdId, document_id: documentId,
+      source_type: 'document', link_type: 'bill', target_id: billId,
     };
-    links.push(created);
-    writeLinks(links);
+    const { data, error } = await supabase.from('document_links').insert(row).select().single();
+    if (error) throw error;
+    const created = rowToLink(data);
+    cache.push(created);
     return created;
   },
 
-  // ---- Document <-> Document (many-to-many, symmetric) ----
-
+  // ---- Document <-> Document ----
   getRelatedDocumentIds(documentId: string): string[] {
     const active = this.getActiveLinks().filter(
       (l) => l.linkType === 'document' && this.sourceOf(l) === 'document'
@@ -74,54 +85,43 @@ export const DocumentLinkService = {
     return Array.from(new Set([...forward, ...reverse]));
   },
 
-  linkToDocument(documentId: string, targetDocumentId: string): DocumentLink | undefined {
-    if (documentId === targetDocumentId) return undefined; // no self-links
+  async linkToDocument(documentId: string, targetDocumentId: string): Promise<DocumentLink | undefined> {
+    if (documentId === targetDocumentId) return undefined;
+    if (this.getRelatedDocumentIds(documentId).includes(targetDocumentId)) return undefined;
 
-    const already = this.getRelatedDocumentIds(documentId).includes(targetDocumentId);
-    if (already) return undefined; // no duplicate pairs, either direction
-
-    const links = readLinks();
-    const created: DocumentLink = {
-      id: newId(),
-      documentId,
-      sourceType: 'document',
-      linkType: 'document',
-      targetId: targetDocumentId,
-      linkedAt: now(),
+    const householdId = await getHouseholdId();
+    const row = {
+      household_id: householdId, document_id: documentId,
+      source_type: 'document', link_type: 'document', target_id: targetDocumentId,
     };
-    links.push(created);
-    writeLinks(links);
+    const { data, error } = await supabase.from('document_links').insert(row).select().single();
+    if (error) throw error;
+    const created = rowToLink(data);
+    cache.push(created);
     return created;
   },
 
   // ---- TaxDocument -> Bill / Document ----
-  // Same rules as above, kept in their own sourceType namespace so a Document's
-  // links and a TaxDocument's links can never cross-resolve into each other.
-
   getLinkedBillIdForTax(taxDocumentId: string): string | undefined {
     return this.getActiveLinks().find(
       (l) => l.documentId === taxDocumentId && l.linkType === 'bill' && this.sourceOf(l) === 'tax_document'
     )?.targetId;
   },
 
-  linkTaxToBill(taxDocumentId: string, billId: string): DocumentLink {
+  async linkTaxToBill(taxDocumentId: string, billId: string): Promise<DocumentLink> {
     this.getActiveLinks()
-      .filter(
-        (l) => l.documentId === taxDocumentId && l.linkType === 'bill' && this.sourceOf(l) === 'tax_document'
-      )
+      .filter((l) => l.documentId === taxDocumentId && l.linkType === 'bill' && this.sourceOf(l) === 'tax_document')
       .forEach((l) => this.unlink(l.id));
 
-    const links = readLinks();
-    const created: DocumentLink = {
-      id: newId(),
-      documentId: taxDocumentId,
-      sourceType: 'tax_document',
-      linkType: 'bill',
-      targetId: billId,
-      linkedAt: now(),
+    const householdId = await getHouseholdId();
+    const row = {
+      household_id: householdId, document_id: taxDocumentId,
+      source_type: 'tax_document', link_type: 'bill', target_id: billId,
     };
-    links.push(created);
-    writeLinks(links);
+    const { data, error } = await supabase.from('document_links').insert(row).select().single();
+    if (error) throw error;
+    const created = rowToLink(data);
+    cache.push(created);
     return created;
   },
 
@@ -129,31 +129,24 @@ export const DocumentLinkService = {
     return Array.from(
       new Set(
         this.getActiveLinks()
-          .filter(
-            (l) =>
-              l.linkType === 'document' &&
-              this.sourceOf(l) === 'tax_document' &&
-              l.documentId === taxDocumentId
-          )
+          .filter((l) => l.linkType === 'document' && this.sourceOf(l) === 'tax_document' && l.documentId === taxDocumentId)
           .map((l) => l.targetId)
       )
     );
   },
 
-  linkTaxToDocument(taxDocumentId: string, documentId: string): DocumentLink | undefined {
+  async linkTaxToDocument(taxDocumentId: string, documentId: string): Promise<DocumentLink | undefined> {
     if (this.getRelatedDocumentIdsForTax(taxDocumentId).includes(documentId)) return undefined;
 
-    const links = readLinks();
-    const created: DocumentLink = {
-      id: newId(),
-      documentId: taxDocumentId,
-      sourceType: 'tax_document',
-      linkType: 'document',
-      targetId: documentId,
-      linkedAt: now(),
+    const householdId = await getHouseholdId();
+    const row = {
+      household_id: householdId, document_id: taxDocumentId,
+      source_type: 'tax_document', link_type: 'document', target_id: documentId,
     };
-    links.push(created);
-    writeLinks(links);
+    const { data, error } = await supabase.from('document_links').insert(row).select().single();
+    if (error) throw error;
+    const created = rowToLink(data);
+    cache.push(created);
     return created;
   },
 
@@ -163,7 +156,6 @@ export const DocumentLinkService = {
     )?.id;
   },
 
-  // Bills / documents can show what tax entries point at them.
   getTaxDocumentIdsForTarget(targetId: string): string[] {
     return Array.from(
       new Set(
@@ -175,17 +167,16 @@ export const DocumentLinkService = {
   },
 
   // ---- Removal (never deletes) ----
-
-  unlink(linkId: string): void {
-    const links = readLinks();
-    const idx = links.findIndex((l) => l.id === linkId);
-    if (idx === -1 || links[idx].unlinkedAt) return;
-    links[idx] = { ...links[idx], unlinkedAt: now() };
-    writeLinks(links);
+  async unlink(linkId: string): Promise<void> {
+    const { error } = await supabase
+      .from('document_links')
+      .update({ unlinked_at: now() })
+      .eq('id', linkId);
+    if (error) throw error;
+    const idx = cache.findIndex((l) => l.id === linkId);
+    if (idx !== -1) cache[idx] = { ...cache[idx], unlinkedAt: now() };
   },
 
-  // Finds the active link record between a document and a specific bill or document
-  // target, so the UI can pass its id to unlink().
   findActiveLinkId(documentId: string, targetId: string): string | undefined {
     return this.getActiveLinks()
       .filter((l) => this.sourceOf(l) === 'document')
@@ -196,10 +187,8 @@ export const DocumentLinkService = {
       )?.id;
   },
 
-  // ---- History (same shape as AccessService.getHistoryForPerson) ----
-
   getHistoryForDocument(documentId: string): DocumentLink[] {
-    return readLinks()
+    return this.getRawLinks()
       .filter((l) => (l.documentId === documentId || l.targetId === documentId) && l.unlinkedAt)
       .sort((a, b) => (b.unlinkedAt || '').localeCompare(a.unlinkedAt || ''));
   },
