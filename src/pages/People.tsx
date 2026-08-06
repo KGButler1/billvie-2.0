@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ChevronDown, ChevronRight, UserPlus } from 'lucide-react';
+import { ChevronDown, ChevronRight, UserPlus, Loader as Loader2 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PeopleService, DirectoryEntry } from '@/services/PeopleService';
+import { TrustedPerson } from '@/types/people';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
 import { AccessService } from '@/services/AccessService';
@@ -36,6 +37,49 @@ import { KeyPeopleService as KPService } from '@/services/KeyPeopleService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 
 const firstName = (name: string) => name.trim().split(' ')[0] || name;
+
+const SendAgainButton = ({
+  entry,
+  person,
+  onDone,
+}: {
+  entry: DirectoryEntry;
+  person: TrustedPerson;
+  onDone: () => void;
+}) => {
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    setSending(true);
+    try {
+      await PeopleService.invite({
+        name: person.name,
+        email: person.email,
+        role: person.role,
+        keyPersonId: person.keyPersonId,
+      });
+      toast({ description: `The invite for ${firstName(entry.name)} has been sent again.` });
+      onDone();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not resend the invite.';
+      toast({ description: msg, variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={sending}
+      className="flex items-center gap-1.5 text-sm text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+      onClick={send}
+    >
+      {sending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+      Send again
+    </button>
+  );
+};
 
 const joinScopes = (scopes: AccessScope[]) => {
   const labels = scopes.map((s, i) =>
@@ -315,15 +359,7 @@ const People = () => {
                     )}
 
                     {person?.status === 'invited' && (
-                      <button
-                        type="button"
-                        className="block text-sm text-primary hover:underline"
-                        onClick={() =>
-                          toast({ description: `The invite for ${firstName(entry.name)} has been sent again.` })
-                        }
-                      >
-                        Send again
-                      </button>
+                      <SendAgainButton entry={entry} person={person} onDone={reload} />
                     )}
 
                     {renderExclusionPicker(entry)}
