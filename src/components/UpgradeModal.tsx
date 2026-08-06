@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Sparkles, Receipt, Calendar, FileText, Share2, ChartBar as BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES } from '@/constants/pricing';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ const UPGRADE_REASONS = {
   },
   financial: {
     title: "Unlock Financial Snapshot",
-    description: "Keep insurance, accounts & retirement, income and debts in one place — what a spouse, advisor or bank would need to know.",
+    description: "Keep insurance, accounts & retirement, income and debts in one place — what a spouse or advisor would need to know.",
     icon: BarChart3,
   },
   share: {
@@ -43,15 +44,7 @@ const UPGRADE_REASONS = {
   },
 };
 
-const FEATURES = [
-  "Unlimited bills",
-  "Unlimited events",
-  "Financial Snapshot - Insurance, accounts & retirement, income & debts",
-  "Share with partners & accountants",
-  "Export as PDF, CSV, JSON",
-  "Advanced analytics",
-  "Priority support",
-];
+const FEATURES = PRO_FEATURES;
 
 const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPreviewAnyway }: UpgradeModalProps) => {
   const config = UPGRADE_REASONS[reason];
@@ -110,8 +103,8 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
               {/* Pricing */}
               <div className="text-center mb-6">
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold">$60</span>
-                  <span className="text-muted-foreground">/year</span>
+                  <span className="text-4xl font-bold">{PRO_PRICE}</span>
+                  <span className="text-muted-foreground">{PRO_PERIOD}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   One plan, billed yearly

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Receipt, ChevronRight } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { RECURRING_LABELS, RecurringInterval } from '@/types/bill';
+import { Bill } from '@/types/bill';
 
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : undefined;
@@ -14,7 +15,7 @@ const metaLine = (bill: { isRecurring?: boolean; recurringInterval?: RecurringIn
   return d ? `Due ${d}` : '';
 };
 
-const BillsWidget = () => {
+const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
   const navigate = useNavigate();
   const bills = BillService.getAllBills();
   const quiet = bills.filter((b) => b.status !== 'overdue' && b.status !== 'due_soon');
@@ -44,7 +45,7 @@ const BillsWidget = () => {
         {recent.map((bill) => (
           <button
             key={bill.id}
-            onClick={() => navigate('/bills')}
+            onClick={() => onOpen(bill)}
             className="w-full bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
           >
             <Receipt className="w-4 h-4 text-primary flex-shrink-0" />

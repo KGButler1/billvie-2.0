@@ -275,7 +275,7 @@ const Dashboard = () => {
         {/* Advisor Widget */}
         <AdvisorWidget />
 
-        <BillsWidget />
+        <BillsWidget onOpen={setDetailBill} />
 
         {/* Bills needing attention */}
         <BillList

@@ -9,7 +9,7 @@ const AccessWidget = () => {
   if (people.length === 0) {
     return (
       <button
-        onClick={() => navigate('/people?invite=1')}
+        onClick={() => navigate('/people')}
         className="w-full mb-6 p-4 rounded-xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-colors text-left"
       >
         <div className="flex items-center gap-3">

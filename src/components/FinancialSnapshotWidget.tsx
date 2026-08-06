@@ -45,7 +45,7 @@ const FinancialSnapshotWidget = () => {
   if (!isPaid) {
     return (
       <>
-        {cta('Financial Snapshot', 'Insurance, super, income & debts — what a spouse or advisor would need to know.', true)}
+        {cta('Financial Snapshot', 'Insurance, accounts & retirement, income & debts — what a spouse or advisor would need to know.', true)}
         <UpgradeModal
           isOpen={showUpgrade}
           onClose={() => setShowUpgrade(false)}
@@ -61,7 +61,7 @@ const FinancialSnapshotWidget = () => {
   }
 
   if (total === 0) {
-    return cta('Financial Snapshot', 'Insurance, super, income & debts — what a spouse or advisor would need to know.', false);
+    return cta('Financial Snapshot', 'Insurance, accounts & retirement, income & debts — what a spouse or advisor would need to know.', false);
   }
 
   const rows = [

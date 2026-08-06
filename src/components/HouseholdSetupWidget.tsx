@@ -24,8 +24,8 @@ const icons: Record<string, React.ElementType> = {
 };
 
 const ProgressRing = ({ covered, total }: { covered: number; total: number }) => {
-  const size = 28;
-  const stroke = 3;
+  const size = 40;
+  const stroke = 4;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const pct = total > 0 ? covered / total : 0;
@@ -115,25 +115,13 @@ const HouseholdSetupWidget = () => {
             className="overflow-hidden"
           >
             <div className="pt-4">
-              <div className="flex gap-1 mb-4">
-                {checks.map((check, i) => (
-                  <div
-                    key={check.id}
-                    className={`h-1.5 flex-1 rounded-full ${
-                      i < covered ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                ))}
-              </div>
-
               <div className="grid grid-cols-5 gap-2">
                 {checks.map((check) => {
                   const Icon = icons[check.id] || Receipt;
                   return (
                     <button
                       key={check.id}
-                      onClick={() => !check.covered && navigate(check.actionPath)}
-                      disabled={check.covered}
+                      onClick={() => navigate(check.covered ? check.viewPath : check.actionPath)}
                       className="flex flex-col items-center gap-1.5 text-center group"
                     >
                       <span className="relative">

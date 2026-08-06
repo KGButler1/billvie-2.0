@@ -21,6 +21,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import UserAvatar, { getInitials } from '@/components/UserAvatar';
 import { toast } from 'sonner';
+import { PRO_PRICE, PRO_PERIOD } from '@/constants/pricing';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ const Settings = () => {
                 <div>
                   <p className="font-medium">Current Plan</p>
                   <p className="text-sm text-muted-foreground">
-                    {isPaid ? 'Paid - $60/year' : 'Free'}
+                    {isPaid ? `Paid - ${PRO_PRICE}${PRO_PERIOD}` : 'Free'}
                   </p>
                 </div>
               </div>

@@ -11,6 +11,7 @@ export interface ReadinessCheck {
   nudge: string;
   actionLabel: string;
   actionPath: string;
+  viewPath: string;
 }
 
 // Pure read-only aggregation — nothing here writes to any service.
@@ -22,6 +23,7 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     nudge: 'Add your first bill so someone knows what\'s running.',
     actionLabel: 'Add a bill',
     actionPath: '/bills?add=bill',
+    viewPath: '/bills',
   },
   {
     id: 'access',
@@ -29,7 +31,8 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     covered: AccessService.getActivePeople().length > 0,
     nudge: 'No one else can see any of this yet.',
     actionLabel: 'Share with someone',
-    actionPath: '/people?invite=1',
+    actionPath: '/people',
+    viewPath: '/people',
   },
   {
     id: 'financial',
@@ -40,6 +43,7 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     nudge: 'Add insurance or an account so they\'re not a mystery later.',
     actionLabel: 'Add insurance or an account',
     actionPath: '/financial',
+    viewPath: '/financial',
   },
   {
     id: 'people',
@@ -48,6 +52,7 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     nudge: 'Add who to call and why.',
     actionLabel: 'Add a key person',
     actionPath: '/key-people?add=1',
+    viewPath: '/key-people',
   },
   {
     id: 'documents',
@@ -56,6 +61,7 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     nudge: 'Add a document — even just a note about where the will is kept helps.',
     actionLabel: 'Add a document',
     actionPath: '/documents?add=1',
+    viewPath: '/documents',
   },
 ];
 

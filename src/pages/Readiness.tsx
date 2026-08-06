@@ -50,7 +50,15 @@ const Readiness = () => {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium">{check.label}</p>
                   {check.covered ? (
-                    <p className="text-sm text-muted-foreground mt-0.5">Covered</p>
+                    <>
+                      <p className="text-sm text-muted-foreground mt-0.5">Covered</p>
+                      <button
+                        onClick={() => navigate(check.viewPath)}
+                        className="text-sm text-primary mt-2 hover:underline"
+                      >
+                        View
+                      </button>
+                    </>
                   ) : (
                     <>
                       <p className="text-sm text-muted-foreground mt-0.5">{check.nudge}</p>

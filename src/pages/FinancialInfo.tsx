@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Shield, Wallet, FileText, Trash2, CreditCard as Edit2, ExternalLink, TrendingUp, Landmark } from 'lucide-react';
+import { ArrowLeft, Plus, Shield, Wallet, FileText, Trash2, Pencil as Edit2, ExternalLink, TrendingUp, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
