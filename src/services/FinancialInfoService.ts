@@ -3,6 +3,7 @@ import { getHouseholdId } from './supabaseData';
 
 export type InsuranceType = 'auto' | 'home' | 'life' | 'health' | 'travel' | 'other';
 export type DebtType = 'mortgage' | 'car' | 'personal' | 'other';
+export type AccountType = 'checking' | 'savings' | 'retirement' | 'investment' | 'other';
 
 export interface InsuranceEntry {
   id: string;
@@ -22,6 +23,7 @@ export interface SuperannuationEntry {
   id: string;
   fundName: string;
   accountNumber?: string;
+  accountType?: AccountType;
   estimatedBalance: number;
   notes?: string;
   contactInfo?: string;
@@ -75,6 +77,14 @@ export const DEBT_TYPE_LABELS: Record<DebtType, string> = {
   other: 'Other',
 };
 
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+  checking: 'Checking',
+  savings: 'Savings',
+  retirement: 'Retirement / Super',
+  investment: 'Investment',
+  other: 'Other',
+};
+
 const now = () => new Date().toISOString();
 
 export class FinancialInfoService {
@@ -110,6 +120,7 @@ export class FinancialInfoService {
     }));
     this.superCache = (supRes.data || []).map((r) => ({
       id: r.id, fundName: r.fund_name, accountNumber: r.account_number || undefined,
+      accountType: (r.account_type as AccountType) || undefined,
       estimatedBalance: Number(r.estimated_balance), notes: r.notes || undefined,
       contactInfo: r.contact_info || undefined,
     }));
@@ -204,13 +215,15 @@ export class FinancialInfoService {
     const householdId = await getHouseholdId();
     const row = {
       household_id: householdId, fund_name: entry.fundName,
-      account_number: entry.accountNumber || null, estimated_balance: entry.estimatedBalance,
+      account_number: entry.accountNumber || null, account_type: entry.accountType || null,
+      estimated_balance: entry.estimatedBalance,
       notes: entry.notes || null, contact_info: entry.contactInfo || null,
     };
     const { data, error } = await supabase.from('financial_superannuation').insert(row).select().single();
     if (error) throw error;
     const newEntry: SuperannuationEntry = {
       id: data.id, fundName: data.fund_name, accountNumber: data.account_number || undefined,
+      accountType: (data.account_type as AccountType) || undefined,
       estimatedBalance: Number(data.estimated_balance), notes: data.notes || undefined,
       contactInfo: data.contact_info || undefined,
     };
@@ -225,6 +238,7 @@ export class FinancialInfoService {
     if (updates.estimatedBalance !== undefined) row.estimated_balance = updates.estimatedBalance;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
     if (updates.contactInfo !== undefined) row.contact_info = updates.contactInfo || null;
+    if (updates.accountType !== undefined) row.account_type = updates.accountType || null;
     const { error } = await supabase.from('financial_superannuation').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.superCache.findIndex((s) => s.id === id);

@@ -37,9 +37,9 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     covered:
       FinancialInfoService.getInsurance().length > 0 ||
       FinancialInfoService.getSuperannuation().length > 0,
-    nudge: 'Add insurance or super details so they\'re not a mystery later.',
-    actionLabel: 'Add insurance or super',
-    actionPath: '/financial?add=insurance',
+    nudge: 'Add insurance or an account so they\'re not a mystery later.',
+    actionLabel: 'Add insurance or an account',
+    actionPath: '/financial',
   },
   {
     id: 'people',

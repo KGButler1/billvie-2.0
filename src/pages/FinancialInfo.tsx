@@ -33,7 +33,9 @@ import {
   DebtType,
   InsuranceType,
   INSURANCE_TYPE_LABELS,
-  DEBT_TYPE_LABELS
+  DEBT_TYPE_LABELS,
+  AccountType,
+  ACCOUNT_TYPE_LABELS,
 } from '@/services/FinancialInfoService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
@@ -42,10 +44,145 @@ import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import { BillService } from '@/services/BillService';
 import { cn } from '@/lib/utils';
 
+const OverviewTab = ({
+  insurance,
+  superannuation,
+  income,
+  debts,
+  misc,
+  onEditInsurance,
+  onEditSuper,
+  onEditIncome,
+  onEditDebt,
+  onEditMisc,
+  onDeleteInsurance,
+  onDeleteSuper,
+  onDeleteIncome,
+  onDeleteDebt,
+  onDeleteMisc,
+}: {
+  insurance: InsuranceEntry[];
+  superannuation: SuperannuationEntry[];
+  income: IncomeSourceEntry[];
+  debts: DebtEntry[];
+  misc: MiscFinancialEntry[];
+  onEditInsurance: (id: string) => void;
+  onEditSuper: (id: string) => void;
+  onEditIncome: (id: string) => void;
+  onEditDebt: (id: string) => void;
+  onEditMisc: (id: string) => void;
+  onDeleteInsurance: (id: string) => Promise<void>;
+  onDeleteSuper: (id: string) => Promise<void>;
+  onDeleteIncome: (id: string) => Promise<void>;
+  onDeleteDebt: (id: string) => Promise<void>;
+  onDeleteMisc: (id: string) => Promise<void>;
+}) => {
+  const isEmpty =
+    insurance.length === 0 &&
+    superannuation.length === 0 &&
+    income.length === 0 &&
+    debts.length === 0 &&
+    misc.length === 0;
+
+  if (isEmpty) {
+    return (
+      <EmptyState
+        icon={Shield}
+        title="Nothing recorded yet"
+        description="Start by adding an insurance policy, then build out the rest from there"
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Group 1: Accounts & Retirement + Income */}
+      {(superannuation.length > 0 || income.length > 0) && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Accounts &amp; Income
+          </h2>
+          <div className="space-y-4">
+            {superannuation.map((entry) => (
+              <SuperCard
+                key={entry.id}
+                entry={entry}
+                onEdit={() => onEditSuper(entry.id)}
+                onDelete={() => onDeleteSuper(entry.id)}
+              />
+            ))}
+            {income.map((entry) => (
+              <SimpleCard
+                key={entry.id}
+                title={entry.sourceName}
+                amountLabel={`${entry.approximateAmount.toLocaleString()} approx.`}
+                notes={entry.notes}
+                onEdit={() => onEditIncome(entry.id)}
+                onDelete={() => onDeleteIncome(entry.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Group 2: Debts */}
+      {debts.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Debts
+          </h2>
+          <div className="space-y-4">
+            {debts.map((entry) => (
+              <SimpleCard
+                key={entry.id}
+                title={entry.owedTo}
+                badge={DEBT_TYPE_LABELS[entry.type]}
+                amountLabel={`${entry.approximateBalance.toLocaleString()} approx. balance`}
+                notes={entry.notes}
+                onEdit={() => onEditDebt(entry.id)}
+                onDelete={() => onDeleteDebt(entry.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Group 3: Insurance + Other */}
+      {(insurance.length > 0 || misc.length > 0) && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Insurance &amp; Other
+          </h2>
+          <div className="space-y-4">
+            {insurance.map((entry) => (
+              <InsuranceCard
+                key={entry.id}
+                entry={entry}
+                onEdit={() => onEditInsurance(entry.id)}
+                onDelete={() => onDeleteInsurance(entry.id)}
+              />
+            ))}
+            {misc.map((entry) => (
+              <SimpleCard
+                key={entry.id}
+                title={entry.key}
+                amountLabel={entry.value || undefined}
+                notes={entry.notes}
+                onEdit={() => onEditMisc(entry.id)}
+                onDelete={() => onDeleteMisc(entry.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
+
 const FinancialInfo = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState('insurance');
+  const [activeTab, setActiveTab] = useState('overview');
   
   // Data states
   const [insurance, setInsurance] = useState<InsuranceEntry[]>([]);
@@ -118,16 +255,38 @@ const FinancialInfo = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-5 mb-6 text-xs sm:text-sm">
-            <TabsTrigger value="insurance" className="px-1">Insurance</TabsTrigger>
-            <TabsTrigger value="super" className="px-1">
-              <span className="lg:hidden">Savings</span>
-              <span className="hidden lg:inline">Savings &amp; Retirement</span>
+          <TabsList className="w-full flex overflow-x-auto no-scrollbar gap-1 mb-6 text-xs sm:text-sm">
+            <TabsTrigger value="overview" className="px-3 flex-shrink-0">Overview</TabsTrigger>
+            <TabsTrigger value="insurance" className="px-1 flex-shrink-0">Insurance</TabsTrigger>
+            <TabsTrigger value="super" className="px-1 flex-shrink-0">
+              <span className="lg:hidden">Accounts</span>
+              <span className="hidden lg:inline">Accounts &amp; Retirement</span>
             </TabsTrigger>
-            <TabsTrigger value="income" className="px-1">Income</TabsTrigger>
-            <TabsTrigger value="debts" className="px-1">Debts</TabsTrigger>
-            <TabsTrigger value="misc" className="px-1">Other</TabsTrigger>
+            <TabsTrigger value="income" className="px-1 flex-shrink-0">Income</TabsTrigger>
+            <TabsTrigger value="debts" className="px-1 flex-shrink-0">Debts</TabsTrigger>
+            <TabsTrigger value="misc" className="px-1 flex-shrink-0">Other</TabsTrigger>
           </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            <OverviewTab
+              insurance={insurance}
+              superannuation={superannuation}
+              income={income}
+              debts={debts}
+              misc={misc}
+              onEditInsurance={(id) => { setEditingItem(id); setShowInsuranceModal(true); }}
+              onEditSuper={(id) => { setEditingItem(id); setShowSuperModal(true); }}
+              onEditIncome={(id) => { setEditingItem(id); setShowIncomeModal(true); }}
+              onEditDebt={(id) => { setEditingItem(id); setShowDebtModal(true); }}
+              onEditMisc={(id) => { setEditingItem(id); setShowMiscModal(true); }}
+              onDeleteInsurance={async (id) => { await FinancialInfoService.deleteInsurance(id); loadData(); }}
+              onDeleteSuper={async (id) => { await FinancialInfoService.deleteSuperannuation(id); loadData(); }}
+              onDeleteIncome={async (id) => { await FinancialInfoService.deleteIncome(id); loadData(); }}
+              onDeleteDebt={async (id) => { await FinancialInfoService.deleteDebt(id); loadData(); }}
+              onDeleteMisc={async (id) => { await FinancialInfoService.deleteMisc(id); loadData(); }}
+            />
+          </TabsContent>
 
           {/* Insurance Tab */}
           <TabsContent value="insurance">
@@ -190,8 +349,8 @@ const FinancialInfo = () => {
               {superannuation.length === 0 && (
                 <EmptyState 
                   icon={Wallet}
-                  title="Nothing recorded yet"
-                  description="Track your retirement savings"
+                  title="No accounts yet"
+                  description="Bank accounts, savings, and retirement funds — so someone else knows what exists"
                 />
               )}
 
@@ -204,7 +363,7 @@ const FinancialInfo = () => {
                 variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Savings or Retirement
+                Add Account
               </Button>
             </div>
           </TabsContent>
@@ -584,6 +743,11 @@ const SuperCard = ({
   <div className="bg-card border border-border rounded-xl p-4">
     <div className="flex justify-between items-start">
       <div>
+        {entry.accountType && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-2 inline-block">
+            {ACCOUNT_TYPE_LABELS[entry.accountType]}
+          </span>
+        )}
         <h3 className="font-semibold">{entry.fundName}</h3>
         {entry.accountNumber && (
           <p className="text-sm text-muted-foreground">Account: {entry.accountNumber}</p>
@@ -850,6 +1014,7 @@ const SuperModal = ({
 }) => {
   const [fundName, setFundName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
+  const [accountType, setAccountType] = useState<AccountType | ''>('');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
   const [contactInfo, setContactInfo] = useState('');
@@ -860,6 +1025,7 @@ const SuperModal = ({
       if (entry) {
         setFundName(entry.fundName);
         setAccountNumber(entry.accountNumber || '');
+        setAccountType(entry.accountType || '');
         setBalance(entry.estimatedBalance.toString());
         setNotes(entry.notes || '');
         setContactInfo(entry.contactInfo || '');
@@ -867,6 +1033,7 @@ const SuperModal = ({
     } else {
       setFundName('');
       setAccountNumber('');
+      setAccountType('');
       setBalance('');
       setNotes('');
       setContactInfo('');
@@ -879,6 +1046,7 @@ const SuperModal = ({
     const data = {
       fundName,
       accountNumber: accountNumber || undefined,
+      accountType: accountType || undefined,
       estimatedBalance: parseFloat(balance),
       notes: notes || undefined,
       contactInfo: contactInfo || undefined,
@@ -898,12 +1066,23 @@ const SuperModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editingId ? 'Edit' : 'Add'} Savings &amp; Retirement</DialogTitle>
+          <DialogTitle>{editingId ? 'Edit' : 'Add'} Account</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <Label>Fund Name</Label>
             <Input value={fundName} onChange={(e) => setFundName(e.target.value)} placeholder="Australian Super" />
+          </div>
+          <div>
+            <Label>Type (optional)</Label>
+            <Select value={accountType} onValueChange={(v) => setAccountType(v as AccountType)}>
+              <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>Account Number (optional)</Label>

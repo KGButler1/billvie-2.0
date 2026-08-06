@@ -66,7 +66,7 @@ const FinancialSnapshotWidget = () => {
 
   const rows = [
     { label: 'Insurance', count: insurance.length },
-    { label: 'Savings & Retirement', count: superannuation.length },
+    { label: 'Accounts & Retirement', count: superannuation.length },
     { label: 'Income', count: income.length },
     { label: 'Debts', count: debts.length },
   ].filter(r => r.count > 0);

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Receipt, Calendar, FileText, Share2, BarChart3 } from 'lucide-react';
+import { X, Check, Sparkles, Receipt, Calendar, FileText, Share2, ChartBar as BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface UpgradeModalProps {
@@ -23,7 +23,7 @@ const UPGRADE_REASONS = {
   },
   financial: {
     title: "Unlock Financial Snapshot",
-    description: "Keep insurance, savings & retirement, income and debts in one place — what a spouse, advisor or bank would need to know.",
+    description: "Keep insurance, accounts & retirement, income and debts in one place — what a spouse, advisor or bank would need to know.",
     icon: BarChart3,
   },
   share: {
@@ -46,7 +46,7 @@ const UPGRADE_REASONS = {
 const FEATURES = [
   "Unlimited bills",
   "Unlimited events",
-  "Financial Snapshot - Insurance, savings & retirement, income & debts",
+  "Financial Snapshot - Insurance, accounts & retirement, income & debts",
   "Share with partners & accountants",
   "Export as PDF, CSV, JSON",
   "Advanced analytics",
