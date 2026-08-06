@@ -295,18 +295,23 @@ const People = () => {
                     )}
 
                     {!entry.keyPersonId && (
-                      <button
-                        type="button"
-                        className="text-sm text-primary hover:underline"
-                        onClick={() =>
-                          setKeyPersonState({
-                            defaults: { name: entry.name, email: entry.email },
-                            linkTo: entry.trustedPersonId,
-                          })
-                        }
-                      >
-                        Add continuity notes about {firstName(entry.name)}
-                      </button>
+                      <div>
+                        <button
+                          type="button"
+                          className="text-sm text-primary hover:underline"
+                          onClick={() =>
+                            setKeyPersonState({
+                              defaults: { name: entry.name, email: entry.email },
+                              linkTo: entry.trustedPersonId,
+                            })
+                          }
+                        >
+                          Add {firstName(entry.name)} as a key contact
+                        </button>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Adds them to your key contacts list — you can note their relationship, how to reach them, and anything else your family should know.
+                        </p>
+                      </div>
                     )}
 
                     {person?.status === 'invited' && (
