@@ -76,7 +76,7 @@ const SendAgainButton = ({
       onClick={send}
     >
       {sending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-      Send again
+      Send invite again
     </button>
   );
 };
@@ -278,7 +278,10 @@ const People = () => {
                   ) : (
                   <>
                     <div>
-                      <p className="text-sm font-medium mb-2">What {firstName(entry.name)} can see</p>
+                      <p className="text-sm font-medium mb-1">What {firstName(entry.name)} can see</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        They can see everything in these categories. Turn off anything you'd rather keep private.
+                      </p>
                       <div className="space-y-1">
                         {ACCESS_SCOPES.map((scope) => (
                           <label
@@ -453,10 +456,6 @@ const People = () => {
 
     return (
       <div className="pt-2 border-t border-border">
-        <p className="text-sm font-medium mb-2">Hide specific items from {firstName(entry.name)}</p>
-        <p className="text-xs text-muted-foreground mb-3">
-          They can see everything in these categories. Turn off anything you'd rather keep private.
-        </p>
         <div className="space-y-3">
           {relevantScopes.map((scope) => {
             const items = getItems(scope);
