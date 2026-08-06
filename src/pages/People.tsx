@@ -20,6 +20,7 @@ import { PeopleService, DirectoryEntry } from '@/services/PeopleService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
 import { AccessService } from '@/services/AccessService';
+import { ExclusionService } from '@/services/ExclusionService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { UserService } from '@/services/UserService';
 import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole } from '@/types/people';
@@ -29,6 +30,9 @@ import InvitePersonModal from '@/components/people/InvitePersonModal';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
 import ShareContentPreview from '@/components/sharing/ShareContentPreview';
 import { cn } from '@/lib/utils';
+import { DocumentService } from '@/services/DocumentService';
+import { KeyPeopleService as KPService } from '@/services/KeyPeopleService';
+import { FinancialInfoService } from '@/services/FinancialInfoService';
 
 const firstName = (name: string) => name.trim().split(' ')[0] || name;
 
@@ -315,6 +319,8 @@ const People = () => {
                       </button>
                     )}
 
+                    {renderExclusionPicker(entry)}
+
                     <button
                       type="button"
                       className="block text-sm text-destructive hover:underline"
@@ -350,6 +356,91 @@ const People = () => {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+    );
+  };
+
+  const toggleExclusion = async (entry: DirectoryEntry, scope: AccessScope, itemId: string, next: boolean) => {
+    if (!entry.trustedPersonId) return;
+    try {
+      if (next) {
+        await ExclusionService.exclude(entry.trustedPersonId, scope, itemId);
+        toast({ description: `Hidden from ${firstName(entry.name)}` });
+      } else {
+        await ExclusionService.restore(entry.trustedPersonId, scope, itemId);
+        toast({ description: `Visible to ${firstName(entry.name)} again` });
+      }
+    } catch {
+      toast({ description: "That didn't save. Nothing has changed.", variant: 'destructive' });
+    }
+    reload();
+  };
+
+  const renderExclusionPicker = (entry: DirectoryEntry) => {
+    if (!entry.trustedPersonId || entry.isOwner) return null;
+    const personId = entry.trustedPersonId;
+    const scopesWithAccess = entry.scopes;
+    if (scopesWithAccess.length === 0) return null;
+
+    // Only show exclusion picker for scopes that support item-level exclusions
+    const EXCLUSION_SCOPES: AccessScope[] = ['documents', 'financial_info', 'key_people'];
+    const relevantScopes = scopesWithAccess.filter((s) => EXCLUSION_SCOPES.includes(s));
+    if (relevantScopes.length === 0) return null;
+
+    const getItems = (scope: AccessScope): { id: string; label: string }[] => {
+      switch (scope) {
+        case 'documents':
+          return DocumentService.getAll().map((d) => ({ id: d.id, label: d.title }));
+        case 'key_people':
+          return KPService.getAllKeyPeople().map((k) => ({ id: k.id, label: k.name }));
+        case 'financial_info': {
+          const items: { id: string; label: string }[] = [];
+          FinancialInfoService.getInsurance().forEach((i) => items.push({ id: i.id, label: `${i.provider} (Insurance)` }));
+          FinancialInfoService.getDebts().forEach((d) => items.push({ id: d.id, label: `${d.owedTo} (Debt)` }));
+          FinancialInfoService.getMisc().forEach((m) => items.push({ id: m.id, label: m.key }));
+          return items;
+        }
+        default:
+          return [];
+      }
+    };
+
+    return (
+      <div className="pt-2 border-t border-border">
+        <p className="text-sm font-medium mb-2">Hide specific items from {firstName(entry.name)}</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          They can see everything in these categories. Turn off anything you'd rather keep private.
+        </p>
+        <div className="space-y-3">
+          {relevantScopes.map((scope) => {
+            const items = getItems(scope);
+            if (items.length === 0) return null;
+            return (
+              <div key={scope}>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                  {ACCESS_SCOPE_LABELS[scope]}
+                </p>
+                <div className="space-y-1">
+                  {items.map((item) => {
+                    const excluded = ExclusionService.isExcluded(personId, scope, item.id);
+                    return (
+                      <label
+                        key={item.id}
+                        className="flex items-center justify-between min-h-[40px] gap-4 cursor-pointer"
+                      >
+                        <span className="text-sm min-w-0 truncate">{item.label}</span>
+                        <Switch
+                          checked={!excluded}
+                          onCheckedChange={(v) => toggleExclusion(entry, scope, item.id, !v)}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };

@@ -10,6 +10,7 @@ import { TaxDocumentService } from './TaxDocumentService';
 import { TaxTagService } from './TaxTagService';
 import { DocumentLinkService } from './DocumentLinkService';
 import { CustomBillOptionsService } from './CustomBillOptionsService';
+import { ExclusionService } from './ExclusionService';
 import { clearHouseholdCache } from './supabaseData';
 
 // Refresh all domain services from Supabase. Called on app mount after
@@ -24,6 +25,7 @@ export async function refreshAllData(): Promise<void> {
     KeyPeopleService.refresh(),
     PeopleService.refresh(),
     AccessService.refresh(),
+    ExclusionService.refresh(),
     FinancialInfoService.refresh(),
     TaxDocumentService.refresh(),
     TaxTagService.refresh(),

@@ -19,7 +19,7 @@ import AccountantPortal from "./pages/AccountantPortal";
 import Documents from "./pages/Documents";
 import People from "./pages/People";
 import HouseholdSummary from "./pages/HouseholdSummary";
-import SharedView from "./pages/SharedView";
+import AcceptInvite from "./pages/AcceptInvite";
 import RecentlyDeleted from "./pages/RecentlyDeleted";
 import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
@@ -94,7 +94,7 @@ const App = () => {
               <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
               <Route path="/advisor" element={<Navigate to="/people" replace />} />
               <Route path="/export/summary" element={<ProtectedRoute><HouseholdSummary /></ProtectedRoute>} />
-              <Route path="/shared/:token" element={<SharedView />} />
+              <Route path="/accept-invite" element={<AcceptInvite />} />
               <Route path="/recently-deleted" element={<ProtectedRoute><RecentlyDeleted /></ProtectedRoute>} />
               <Route path="/key-people" element={<ProtectedRoute><KeyPeople /></ProtectedRoute>} />
               <Route path="/readiness" element={<ProtectedRoute><Readiness /></ProtectedRoute>} />

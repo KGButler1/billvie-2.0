@@ -94,26 +94,27 @@ export const PeopleService = {
     role: PersonRole;
     keyPersonId?: string;
   }): Promise<TrustedPerson> {
-    const householdId = await getHouseholdId();
-    const row = {
-      household_id: householdId,
-      display_name: name.trim(),
-      email: email.trim(),
-      role,
-      status: 'invited',
-      invite_token: makeToken(),
-      key_person_id: keyPersonId || null,
-      invited_at: now(),
-    };
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase
-      .from('trusted_person')
-      .insert(row)
-      .select()
-      .single();
+    const response = await fetch(`${supabaseUrl}/functions/v1/invite-household-member`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+      },
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId }),
+    });
 
-    if (error) throw error;
-    const person = rowToPerson(data);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({ error: 'Invite failed' }));
+      throw new Error(body.error || `Invite failed (${response.status})`);
+    }
+
+    const body = await response.json();
+    const person = rowToPerson(body.person);
     cache.push(person);
     return person;
   },
