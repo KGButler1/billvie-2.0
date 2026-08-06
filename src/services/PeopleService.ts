@@ -22,6 +22,7 @@ function rowToPerson(row: Record<string, unknown>): TrustedPerson {
     role: (row.role as PersonRole) || 'household',
     status: (row.status as TrustedPersonStatus) || 'invited',
     accessLevel: (row.access_level as 'owner') || undefined,
+    userId: (row.user_id as string) || undefined,
     inviteToken: (row.invite_token as string) || undefined,
     keyPersonId: (row.key_person_id as string) || undefined,
     invitedAt: (row.invited_at as string) || undefined,

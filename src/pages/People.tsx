@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { ChevronDown, ChevronRight, UserPlus } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,7 @@ const Section = ({
 
 const People = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [directory, setDirectory] = useState<DirectoryEntry[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -377,7 +379,10 @@ const People = () => {
   };
 
   const renderExclusionPicker = (entry: DirectoryEntry) => {
-    if (!entry.trustedPersonId || entry.isOwner) return null;
+    const isCurrentUserOwner = PeopleService.getAll().some(
+      (p) => p.userId === user?.id && p.accessLevel === 'owner'
+    );
+    if (!entry.trustedPersonId || entry.isOwner || !isCurrentUserOwner) return null;
     const personId = entry.trustedPersonId;
     const scopesWithAccess = entry.scopes;
     if (scopesWithAccess.length === 0) return null;

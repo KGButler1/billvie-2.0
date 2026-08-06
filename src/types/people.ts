@@ -8,6 +8,7 @@ export interface TrustedPerson {
   role: PersonRole;
   status: TrustedPersonStatus;
   accessLevel?: 'owner';
+  userId?: string;
   inviteToken?: string;
   keyPersonId?: string; // one-way link to the KeyPerson record, if any
   invitedAt?: string;
