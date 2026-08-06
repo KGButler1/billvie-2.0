@@ -110,14 +110,87 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const displayName = (name || "").trim() || email.trim().split("@")[0];
+
+    // Duplicate-invite guard: check for an existing trusted_person row
+    // matching this household + email (case-insensitive) that is still
+    // invited or active, so "Send again" doesn't create duplicate rows.
+    const { data: existingRow } = await userClient
+      .from("trusted_person")
+      .select("id, invite_token, status, name")
+      .eq("household_id", householdId)
+      .ilike("email", email.trim())
+      .in("status", ["invited", "active"])
+      .maybeSingle();
+
+    if (existingRow) {
+      if (existingRow.status === "active") {
+        return new Response(
+          JSON.stringify({
+            error: `${existingRow.name} is already an active member of your household.`,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // status === 'invited': reuse the existing row instead of inserting a new one
+      const { error: updateError } = await userClient
+        .from("trusted_person")
+        .update({ invited_at: new Date().toISOString() })
+        .eq("id", existingRow.id);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Re-fetch the full row so the response shape matches a fresh insert
+      const { data: reusedRow, error: refetchError } = await userClient
+        .from("trusted_person")
+        .select("*")
+        .eq("id", existingRow.id)
+        .single();
+
+      if (refetchError) {
+        return new Response(
+          JSON.stringify({ error: refetchError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Re-send the invite email using the existing token
+      const appUrl = Deno.env.get("APP_URL") || `${supabaseUrl.replace(".supabase.co", "")}`;
+      const redirectUrl = `${appUrl}/accept-invite?token=${existingRow.invite_token}`;
+
+      const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+        email.trim(),
+        { redirectTo: redirectUrl }
+      );
+
+      if (inviteError) {
+        return new Response(
+          JSON.stringify({
+            person: reusedRow,
+            warning: "Person added but invite email could not be sent. Try 'Send again' later.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ person: reusedRow }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Generate invite token
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let inviteToken = "";
     for (let i = 0; i < 16; i++) {
       inviteToken += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-
-    const displayName = (name || "").trim() || email.trim().split("@")[0];
 
     // Insert the trusted_person row
     const { data: personRow, error: insertError } = await userClient

@@ -18,7 +18,10 @@ export const EntitlementService = {
     if (isPaid) return { allowed: true };
 
     const householdCount = PeopleService.getRaw().filter(
-      (p) => p.role === 'household' && (p.status === 'invited' || p.status === 'active')
+      (p) =>
+        p.role === 'household' &&
+        p.accessLevel !== 'owner' &&
+        (p.status === 'invited' || p.status === 'active')
     ).length;
 
     if (householdCount === 0) return { allowed: true };
