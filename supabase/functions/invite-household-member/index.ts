@@ -70,51 +70,14 @@ Deno.serve(async (req: Request) => {
 
     const householdId = callerPerson.household_id;
 
-    // Server-side entitlement check: free-tier "one trusted person" limit
     const pRole = role || "household";
-    if (pRole === "household") {
-      const { data: settings } = await userClient
-        .from("user_settings")
-        .select("user_type")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      const isPaid = settings?.user_type === "paid" || settings?.user_type === "accountant";
-      if (!isPaid) {
-        const { count, error: countError } = await userClient
-          .from("trusted_person")
-          .select("id", { count: "exact", head: true })
-          .eq("household_id", householdId)
-          .eq("role", "household")
-          .in("status", ["invited", "active"]);
-
-        if (countError) {
-          return new Response(
-            JSON.stringify({ error: "Could not check entitlements" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        // Count includes the owner, so free tier allows 1 non-owner household member
-        // owner has access_level='owner', so count - 1 = invited/active non-owner
-        // Actually the count includes owner (status=active, role=household). Free tier
-        // allows 1 trusted person total (non-owner). So if count >= 2 (owner + 1), block.
-        if ((count || 0) >= 2) {
-          return new Response(
-            JSON.stringify({
-              error: "Free includes one trusted person. Add anyone else with Pro.",
-            }),
-            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      }
-    }
-
     const displayName = (name || "").trim() || email.trim().split("@")[0];
 
     // Duplicate-invite guard: check for an existing trusted_person row
     // matching this household + email (case-insensitive) that is still
     // invited or active, so "Send again" doesn't create duplicate rows.
+    // This runs BEFORE the entitlement check — resending to an existing
+    // person should never hit the free-tier limit.
     const { data: existingRow } = await userClient
       .from("trusted_person")
       .select("id, invite_token, status, name")
@@ -183,6 +146,46 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ person: reusedRow }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // No existing row found — this is a brand-new invite.
+    // Run the entitlement check here, only for new household members.
+    if (pRole === "household") {
+      const { data: settings } = await userClient
+        .from("user_settings")
+        .select("user_type")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const isPaid = settings?.user_type === "paid" || settings?.user_type === "accountant";
+      if (!isPaid) {
+        const { count, error: countError } = await userClient
+          .from("trusted_person")
+          .select("id", { count: "exact", head: true })
+          .eq("household_id", householdId)
+          .eq("role", "household")
+          .in("status", ["invited", "active"]);
+
+        if (countError) {
+          return new Response(
+            JSON.stringify({ error: "Could not check entitlements" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Count includes the owner, so free tier allows 1 non-owner household member
+        // owner has access_level='owner', so count - 1 = invited/active non-owner
+        // Actually the count includes owner (status=active, role=household). Free tier
+        // allows 1 trusted person total (non-owner). So if count >= 2 (owner + 1), block.
+        if ((count || 0) >= 2) {
+          return new Response(
+            JSON.stringify({
+              error: "Free includes one trusted person. Add anyone else with Pro.",
+            }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
     }
 
     // Generate invite token
