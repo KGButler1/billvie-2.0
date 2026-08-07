@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Plus } from 'lucide-react';
+import { ArrowLeft, Check, Plus, Clock } from 'lucide-react';
 import { getReadinessSummary } from '@/utils/readiness';
 import BottomNav from '@/components/BottomNav';
 
@@ -38,11 +38,17 @@ const Readiness = () => {
               <div className="flex items-start gap-3">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    check.covered ? 'bg-primary/10' : 'bg-muted'
+                    check.covered
+                      ? 'bg-primary/10'
+                      : check.pending
+                        ? 'bg-amber-500/10'
+                        : 'bg-muted'
                   }`}
                 >
                   {check.covered ? (
                     <Check className="w-4 h-4 text-primary" />
+                  ) : check.pending ? (
+                    <Clock className="w-4 h-4 text-amber-600" />
                   ) : (
                     <Plus className="w-4 h-4 text-muted-foreground" />
                   )}
@@ -57,6 +63,16 @@ const Readiness = () => {
                         className="text-sm text-primary mt-2 hover:underline"
                       >
                         View
+                      </button>
+                    </>
+                  ) : check.pending ? (
+                    <>
+                      <p className="text-sm text-muted-foreground mt-0.5">Invite sent — waiting for them to accept.</p>
+                      <button
+                        onClick={() => navigate('/people')}
+                        className="text-sm text-primary mt-2 hover:underline"
+                      >
+                        View people
                       </button>
                     </>
                   ) : (

@@ -1,15 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, ChevronRight } from 'lucide-react';
+import { Users, ChevronRight, Clock } from 'lucide-react';
 import { AccessService } from '@/services/AccessService';
+import { getAccessState } from '@/utils/accessState';
 
 const AccessWidget = () => {
   const navigate = useNavigate();
   const people = AccessService.getActivePeople();
+  const state = getAccessState();
 
-  if (people.length === 0) {
+  if (state === 'none') {
     return (
       <button
-        onClick={() => navigate('/people')}
+        onClick={() => navigate('/people?invite=1')}
         className="w-full mb-6 p-4 rounded-xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-colors text-left"
       >
         <div className="flex items-center gap-3">
@@ -19,6 +21,26 @@ const AccessWidget = () => {
           <div className="flex-1">
             <p className="text-sm font-medium">Household Access</p>
             <p className="text-xs text-muted-foreground">No one else can see any of this yet.</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </div>
+      </button>
+    );
+  }
+
+  if (state === 'pending') {
+    return (
+      <button
+        onClick={() => navigate('/people')}
+        className="w-full mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">Household Access</p>
+            <p className="text-xs text-muted-foreground">Invite sent — waiting for them to accept.</p>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </div>

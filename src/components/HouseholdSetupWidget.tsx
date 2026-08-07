@@ -10,6 +10,7 @@ import {
   Wallet,
   BookUser,
   FolderOpen,
+  Clock,
 } from 'lucide-react';
 import { getReadinessSummary } from '@/utils/readiness';
 
@@ -118,10 +119,11 @@ const HouseholdSetupWidget = () => {
               <div className="grid grid-cols-5 gap-2">
                 {checks.map((check) => {
                   const Icon = icons[check.id] || Receipt;
+                  const isPending = check.id === 'access' && check.pending;
                   return (
                     <button
                       key={check.id}
-                      onClick={() => navigate(check.covered ? check.viewPath : check.actionPath)}
+                      onClick={() => navigate(check.covered ? check.viewPath : isPending ? '/people' : check.actionPath)}
                       className="flex flex-col items-center gap-1.5 text-center group"
                     >
                       <span className="relative">
@@ -129,20 +131,30 @@ const HouseholdSetupWidget = () => {
                           className={`w-10 h-10 rounded-full flex items-center justify-center ${
                             check.covered
                               ? 'bg-primary/10 text-primary'
-                              : 'border border-dashed border-border text-muted-foreground group-hover:border-primary/50'
+                              : isPending
+                                ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30'
+                                : 'border border-dashed border-border text-muted-foreground group-hover:border-primary/50'
                           }`}
                         >
-                          <Icon className="w-4 h-4" />
+                          {isPending && check.id === 'access' ? (
+                            <Clock className="w-4 h-4" />
+                          ) : (
+                            <Icon className="w-4 h-4" />
+                          )}
                         </span>
                         <span
                           className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ${
                             check.covered
                               ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground'
+                              : isPending
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-muted text-muted-foreground'
                           }`}
                         >
                           {check.covered ? (
                             <Check className="w-2.5 h-2.5" />
+                          ) : isPending ? (
+                            <Clock className="w-2.5 h-2.5" />
                           ) : (
                             <Plus className="w-2.5 h-2.5" />
                           )}

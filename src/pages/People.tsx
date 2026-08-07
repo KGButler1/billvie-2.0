@@ -184,10 +184,16 @@ const People = () => {
 
   const handleStopSharing = async () => {
     if (!confirmRemove?.trustedPersonId) return;
-    await PeopleService.remove(confirmRemove.trustedPersonId);
-    setConfirmRemove(null);
-    setExpanded(null);
-    reload();
+    try {
+      await PeopleService.remove(confirmRemove.trustedPersonId);
+      setConfirmRemove(null);
+      setExpanded(null);
+      reload();
+      toast({ description: `${firstName(confirmRemove.name)} has been removed — they can no longer see anything.` });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not remove this person.';
+      toast({ description: msg, variant: 'destructive' });
+    }
   };
 
   const saveKeyPerson = async (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -362,7 +368,27 @@ const People = () => {
                     )}
 
                     {person?.status === 'invited' && (
-                      <SendAgainButton entry={entry} person={person} onDone={reload} />
+                      <div className="flex items-center gap-4">
+                        <SendAgainButton entry={entry} person={person} onDone={reload} />
+                        {person.inviteToken && (
+                          <button
+                            type="button"
+                            className="text-sm text-primary hover:underline"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(
+                                  `${window.location.origin}/accept-invite?token=${person.inviteToken}`
+                                );
+                                toast({ description: 'Invite link copied — paste it into an email or message.' });
+                              } catch {
+                                toast({ description: 'Could not copy the link.', variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            Copy invite link
+                          </button>
+                        )}
+                      </div>
                     )}
 
                     {renderExclusionPicker(entry)}
@@ -517,6 +543,12 @@ const People = () => {
         </div>
 
         <Section title="Your household">
+          {householdRows.some((r) => r.trustedPerson?.status === 'invited') && (
+            <p className="text-xs text-muted-foreground mb-3 px-1">
+              Haven't heard back from someone you invited? If they can't find it, ask them to check spam or junk —
+              first emails from a new sender sometimes land there.
+            </p>
+          )}
           {householdRows.length === 0 ? (
             <EmptyState
               text="No one in your household can see this yet."

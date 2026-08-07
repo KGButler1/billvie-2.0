@@ -3,11 +3,13 @@ import { AccessService } from '@/services/AccessService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { DocumentService } from '@/services/DocumentService';
+import { getAccessState } from '@/utils/accessState';
 
 export interface ReadinessCheck {
   id: string;
   label: string;
   covered: boolean;
+  pending?: boolean;
   nudge: string;
   actionLabel: string;
   actionPath: string;
@@ -29,6 +31,7 @@ export const getReadinessChecks = (): ReadinessCheck[] => [
     id: 'access',
     label: 'Someone has access',
     covered: AccessService.getActivePeople().length > 0,
+    pending: getAccessState() === 'pending',
     nudge: 'No one else can see any of this yet.',
     actionLabel: 'Share with someone',
     actionPath: '/people',

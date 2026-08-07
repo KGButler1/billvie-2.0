@@ -153,10 +153,17 @@ export const PeopleService = {
     const idx = cache.findIndex((p) => p.id === id);
     if (idx !== -1) cache[idx] = { ...cache[idx], status: 'removed', removedAt: now() };
 
-    // Revoke all access grants for this person
+    // Revoke all access grants for this person. A failure here must not
+    // hide the fact that the core removal (the status update) already
+    // succeeded — the person's status is 'removed', which is what access
+    // control actually checks.
     const grants = AccessService.getGrantsForPerson(id);
     for (const g of grants) {
-      await AccessService.revoke(g.id);
+      try {
+        await AccessService.revoke(g.id);
+      } catch (err) {
+        console.error(`Failed to revoke grant ${g.id} for person ${id}:`, err);
+      }
     }
   },
 
