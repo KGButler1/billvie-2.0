@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, Link2 } from 'lucide-react';
+import { X, Plus, Link2, CircleAlert as AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,6 +113,8 @@ function computeRecurringDueDate(
 
 const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBillProps) => {
   const isEdit = mode === 'edit';
+  const confidence = initialBill?.extractionConfidence;
+  const isLowConfidence = (field: string): boolean => confidence?.[field] === 'low';
   const [name, setName] = useState(initialBill?.name ?? '');
   const [amount, setAmount] = useState(
     initialBill?.amount !== undefined ? String(initialBill.amount) : ''
@@ -319,20 +322,24 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name - Required */}
           <div className="space-y-2">
-            <Label htmlFor="name">What is it? *</Label>
+            <Label htmlFor="name" className={isLowConfidence('name') ? 'text-amber-600' : ''}>
+              What is it? {isLowConfidence('name') && <AlertCircle className="inline w-3.5 h-3.5 ml-1" />}
+            </Label>
             <Input
               id="name"
               placeholder="e.g., Electricity, Internet, Council rates"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              className="h-12"
+              className={cn('h-12', isLowConfidence('name') && 'border-amber-400')}
             />
           </div>
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount" className={isLowConfidence('amount') ? 'text-amber-600' : ''}>
+              Amount {isLowConfidence('amount') && <AlertCircle className="inline w-3.5 h-3.5 ml-1" />}
+            </Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 $
@@ -344,7 +351,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="h-12 pl-7"
+                className={cn('h-12 pl-7', isLowConfidence('amount') && 'border-amber-400')}
               />
             </div>
           </div>
@@ -423,7 +430,9 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
           {/* Full date picker — only for one-time bills */}
           {!isRecurring && (
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <Label htmlFor="dueDate" className={isLowConfidence('dueDate') ? 'text-amber-600' : ''}>
+                Due Date {isLowConfidence('dueDate') && <AlertCircle className="inline w-3.5 h-3.5 ml-1" />}
+              </Label>
               <Input
                 id="dueDate"
                 type="date"
@@ -436,7 +445,9 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
 
           {/* Category */}
           <div className="space-y-2">
-            <Label>Category</Label>
+            <Label className={isLowConfidence('category') ? 'text-amber-600' : ''}>
+              Category {isLowConfidence('category') && <AlertCircle className="inline w-3.5 h-3.5 ml-1" />}
+            </Label>
             {isAddingCategory ? (
               <div className="flex gap-2">
                 <Input

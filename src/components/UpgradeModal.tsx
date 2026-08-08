@@ -6,7 +6,7 @@ import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES } from '@/constants/pricing';
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reason?: 'bills' | 'events' | 'financial' | 'share' | 'export' | 'general';
+  reason?: 'bills' | 'events' | 'financial' | 'share' | 'export' | 'scan' | 'general';
   onUpgrade?: () => void;
   onPreviewAnyway?: () => void;
 }
@@ -36,6 +36,11 @@ const UPGRADE_REASONS = {
     title: "Unlock Export",
     description: "Export your data as PDF, CSV, or JSON for tax purposes or record keeping.",
     icon: FileText,
+  },
+  scan: {
+    title: "You've used your 5 free scans this month",
+    description: "Upgrade for unlimited AI bill scanning — snap a photo and we'll extract the details for you.",
+    icon: Receipt,
   },
   general: {
     title: "Billvie Annual",

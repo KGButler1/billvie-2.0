@@ -63,6 +63,11 @@ function rowToBill(row: Record<string, unknown>): Bill {
     paidDate: row.paid_date as string | undefined,
     isSample: row.is_sample as boolean | undefined,
     deletedAt: row.deleted_at as string | undefined,
+    extractionStatus: row.extraction_status as 'processing' | 'needs_review' | 'failed' | undefined,
+    sourceDocumentId: row.source_document_id as string | undefined,
+    extractionConfidence: row.extraction_confidence as Record<string, 'high' | 'medium' | 'low'> | undefined,
+    processingStartedAt: row.processing_started_at as string | undefined,
+    extractionError: row.extraction_error as string | undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   } as Bill;
@@ -87,6 +92,11 @@ function billToRow(bill: Partial<Bill>): Record<string, unknown> {
   if (bill.paidDate !== undefined) row.paid_date = bill.paidDate || null;
   if (bill.isSample !== undefined) row.is_sample = bill.isSample;
   if (bill.deletedAt !== undefined) row.deleted_at = bill.deletedAt || null;
+  if (bill.extractionStatus !== undefined) row.extraction_status = bill.extractionStatus || null;
+  if (bill.sourceDocumentId !== undefined) row.source_document_id = bill.sourceDocumentId || null;
+  if (bill.extractionConfidence !== undefined) row.extraction_confidence = bill.extractionConfidence || null;
+  if (bill.processingStartedAt !== undefined) row.processing_started_at = bill.processingStartedAt || null;
+  if (bill.extractionError !== undefined) row.extraction_error = bill.extractionError || null;
   return row;
 }
 

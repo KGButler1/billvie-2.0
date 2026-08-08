@@ -3,10 +3,18 @@ import { motion } from 'framer-motion';
 import { X, Upload, Link2, MapPin, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileAttachmentInput } from '@/components/shared/FileAttachmentInput';
+import FileCapture, { CapturedFile } from '@/components/shared/FileCapture';
 import { DocumentService } from '@/services/DocumentService';
 import { HouseholdDocument } from '@/types/document';
 import { FileAttachment } from '@/types/sharing';
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 type Mode = 'choose' | 'upload' | 'link' | 'location';
 
@@ -24,6 +32,7 @@ const options: { mode: Mode; icon: React.ElementType; title: string; description
 const AttachDocumentSheet = ({ document: doc, onClose }: AttachDocumentSheetProps) => {
   const [mode, setMode] = useState<Mode>('choose');
   const [attachment, setAttachment] = useState<FileAttachment | undefined>(doc.attachment);
+  const [capturedFiles, setCapturedFiles] = useState<CapturedFile[]>([]);
   const [link, setLink] = useState(doc.externalLink ?? '');
   const [location, setLocation] = useState(doc.physicalLocation ?? '');
   const [linkError, setLinkError] = useState('');
@@ -69,9 +78,21 @@ const AttachDocumentSheet = ({ document: doc, onClose }: AttachDocumentSheetProp
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (mode === 'upload') {
-      persist({ attachment });
+      if (capturedFiles.length > 0) {
+        const file = capturedFiles[0].file;
+        const dataUrl = await fileToBase64(file);
+        const newAttachment: FileAttachment = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl,
+        };
+        persist({ attachment: newAttachment });
+      } else {
+        persist({ attachment });
+      }
     } else if (mode === 'link') {
       const value = link.trim();
       if (!/^https?:\/\//i.test(value)) {
@@ -85,7 +106,7 @@ const AttachDocumentSheet = ({ document: doc, onClose }: AttachDocumentSheetProp
   };
 
   const saveDisabled =
-    (mode === 'upload' && !attachment) ||
+    (mode === 'upload' && !attachment && capturedFiles.length === 0) ||
     (mode === 'link' && !/^https?:\/\//i.test(link.trim())) ||
     (mode === 'location' && !location.trim());
 
@@ -177,12 +198,31 @@ const AttachDocumentSheet = ({ document: doc, onClose }: AttachDocumentSheetProp
           <div className="space-y-4">
             {mode === 'upload' && (
               <div className="space-y-2">
-                <FileAttachmentInput
-                  attachment={attachment}
-                  maxSizeMB={0.5}
-                  onAttach={setAttachment}
-                  onRemove={() => setAttachment(undefined)}
-                />
+                {attachment && !capturedFiles.length ? (
+                  <div className="border border-border rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      {attachment.type.startsWith('image/') ? (
+                        <img src={attachment.dataUrl} alt={attachment.name} className="w-12 h-12 object-cover rounded-lg" />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm">{attachment.name}</p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setAttachment(undefined)}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <FileCapture
+                    files={capturedFiles}
+                    onFilesChange={setCapturedFiles}
+                    multiple={false}
+                  />
+                )}
                 <p className="text-xs text-muted-foreground">
                   PDF or image, up to 500KB. Stored privately — only you and people you share with can open it.
                 </p>

@@ -146,6 +146,13 @@ export const BILL_LIMITS = {
   accountant: Infinity,
 } as const;
 
+export const SCAN_LIMITS = {
+  free: 5,
+  paid: Infinity,
+  anonymous: 5,
+  accountant: Infinity,
+} as const;
+
 export const EVENT_LIMITS = {
   free: 3,
   paid: Infinity,

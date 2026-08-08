@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, Pencil, AlertTriangle, Link2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, RotateCcw, Trash2, CreditCard, RefreshCw, Zap, Pencil, TriangleAlert as AlertTriangle, Link2, Loader as Loader2, CircleAlert as AlertCircle } from 'lucide-react';
 import { Bill, PaymentMethod, PAYMENT_METHOD_LABELS, RECURRING_LABELS } from '@/types/bill';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,9 @@ const getPaymentMethodLabel = (method: PaymentMethod | string): string => {
 
 const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: BillCardProps) => {
   const isPaid = bill.status === 'paid';
+  const isProcessing = bill.extractionStatus === 'processing';
+  const needsReview = bill.extractionStatus === 'needs_review';
+  const isFailed = bill.extractionStatus === 'failed';
   const card = PaymentCardService.getById(bill.paymentCardId);
   const cardFlag = cardExpiryFlag(card);
   const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
@@ -62,13 +65,41 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
       className={cn(
         'card-bill relative',
         isPaid && 'opacity-60',
-        onOpen && 'cursor-pointer'
+        onOpen && 'cursor-pointer',
+        isProcessing && 'ring-1 ring-primary/30',
+        needsReview && 'ring-2 ring-amber-400/50'
       )}
     >
       {/* Sample indicator */}
-      {bill.isSample && (
+      {bill.isSample && !isProcessing && !needsReview && !isFailed && (
         <span className="absolute top-2 right-2 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
           Sample
+        </span>
+      )}
+
+      {/* Processing state overlay */}
+      {isProcessing && (
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 text-xs text-primary">
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span>Reading...</span>
+        </div>
+      )}
+
+      {/* Needs review badge */}
+      {needsReview && (
+        <motion.span
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800"
+        >
+          Review
+        </motion.span>
+      )}
+
+      {/* Failed badge */}
+      {isFailed && (
+        <span className="absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full bg-destructive/10 text-destructive">
+          Couldn't read
         </span>
       )}
 
@@ -103,15 +134,24 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
 
           {/* Amount and due date */}
           <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-            {bill.amount !== undefined && (
-              <span className="font-medium text-foreground">
-                ${bill.amount.toFixed(2)}
-              </span>
-            )}
-            {bill.dueDate && (
-              <span>
-                {isPaid ? 'Paid' : 'Due'} {format(parseISO(bill.dueDate), 'MMM d')}
-              </span>
+            {isProcessing ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+              </div>
+            ) : (
+              <>
+                {bill.amount !== undefined && (
+                  <span className="font-medium text-foreground">
+                    ${bill.amount.toFixed(2)}
+                  </span>
+                )}
+                {bill.dueDate && (
+                  <span>
+                    {isPaid ? 'Paid' : 'Due'} {format(parseISO(bill.dueDate), 'MMM d')}
+                  </span>
+                )}
+              </>
             )}
             {bill.paymentMethod && (
               <span className="flex items-center gap-1">
@@ -163,12 +203,34 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
         </div>
       </div>
 
+      {/* Failed message */}
+      {isFailed && (
+        <p className="text-xs text-destructive mt-1.5">
+          Couldn't quite read this one. Tap to enter the details manually.
+        </p>
+      )}
+
       {/* Actions */}
       <div
         className="flex items-center gap-1 mt-4 pt-3 border-t border-border"
         onClick={(e) => e.stopPropagation()}
       >
-        {isPaid ? (
+        {isProcessing ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground py-1.5">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Extracting details...</span>
+          </div>
+        ) : isFailed ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit?.(bill)}
+            className="flex-1 text-primary hover:text-primary"
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            Enter manually
+          </Button>
+        ) : isPaid ? (
           <Button
             variant="ghost"
             size="sm"

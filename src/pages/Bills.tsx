@@ -14,6 +14,7 @@ import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
 import BillList from '@/components/bills/BillList';
 import QuickAddBill from '@/components/QuickAddBill';
+import { supabase } from '@/lib/supabase';
 import BillDetailDialog from '@/components/bills/BillDetailDialog';
 import BillScanModal from '@/components/BillScanModal';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -68,6 +69,15 @@ const Bills = () => {
 
   useEffect(() => {
     BillService.refresh().then(loadBills).catch(console.error);
+
+    const channel = supabase
+      .channel('bills-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bills' }, () => {
+        BillService.refresh().then(loadBills).catch(console.error);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const counts = useMemo(
@@ -87,17 +97,33 @@ const Bills = () => {
     if (category !== 'all') list = list.filter(b => b.category === category);
 
     const sorted = [...list];
-    if (sort === 'amount') sorted.sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
-    else if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sort === 'category')
-      sorted.sort((a, b) => String(a.category ?? '').localeCompare(String(b.category ?? '')));
-    else
-      sorted.sort((a, b) => {
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return a.dueDate.localeCompare(b.dueDate);
-      });
-    return sorted;
+
+    // Pin processing and needs_review bills at the top, regardless of sort
+    const extractionPriority = (b: Bill): number => {
+      if (b.extractionStatus === 'processing') return 0;
+      if (b.extractionStatus === 'needs_review') return 1;
+      return 2;
+    };
+    sorted.sort((a, b) => extractionPriority(a) - extractionPriority(b));
+
+    // Within each extraction group, apply the user's sort
+    const withinGroup = (a: Bill, b: Bill) => {
+      if (sort === 'amount') return (b.amount ?? 0) - (a.amount ?? 0);
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      if (sort === 'category')
+        return String(a.category ?? '').localeCompare(String(b.category ?? ''));
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate.localeCompare(b.dueDate);
+    };
+
+    // Stable sort within each priority group
+    const groups: Bill[] = [];
+    const group0 = sorted.filter(b => extractionPriority(b) === 0).sort(withinGroup);
+    const group1 = sorted.filter(b => extractionPriority(b) === 1).sort(withinGroup);
+    const group2 = sorted.filter(b => extractionPriority(b) === 2).sort(withinGroup);
+    groups.push(...group0, ...group1, ...group2);
+    return groups;
   }, [bills, status, category, sort]);
 
   const mode: 'grouped' | 'flat' =
@@ -133,7 +159,11 @@ const Bills = () => {
     tax?: TaxRelevanceValue
   ) => {
     if (!editingBill) return;
-    await BillService.updateBill(editingBill.id, updates);
+    await BillService.updateBill(editingBill.id, {
+      ...updates,
+      extractionStatus: '',
+      extractionConfidence: undefined,
+    });
     if (tax) TaxTagService.setTag(editingBill.id, 'bill', tax);
     loadBills();
     setEditingBill(null);
@@ -293,14 +323,14 @@ const Bills = () => {
 
       <AnimatePresence>
         {isScanningBill && (
-          <BillScanModal onAdd={handleAddBill} onClose={() => setIsScanningBill(false)} />
+          <BillScanModal onClose={() => setIsScanningBill(false)} onUpgradeClick={() => setShowUpgradeModal(true)} />
         )}
       </AnimatePresence>
 
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        reason="bills"
+        reason="scan"
         onUpgrade={() => {
           UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
           setShowUpgradeModal(false);
