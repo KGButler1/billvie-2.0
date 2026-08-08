@@ -1,7 +1,7 @@
 import type { Bill } from '@/types/bill';
 import type { HouseholdDocument } from '@/types/document';
 import type { KeyPerson } from '@/types/keyPerson';
-import type { TrustedPerson } from '@/types/people';
+import type { TrustedPerson, AccessGrant } from '@/types/people';
 import type { SuperannuationEntry } from '@/services/FinancialInfoService';
 
 const now = new Date().toISOString();
@@ -216,5 +216,7 @@ export const DEMO_INSURANCE: never[] = [];
 export const DEMO_INCOME: never[] = [];
 export const DEMO_DEBTS: never[] = [];
 export const DEMO_MISC: never[] = [];
+
+export const DEMO_ACCESS_GRANTS: AccessGrant[] = [];
 
 export const DEMO_HOUSEHOLD_NAME = 'Reyes-Whitfield Household';

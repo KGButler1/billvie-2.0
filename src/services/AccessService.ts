@@ -2,6 +2,8 @@ import { AccessGrant, AccessScope, TrustedPerson } from '@/types/people';
 import { PeopleService } from './PeopleService';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { DEMO_ACCESS_GRANTS } from '@/demo/demoData';
 
 const now = () => new Date().toISOString();
 
@@ -21,6 +23,11 @@ let loaded = false;
 
 export const AccessService = {
   async refresh(): Promise<void> {
+    if (isDemoModeActive()) {
+      cache = DEMO_ACCESS_GRANTS.map((g) => ({ ...g }));
+      loaded = true;
+      return;
+    }
     const householdId = await getHouseholdId();
     const { data, error } = await supabase
       .from('access_grants')
@@ -83,6 +90,18 @@ export const AccessService = {
     );
     if (existing) return existing;
 
+    if (isDemoModeActive()) {
+      const created: AccessGrant = {
+        id: crypto.randomUUID(),
+        personId,
+        scope,
+        itemId,
+        grantedAt: now(),
+      };
+      cache.push(created);
+      return created;
+    }
+
     const householdId = await getHouseholdId();
     const row = {
       household_id: householdId,
@@ -130,6 +149,12 @@ export const AccessService = {
   async revoke(grantId: string): Promise<void> {
     const existing = cache.find((g) => g.id === grantId);
     if (!existing || existing.revokedAt) return;
+
+    if (isDemoModeActive()) {
+      const idx = cache.findIndex((g) => g.id === grantId);
+      if (idx !== -1) cache[idx] = { ...cache[idx], revokedAt: now() };
+      return;
+    }
 
     const { error } = await supabase
       .from('access_grants')

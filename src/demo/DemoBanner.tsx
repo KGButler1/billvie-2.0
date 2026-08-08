@@ -11,13 +11,21 @@ const DemoBanner = () => {
           <Sparkles className="w-4 h-4 flex-shrink-0" />
           <span className="truncate">You're exploring the Reyes-Whitfield household.</span>
         </p>
-        <Button
-          size="sm"
-          className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0"
-          onClick={() => navigate('/auth')}
-        >
-          Create your own
-        </Button>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={() => navigate('/')}
+            className="text-sm text-amber-800 hover:text-amber-900 underline-offset-2 hover:underline transition-colors"
+          >
+            Exit demo
+          </button>
+          <Button
+            size="sm"
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+            onClick={() => navigate('/auth')}
+          >
+            Create your own
+          </Button>
+        </div>
       </div>
     </div>
   );
