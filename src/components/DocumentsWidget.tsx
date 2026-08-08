@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { FolderOpen, ChevronRight, Shield, TrendingUp, Building, Landmark, FileText, File } from 'lucide-react';
 import { DocumentService } from '@/services/DocumentService';
 import { HouseholdDocument, DocumentType } from '@/types/document';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
   insurance: Shield,
@@ -20,7 +21,7 @@ const DocumentsWidget = () => {
   if (total === 0) {
     return (
       <button
-        onClick={() => navigate('/documents')}
+        onClick={() => navigate(isDemoModeActive() ? '/demo/documents' : '/documents')}
         className="w-full mb-6 p-4 rounded-xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-colors text-left"
       >
         <div className="flex items-center gap-3">
@@ -40,7 +41,7 @@ const DocumentsWidget = () => {
   return (
     <div className="mb-6">
       <button
-        onClick={() => navigate('/documents')}
+        onClick={() => navigate(isDemoModeActive() ? '/demo/documents' : '/documents')}
         className="flex items-center justify-between w-full mb-3"
       >
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Important Documents</h2>
@@ -54,7 +55,7 @@ const DocumentsWidget = () => {
           return (
             <button
               key={doc.id}
-              onClick={() => navigate('/documents')}
+              onClick={() => navigate(isDemoModeActive() ? '/demo/documents' : '/documents')}
               className="w-full bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
             >
               <Icon className="w-4 h-4 text-primary flex-shrink-0" />

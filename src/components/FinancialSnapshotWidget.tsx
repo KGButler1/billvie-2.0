@@ -4,10 +4,12 @@ import { Building, ChevronRight, Lock } from 'lucide-react';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
 import UpgradeModal from '@/components/UpgradeModal';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 const FinancialSnapshotWidget = () => {
   const navigate = useNavigate();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const goFinancial = () => navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
@@ -21,12 +23,12 @@ const FinancialSnapshotWidget = () => {
   const handleUpgrade = () => {
     UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
     setShowUpgrade(false);
-    navigate('/financial');
+    navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
   };
 
   const cta = (label: string, description: string, locked: boolean) => (
     <button
-      onClick={() => (locked ? setShowUpgrade(true) : navigate('/financial'))}
+      onClick={() => (locked ? setShowUpgrade(true) : goFinancial())}
       className="w-full mb-6 p-4 rounded-xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-colors text-left"
     >
       <div className="flex items-center gap-3">
@@ -53,7 +55,7 @@ const FinancialSnapshotWidget = () => {
           onUpgrade={handleUpgrade}
           onPreviewAnyway={() => {
             setShowUpgrade(false);
-            navigate('/financial');
+            navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
           }}
         />
       </>
@@ -74,7 +76,7 @@ const FinancialSnapshotWidget = () => {
   return (
     <div className="mb-6">
       <button
-        onClick={() => navigate('/financial')}
+        onClick={goFinancial}
         className="flex items-center justify-between w-full mb-3"
       >
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Financial Snapshot</h2>
@@ -83,7 +85,7 @@ const FinancialSnapshotWidget = () => {
         </span>
       </button>
       <button
-        onClick={() => navigate('/financial')}
+        onClick={goFinancial}
         className="w-full bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
       >
         <Building className="w-4 h-4 text-primary flex-shrink-0" />

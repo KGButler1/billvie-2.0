@@ -4,6 +4,10 @@ import { KeyPeopleService } from './KeyPeopleService';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { DEMO_PEOPLE } from '@/demo/demoData';
+
+let demoCache: TrustedPerson[] = DEMO_PEOPLE.map((p) => ({ ...p }));
 
 const now = () => new Date().toISOString();
 
@@ -52,6 +56,7 @@ export interface DirectoryEntry {
 
 export const PeopleService = {
   async refresh(): Promise<void> {
+    if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();
     const { data, error } = await supabase
       .from('trusted_person')
@@ -65,6 +70,7 @@ export const PeopleService = {
   },
 
   getRaw(): TrustedPerson[] {
+    if (isDemoModeActive()) return demoCache;
     return loaded ? cache : [];
   },
 

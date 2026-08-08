@@ -1,6 +1,10 @@
 import { HouseholdDocument, DocumentType } from '@/types/document';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { DEMO_DOCUMENTS } from '@/demo/demoData';
+
+let demoCache: HouseholdDocument[] = DEMO_DOCUMENTS.map((d) => ({ ...d }));
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -42,6 +46,7 @@ let loaded = false;
 
 export const DocumentService = {
   async refresh(): Promise<void> {
+    if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();
     const { data, error } = await supabase
       .from('documents')
@@ -55,6 +60,7 @@ export const DocumentService = {
   },
 
   ensureLoaded(): HouseholdDocument[] {
+    if (isDemoModeActive()) return demoCache;
     return loaded ? cache : [];
   },
 
@@ -83,6 +89,11 @@ export const DocumentService = {
   },
 
   async update(id: string, updates: Partial<HouseholdDocument>): Promise<void> {
+    if (isDemoModeActive()) {
+      const idx = demoCache.findIndex((d) => d.id === id);
+      if (idx !== -1) demoCache[idx] = { ...demoCache[idx], ...updates, updatedAt: new Date().toISOString() };
+      return;
+    }
     const row = { ...docToRow(updates), updated_at: new Date().toISOString() };
     const { data, error } = await supabase
       .from('documents')

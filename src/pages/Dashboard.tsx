@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { isDemoModeActive } from '@/demo/demoFlag';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield, Eye, EyeOff } from 'lucide-react';
 import { BillService } from '@/services/BillService';
@@ -291,7 +292,7 @@ const Dashboard = () => {
 
         {bills.length > 0 && (
           <Link
-            to="/bills"
+            to={isDemoModeActive() ? '/demo/bills' : '/bills'}
             className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-8"
           >
             View all {bills.length} bills →

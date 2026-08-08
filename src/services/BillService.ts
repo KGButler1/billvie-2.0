@@ -3,6 +3,10 @@ import { differenceInDays, parseISO, startOfDay, addWeeks, addMonths, addYears }
 import { categorizeByName } from '@/utils/billCategorizer';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { DEMO_BILLS } from '@/demo/demoData';
+
+let demoCache: Bill[] = DEMO_BILLS.map((b) => ({ ...b }));
 
 // Calculate bill status based on due date and payment status.
 // Auto-debited bills that have passed their due date are treated as pending
@@ -94,6 +98,7 @@ export class BillService {
   // Fetch all bills from Supabase and populate the cache. Pages call this on
   // mount and after mutations, then read from the synchronous getters.
   static async refresh(): Promise<void> {
+    if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();
     const { data, error } = await supabase
       .from('bills')
@@ -109,6 +114,7 @@ export class BillService {
   // Ensures cache is populated. Called by the synchronous getters as a
   // fallback — if refresh hasn't completed yet, returns empty.
   private static ensureLoaded(): Bill[] {
+    if (isDemoModeActive()) return demoCache;
     return loaded ? cache : [];
   }
 
@@ -165,6 +171,15 @@ export class BillService {
     const bill = this.getBillById(id);
     if (!bill) return undefined;
 
+    if (isDemoModeActive()) {
+      const idx = demoCache.findIndex((b) => b.id === id);
+      if (idx !== -1) {
+        demoCache[idx] = { ...demoCache[idx], status: 'paid', paidDate: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        return demoCache[idx];
+      }
+      return undefined;
+    }
+
     const updatedBill = await this.updateBill(id, {
       status: 'paid',
       paidDate: new Date().toISOString(),
@@ -189,6 +204,14 @@ export class BillService {
   }
 
   static async markAsUnpaid(id: string): Promise<Bill | undefined> {
+    if (isDemoModeActive()) {
+      const idx = demoCache.findIndex((b) => b.id === id);
+      if (idx !== -1) {
+        demoCache[idx] = { ...demoCache[idx], status: 'pending', paidDate: undefined, updatedAt: new Date().toISOString() };
+        return demoCache[idx];
+      }
+      return undefined;
+    }
     return this.updateBill(id, {
       status: 'pending',
       paidDate: undefined,

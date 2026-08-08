@@ -21,6 +21,7 @@ import People from "./pages/People";
 import HouseholdSummary from "./pages/HouseholdSummary";
 import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
+import DemoRoute from "./demo/DemoRoute";
 import RecentlyDeleted from "./pages/RecentlyDeleted";
 import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
@@ -97,6 +98,12 @@ const App = () => {
               <Route path="/export/summary" element={<ProtectedRoute><HouseholdSummary /></ProtectedRoute>} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/demo" element={<DemoRoute><Navigate to="/demo/dashboard" replace /></DemoRoute>} />
+              <Route path="/demo/dashboard" element={<DemoRoute><Dashboard /></DemoRoute>} />
+              <Route path="/demo/bills" element={<DemoRoute><Bills /></DemoRoute>} />
+              <Route path="/demo/documents" element={<DemoRoute><Documents /></DemoRoute>} />
+              <Route path="/demo/people" element={<DemoRoute><People /></DemoRoute>} />
+              <Route path="/demo/financial" element={<DemoRoute><FinancialInfo /></DemoRoute>} />
               <Route path="/recently-deleted" element={<ProtectedRoute><RecentlyDeleted /></ProtectedRoute>} />
               <Route path="/key-people" element={<ProtectedRoute><KeyPeople /></ProtectedRoute>} />
               <Route path="/readiness" element={<ProtectedRoute><Readiness /></ProtectedRoute>} />

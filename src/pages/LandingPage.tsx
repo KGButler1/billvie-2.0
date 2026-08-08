@@ -108,6 +108,16 @@ const LandingPage = () => {
                 See How It Works
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              Or{" "}
+              <button
+                onClick={() => navigate("/demo")}
+                className="text-primary hover:underline underline-offset-2"
+              >
+                explore a sample household
+              </button>{" "}
+              — no sign-up needed.
+            </p>
             {/* Trust signals */}
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-8">
               {trustSignals.map((signal) => (

@@ -2,16 +2,18 @@ import { useNavigate } from 'react-router-dom';
 import { Users, ChevronRight, Clock } from 'lucide-react';
 import { AccessService } from '@/services/AccessService';
 import { getAccessState } from '@/utils/accessState';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 const AccessWidget = () => {
   const navigate = useNavigate();
   const people = AccessService.getActivePeople();
   const state = getAccessState();
+  const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
 
   if (state === 'none') {
     return (
       <button
-        onClick={() => navigate('/people?invite=1')}
+        onClick={() => navigate(demoPrefix('/people?invite=1'))}
         className="w-full mb-6 p-4 rounded-xl border border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-colors text-left"
       >
         <div className="flex items-center gap-3">
@@ -31,7 +33,7 @@ const AccessWidget = () => {
   if (state === 'pending') {
     return (
       <button
-        onClick={() => navigate('/people')}
+        onClick={() => navigate(demoPrefix('/people'))}
         className="w-full mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors text-left"
       >
         <div className="flex items-center gap-3">
@@ -51,7 +53,7 @@ const AccessWidget = () => {
   return (
     <div className="mb-6">
       <button
-        onClick={() => navigate('/people')}
+        onClick={() => navigate(demoPrefix('/people'))}
         className="flex items-center justify-between w-full mb-3"
       >
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Household Access</h2>
@@ -63,7 +65,7 @@ const AccessWidget = () => {
         {people.slice(0, 3).map((person) => (
           <button
             key={person.id}
-            onClick={() => navigate('/people')}
+            onClick={() => navigate(demoPrefix('/people'))}
             className="w-full bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
           >
             <Users className="w-4 h-4 text-primary flex-shrink-0" />

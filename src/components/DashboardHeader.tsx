@@ -6,6 +6,7 @@ import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 interface DashboardHeaderProps {
   onClearSamples: () => void;
@@ -17,27 +18,30 @@ interface DashboardHeaderProps {
 const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false, onToggleFamilyView }: DashboardHeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const demo = isDemoModeActive();
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => navigate(demo ? '/demo/dashboard' : '/')}
             className="flex items-center gap-2"
           >
             <BillvieLogo size="md" />
           </button>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Search"
-              onClick={openSearch}
-            >
-              <Search className="w-5 h-5" />
-            </Button>
+            {!demo && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Search"
+                onClick={openSearch}
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+            )}
 
 
             {onToggleFamilyView && (
@@ -71,12 +75,14 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
             </button>
 
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-            </nav>
+            {!demo && (
+              <nav className="hidden md:flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              </nav>
+            )}
           </div>
         </div>
       </header>
@@ -104,13 +110,15 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
                   Clear sample bills
                 </Button>
               )}
-              <Button variant="ghost" className="w-full justify-start" onClick={() => {
-                navigate('/settings');
-                setIsMenuOpen(false);
-              }}>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
+              {!demo && (
+                <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                  navigate('/settings');
+                  setIsMenuOpen(false);
+                }}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              )}
             </nav>
           </motion.div>
         )}

@@ -85,7 +85,12 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   other: 'Other',
 };
 
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { DEMO_SUPERANNUATION, DEMO_INSURANCE, DEMO_INCOME, DEMO_DEBTS, DEMO_MISC } from '@/demo/demoData';
+
 const now = () => new Date().toISOString();
+
+let demoSuperCache: SuperannuationEntry[] = DEMO_SUPERANNUATION.map((s) => ({ ...s }));
 
 export class FinancialInfoService {
   private static insuranceCache: InsuranceEntry[] = [];
@@ -96,6 +101,7 @@ export class FinancialInfoService {
   private static loaded = false;
 
   static async refresh(): Promise<void> {
+    if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();
     const [insRes, supRes, incRes, debtRes, miscRes] = await Promise.all([
       supabase.from('financial_insurance').select('*').eq('household_id', householdId).order('created_at', { ascending: true }),
@@ -144,6 +150,7 @@ export class FinancialInfoService {
 
   // Insurance
   static getInsurance(): InsuranceEntry[] {
+    if (isDemoModeActive()) return DEMO_INSURANCE as InsuranceEntry[];
     return this.ensureLoaded() ? this.insuranceCache : [];
   }
 
@@ -208,6 +215,7 @@ export class FinancialInfoService {
 
   // Superannuation
   static getSuperannuation(): SuperannuationEntry[] {
+    if (isDemoModeActive()) return demoSuperCache;
     return this.ensureLoaded() ? this.superCache : [];
   }
 
@@ -232,6 +240,11 @@ export class FinancialInfoService {
   }
 
   static async updateSuperannuation(id: string, updates: Partial<SuperannuationEntry>): Promise<void> {
+    if (isDemoModeActive()) {
+      const idx = demoSuperCache.findIndex((s) => s.id === id);
+      if (idx !== -1) demoSuperCache[idx] = { ...demoSuperCache[idx], ...updates };
+      return;
+    }
     const row: Record<string, unknown> = { updated_at: now() };
     if (updates.fundName !== undefined) row.fund_name = updates.fundName;
     if (updates.accountNumber !== undefined) row.account_number = updates.accountNumber || null;
@@ -257,6 +270,7 @@ export class FinancialInfoService {
 
   // Income
   static getIncome(): IncomeSourceEntry[] {
+    if (isDemoModeActive()) return DEMO_INCOME as IncomeSourceEntry[];
     return this.ensureLoaded() ? this.incomeCache : [];
   }
 
@@ -299,6 +313,7 @@ export class FinancialInfoService {
 
   // Debts
   static getDebts(): DebtEntry[] {
+    if (isDemoModeActive()) return DEMO_DEBTS as DebtEntry[];
     return this.ensureLoaded() ? this.debtCache : [];
   }
 
@@ -342,6 +357,7 @@ export class FinancialInfoService {
 
   // Misc
   static getMisc(): MiscFinancialEntry[] {
+    if (isDemoModeActive()) return DEMO_MISC as MiscFinancialEntry[];
     return this.ensureLoaded() ? this.miscCache : [];
   }
 

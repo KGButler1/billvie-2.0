@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
@@ -57,6 +58,7 @@ const Bills = () => {
   const [detailBill, setDetailBill] = useState<Bill | null>(null);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [demoNudge, setDemoNudge] = useState(false);
 
   const loadBills = () => {
     const upcoming = BillService.getUpcomingBills();
@@ -141,6 +143,10 @@ const Bills = () => {
   const handleMarkPaid = async (id: string) => {
     await BillService.markAsPaid(id);
     loadBills();
+    if (isDemoModeActive()) {
+      setDemoNudge(true);
+      setTimeout(() => setDemoNudge(false), 4000);
+    }
   };
   const handleMarkUnpaid = async (id: string) => {
     await BillService.markAsUnpaid(id);
@@ -162,6 +168,12 @@ const Bills = () => {
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
         <h1 className="text-2xl font-semibold hidden lg:block mb-2">Bills &amp; Commitments</h1>
+
+        {demoNudge && (
+          <p className="text-sm text-muted-foreground italic mb-4">
+            That's it. One tap, and the whole family always knows it's done.
+          </p>
+        )}
 
         {/* Totals strip */}
         <p className="text-sm text-muted-foreground mb-4">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { isDemoModeActive } from '@/demo/demoFlag';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDown,
@@ -123,7 +124,10 @@ const HouseholdSetupWidget = () => {
                   return (
                     <button
                       key={check.id}
-                      onClick={() => navigate(check.covered ? check.viewPath : isPending ? '/people' : check.actionPath)}
+                      onClick={() => {
+                        const target = check.covered ? check.viewPath : isPending ? '/people' : check.actionPath;
+                        navigate(isDemoModeActive() ? `/demo${target}` : target);
+                      }}
                       className="flex flex-col items-center gap-1.5 text-center group"
                     >
                       <span className="relative">

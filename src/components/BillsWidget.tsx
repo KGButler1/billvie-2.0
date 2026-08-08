@@ -3,6 +3,7 @@ import { Receipt, ChevronRight } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { RECURRING_LABELS, RecurringInterval } from '@/types/bill';
 import { Bill } from '@/types/bill';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : undefined;
@@ -33,7 +34,7 @@ const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
   return (
     <div className="mb-6">
       <button
-        onClick={() => navigate('/bills')}
+        onClick={() => navigate(isDemoModeActive() ? '/demo/bills' : '/bills')}
         className="flex items-center justify-between w-full mb-3"
       >
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Bills</h2>

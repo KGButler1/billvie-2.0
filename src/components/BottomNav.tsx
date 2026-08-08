@@ -16,6 +16,9 @@ import {
 import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
 import UserAvatar from '@/components/UserAvatar';
+import { isDemoModeActive } from '@/demo/demoFlag';
+
+const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
 
 const mobileNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -94,8 +97,9 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const demo = isDemoModeActive();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === demoPrefix(path);
 
   return (
     <>
@@ -103,7 +107,7 @@ const BottomNav = () => {
       <header className="hidden lg:flex fixed top-0 left-0 right-0 z-40 h-16 bg-background/95 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-6 flex items-center justify-between w-full">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(demoPrefix('/dashboard'))}
             className="flex items-center gap-2"
           >
             <BillvieLogo size="md" />
@@ -115,7 +119,7 @@ const BottomNav = () => {
               return (
                 <Link
                   key={path}
-                  to={path}
+                  to={demoPrefix(path)}
                   className={cn(
                     'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors relative',
                     active
@@ -131,27 +135,31 @@ const BottomNav = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="gap-1.5" onClick={openSearch}>
-              <Search className="w-4 h-4" />
-              Search
-              <kbd className="ml-1 text-xs text-muted-foreground border border-border rounded px-1">
-                ⌘K
-              </kbd>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center rounded-full hover:ring-2 hover:ring-primary/30 transition-all">
-                  <UserAvatar
-                    displayName={profile?.displayName ?? 'You'}
-                    avatarUrl={profile?.avatarUrl}
-                    size="md"
-                  />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 bg-background z-50">
-                <AccountDropdownContent />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!demo && (
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={openSearch}>
+                <Search className="w-4 h-4" />
+                Search
+                <kbd className="ml-1 text-xs text-muted-foreground border border-border rounded px-1">
+                  ⌘K
+                </kbd>
+              </Button>
+            )}
+            {!demo && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center rounded-full hover:ring-2 hover:ring-primary/30 transition-all">
+                    <UserAvatar
+                      displayName={profile?.displayName ?? 'You'}
+                      avatarUrl={profile?.avatarUrl}
+                      size="md"
+                    />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 bg-background z-50">
+                  <AccountDropdownContent />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
@@ -163,7 +171,7 @@ const BottomNav = () => {
           return (
             <Link
               key={path}
-              to={path}
+              to={demoPrefix(path)}
               className={cn('bottom-nav-item', active && 'active')}
             >
               <Icon className="w-5 h-5 mb-0.5" />
@@ -171,25 +179,27 @@ const BottomNav = () => {
             </Link>
           );
         })}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className={cn('bottom-nav-item', isActive('/more') && 'active')}>
-              {profile?.avatarUrl ? (
-                <img
-                  src={profile.avatarUrl}
-                  alt={profile.displayName}
-                  className="w-5 h-5 rounded-full object-cover mb-0.5"
-                />
-              ) : (
-                <MoreHorizontal className="w-5 h-5 mb-0.5" />
-              )}
-              <span className="text-xs">More</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 bg-background z-50 mb-2">
-            <AccountDropdownContent />
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!demo && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={cn('bottom-nav-item', isActive('/more') && 'active')}>
+                {profile?.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={profile.displayName}
+                    className="w-5 h-5 rounded-full object-cover mb-0.5"
+                  />
+                ) : (
+                  <MoreHorizontal className="w-5 h-5 mb-0.5" />
+                )}
+                <span className="text-xs">More</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 bg-background z-50 mb-2">
+              <AccountDropdownContent />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </nav>
     </>
   );

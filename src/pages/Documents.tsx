@@ -18,6 +18,7 @@ import AccessSheet from '@/components/documents/AccessSheet';
 import LinkItemsSheet from '@/components/documents/LinkItemsSheet';
 
 import BottomNav from '@/components/BottomNav';
+import { isDemoModeActive } from '@/demo/demoFlag';
 
 const Documents = () => {
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
@@ -27,6 +28,7 @@ const Documents = () => {
   const [accessId, setAccessId] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [demoNudge, setDemoNudge] = useState(false);
 
 
   const reload = () => setDocuments(DocumentService.getAll());
@@ -46,6 +48,10 @@ const Documents = () => {
     reload();
     setIsAdding(false);
     setAttachingId(created.id);
+    if (isDemoModeActive()) {
+      setDemoNudge(true);
+      setTimeout(() => setDemoNudge(false), 4000);
+    }
   };
 
   const handleEditSave = async (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => {
@@ -53,6 +59,10 @@ const Documents = () => {
     if (tax) await TaxTagService.setTag(id, 'document', tax);
     reload();
     setEditingId(null);
+    if (isDemoModeActive()) {
+      setDemoNudge(true);
+      setTimeout(() => setDemoNudge(false), 4000);
+    }
   };
 
   const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
@@ -72,6 +82,11 @@ const Documents = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        {demoNudge && (
+          <p className="text-sm text-muted-foreground italic mb-4">
+            This is what a note looks like for your own family. Nothing fancy, just clear.
+          </p>
+        )}
         {/* Trust signal */}
         <p className="text-xs text-muted-foreground text-center mb-6 flex items-center justify-center gap-1.5">
           <Shield className="w-3 h-3" />

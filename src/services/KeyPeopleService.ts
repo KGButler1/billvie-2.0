@@ -1,6 +1,10 @@
 import { KeyPerson } from '@/types/keyPerson';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { DEMO_KEY_PEOPLE } from '@/demo/demoData';
+
+let demoCache: KeyPerson[] = DEMO_KEY_PEOPLE.map((p) => ({ ...p }));
 
 function rowToPerson(row: Record<string, unknown>): KeyPerson {
   return {
@@ -34,6 +38,7 @@ let loaded = false;
 
 export const KeyPeopleService = {
   async refresh(): Promise<void> {
+    if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();
     const { data, error } = await supabase
       .from('key_people')
@@ -47,6 +52,7 @@ export const KeyPeopleService = {
   },
 
   getAllKeyPeople(): KeyPerson[] {
+    if (isDemoModeActive()) return demoCache;
     return loaded ? cache : [];
   },
 
