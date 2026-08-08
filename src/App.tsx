@@ -20,6 +20,7 @@ import Documents from "./pages/Documents";
 import People from "./pages/People";
 import HouseholdSummary from "./pages/HouseholdSummary";
 import AcceptInvite from "./pages/AcceptInvite";
+import ResetPassword from "./pages/ResetPassword";
 import RecentlyDeleted from "./pages/RecentlyDeleted";
 import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
@@ -95,6 +96,7 @@ const App = () => {
               <Route path="/advisor" element={<Navigate to="/people" replace />} />
               <Route path="/export/summary" element={<ProtectedRoute><HouseholdSummary /></ProtectedRoute>} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/recently-deleted" element={<ProtectedRoute><RecentlyDeleted /></ProtectedRoute>} />
               <Route path="/key-people" element={<ProtectedRoute><KeyPeople /></ProtectedRoute>} />
               <Route path="/readiness" element={<ProtectedRoute><Readiness /></ProtectedRoute>} />
