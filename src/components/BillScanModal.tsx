@@ -54,8 +54,9 @@ const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
         f.id === staged.id ? { ...f, status: 'uploading' as const } : f
       ));
 
+      let uploaded: { documentId: string; documentUrl: string } | null = null;
       try {
-        const uploaded = await BillScanService.uploadScanFile(staged.file);
+        uploaded = await BillScanService.uploadScanFile(staged.file);
         if (!uploaded) {
           setFiles((prev) => prev.map((f) =>
             f.id === staged.id ? { ...f, status: 'error' as const } : f
@@ -75,6 +76,7 @@ const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
             f.id === staged.id ? { ...f, status: 'quota_exceeded' as const, needsPro: true } : f
           ));
         } else if ('error' in result) {
+          if (uploaded) await BillScanService.deleteScanDocument(uploaded.documentId);
           setFiles((prev) => prev.map((f) =>
             f.id === staged.id ? { ...f, status: 'error' as const } : f
           ));
@@ -84,6 +86,7 @@ const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
           ));
         }
       } catch {
+        if (uploaded) await BillScanService.deleteScanDocument(uploaded.documentId);
         setFiles((prev) => prev.map((f) =>
           f.id === staged.id ? { ...f, status: 'error' as const } : f
         ));

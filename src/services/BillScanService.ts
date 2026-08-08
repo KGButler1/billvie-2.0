@@ -62,7 +62,7 @@ export const BillScanService = {
       return null;
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = await supabase.storage
       .from('bill-scans')
       .createSignedUrl(fileName, 3600);
 
@@ -91,6 +91,10 @@ export const BillScanService = {
     }
 
     return { documentId: docRow.id, documentUrl };
+  },
+
+  async deleteScanDocument(documentId: string): Promise<void> {
+    await supabase.from('documents').delete().eq('id', documentId);
   },
 
   async triggerScan(params: {
