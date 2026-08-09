@@ -94,6 +94,7 @@ export const BillScanService = {
         provider: '',
         type: 'other',
         scan_sourced: true,
+        source: 'bill_scan',
       })
       .select('id')
       .single();

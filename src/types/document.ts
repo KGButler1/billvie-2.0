@@ -17,6 +17,7 @@ export interface HouseholdDocument {
   taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
 
   scanSourced?: boolean; // true when auto-created by bill-scan; hidden from document lists
+  source?: 'manual' | 'bill_scan'; // origin of the record
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;

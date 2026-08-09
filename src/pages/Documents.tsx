@@ -1,8 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, FolderOpen, Shield } from 'lucide-react';
+import { Plus, FolderOpen, Shield, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { DocumentService } from '@/services/DocumentService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
@@ -13,25 +21,49 @@ import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { HouseholdDocument } from '@/types/document';
 import DocumentCard from '@/components/documents/DocumentCard';
 import AddDocumentModal from '@/components/documents/AddDocumentModal';
-import AttachDocumentSheet from '@/components/documents/AttachDocumentSheet';
 import AccessSheet from '@/components/documents/AccessSheet';
 import LinkItemsSheet from '@/components/documents/LinkItemsSheet';
-
+import DismissibleIntro from '@/components/DismissibleIntro';
 import BottomNav from '@/components/BottomNav';
 import { isDemoModeActive } from '@/demo/demoFlag';
 
+type DocType = HouseholdDocument['type'];
+type SortKey = 'updated' | 'title' | 'type';
+
+const TYPE_LABELS: Record<string, string> = {
+  insurance: 'Insurance',
+  investment: 'Investments',
+  account: 'Accounts',
+  superannuation: 'Super & Retirement',
+  will: 'Wills & Estate',
+  other: 'Other',
+};
+
+const TYPE_ORDER: DocType[] = ['insurance', 'investment', 'account', 'superannuation', 'will', 'other'];
+
+const SORT_LABELS: Record<SortKey, string> = {
+  updated: 'Recently updated',
+  title: 'Title (A–Z)',
+  type: 'Category',
+};
+
 const Documents = () => {
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
+  const [scannedDocs, setScannedDocs] = useState<HouseholdDocument[]>(() => DocumentService.getScanned());
   const [searchParams] = useSearchParams();
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
-  const [attachingId, setAttachingId] = useState<string | null>(null);
   const [accessId, setAccessId] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editScrollToWhereToFindIt, setEditScrollToWhereToFindIt] = useState(false);
   const [demoNudge, setDemoNudge] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<DocType | 'all'>('all');
+  const [sort, setSort] = useState<SortKey>('updated');
 
-
-  const reload = () => setDocuments(DocumentService.getAll());
+  const reload = () => {
+    setDocuments(DocumentService.getAll());
+    setScannedDocs(DocumentService.getScanned());
+  };
 
   const handleAdd = async (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
@@ -47,7 +79,9 @@ const Documents = () => {
     if (msg) showMilestoneToast(msg);
     reload();
     setIsAdding(false);
-    setAttachingId(created.id);
+    // Open the edit dialog scrolled to the where-to-find-it section, preserving the post-save prompt behavior.
+    setEditingId(created.id);
+    setEditScrollToWhereToFindIt(true);
     if (isDemoModeActive()) {
       setDemoNudge(true);
       setTimeout(() => setDemoNudge(false), 4000);
@@ -59,16 +93,48 @@ const Documents = () => {
     if (tax) await TaxTagService.setTag(id, 'document', tax);
     reload();
     setEditingId(null);
+    setEditScrollToWhereToFindIt(false);
     if (isDemoModeActive()) {
       setDemoNudge(true);
       setTimeout(() => setDemoNudge(false), 4000);
     }
   };
 
-  const attachingDoc = attachingId ? documents.find((d) => d.id === attachingId) : undefined;
-  const linkingDoc = linkingId ? documents.find((d) => d.id === linkingId) : undefined;
-  const editingDoc = editingId ? documents.find((d) => d.id === editingId) : undefined;
+  const linkingDoc = linkingId ? [...documents, ...scannedDocs].find((d) => d.id === linkingId) : undefined;
+  const editingDoc = editingId ? [...documents, ...scannedDocs].find((d) => d.id === editingId) : undefined;
 
+  // Important documents: filtered + sorted, grouped by type
+  const filteredDocs = useMemo(() => {
+    let list = documents;
+    if (typeFilter !== 'all') list = list.filter((d) => d.type === typeFilter);
+
+    const sorted = [...list].sort((a, b) => {
+      if (sort === 'title') return a.title.localeCompare(b.title);
+      if (sort === 'type') return TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type);
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+    return sorted;
+  }, [documents, typeFilter, sort]);
+
+  const groupedDocs = useMemo(() => {
+    const groups: Record<string, HouseholdDocument[]> = {};
+    for (const doc of filteredDocs) {
+      if (!groups[doc.type]) groups[doc.type] = [];
+      groups[doc.type].push(doc);
+    }
+    return groups;
+  }, [filteredDocs]);
+
+  // Scanned documents: flat, newest first
+  const sortedScanned = useMemo(
+    () => [...scannedDocs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [scannedDocs]
+  );
+
+  const availableTypes = useMemo(() => {
+    const types = new Set(documents.map((d) => d.type));
+    return TYPE_ORDER.filter((t) => types.has(t));
+  }, [documents]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -81,12 +147,13 @@ const Documents = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-20">
+      <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
         {demoNudge && (
           <p className="text-sm text-muted-foreground italic mb-4">
             This is what a note looks like for your own family. Nothing fancy, just clear.
           </p>
         )}
+
         {/* Trust signal */}
         <p className="text-xs text-muted-foreground text-center mb-6 flex items-center justify-center gap-1.5">
           <Shield className="w-3 h-3" />
@@ -102,7 +169,7 @@ const Documents = () => {
           </div>
         )}
 
-        {documents.length === 0 ? (
+        {documents.length === 0 && scannedDocs.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -120,29 +187,129 @@ const Documents = () => {
             </Button>
           </motion.div>
         ) : (
-          <div className="space-y-3">
-            {documents.map((doc, i) => (
-              <motion.div
-                key={doc.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <DocumentCard
-                  document={doc}
-                  onAttach={(id) => setAttachingId(id)}
-                  onEditAccess={(id) => setAccessId(id)}
-                  onLinks={(id) => setLinkingId(id)}
-                  onEdit={(id) => setEditingId(id)}
-                  onDelete={async (id) => {
-                    if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
-                    await DocumentService.delete(id);
-                    reload();
-                  }}
-                />
-              </motion.div>
-            ))}
-          </div>
+          <>
+            {/* Intro blurb */}
+            <DismissibleIntro storageKey="billvie_documents_intro">
+              This is the important stuff — a will, a policy, anything someone would need to find in a hurry.
+              Scanned bills show up further down for convenience; they don't need to be filed here on purpose.
+            </DismissibleIntro>
+
+            {/* Important Documents section */}
+            {documents.length > 0 && (
+              <div className="mb-8">
+                {/* Toolbar */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      onClick={() => setTypeFilter('all')}
+                      className={cn(
+                        'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                        typeFilter === 'all'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border hover:bg-muted'
+                      )}
+                    >
+                      All
+                    </button>
+                    {availableTypes.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTypeFilter(t)}
+                        className={cn(
+                          'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                          typeFilter === t
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'border-border hover:bg-muted'
+                        )}
+                      >
+                        {TYPE_LABELS[t] || t}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+                      <SelectTrigger className="w-[170px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {Object.entries(SORT_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Grouped documents */}
+                <div className="space-y-6">
+                  {TYPE_ORDER.filter((t) => groupedDocs[t]?.length).map((type) => (
+                    <div key={type}>
+                      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                        {TYPE_LABELS[type] || type}
+                      </h3>
+                      <div className="space-y-3">
+                        {groupedDocs[type].map((doc, i) => (
+                          <motion.div
+                            key={doc.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                          >
+                            <DocumentCard
+                              document={doc}
+                              onEditAccess={(id) => setAccessId(id)}
+                              onLinks={(id) => setLinkingId(id)}
+                              onEdit={(id) => {
+                                setEditingId(id);
+                                setEditScrollToWhereToFindIt(false);
+                              }}
+                              onDelete={async (id) => {
+                                if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
+                                await DocumentService.delete(id);
+                                reload();
+                              }}
+                            />
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Scanned Documents section */}
+            {sortedScanned.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <ScanLine className="w-3.5 h-3.5" />
+                  Scanned Bills
+                </h2>
+                <div className="space-y-2">
+                  {sortedScanned.map((doc) => (
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      onEditAccess={(id) => setAccessId(id)}
+                      onLinks={(id) => setLinkingId(id)}
+                      onEdit={(id) => {
+                        setEditingId(id);
+                        setEditScrollToWhereToFindIt(false);
+                      }}
+                      onDelete={async (id) => {
+                        if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
+                        await DocumentService.delete(id);
+                        reload();
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -150,15 +317,14 @@ const Documents = () => {
         {(isAdding || editingDoc) && (
           <AddDocumentModal
             document={editingDoc}
+            scrollToWhereToFindIt={editScrollToWhereToFindIt}
             onAdd={handleAdd}
             onEdit={handleEditSave}
-            onClose={() => { setIsAdding(false); setEditingId(null); }}
-          />
-        )}
-        {attachingDoc && (
-          <AttachDocumentSheet
-            document={attachingDoc}
-            onClose={() => { setAttachingId(null); reload(); }}
+            onClose={() => {
+              setIsAdding(false);
+              setEditingId(null);
+              setEditScrollToWhereToFindIt(false);
+            }}
           />
         )}
         {accessId && (
@@ -175,7 +341,6 @@ const Documents = () => {
           />
         )}
       </AnimatePresence>
-
 
       <BottomNav />
     </div>

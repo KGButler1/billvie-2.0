@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Shield, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,11 @@ import TaxRelevanceFields, {
   emptyTaxRelevance,
 } from '@/components/tax/TaxRelevanceFields';
 import { TaxTagService } from '@/services/TaxTagService';
+import WhereToFindIt, { WhereToFindItValue } from '@/components/documents/WhereToFindIt';
 
 interface AddDocumentModalProps {
   document?: HouseholdDocument;
+  scrollToWhereToFindIt?: boolean;
   onAdd: (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
@@ -31,7 +33,7 @@ interface AddDocumentModalProps {
   onClose: () => void;
 }
 
-const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModalProps) => {
+const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onClose }: AddDocumentModalProps) => {
   const [title, setTitle] = useState(document?.title ?? '');
   const [provider, setProvider] = useState(document?.provider ?? '');
   const [type, setType] = useState<DocumentType>(document?.type ?? 'insurance');
@@ -60,6 +62,14 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
         }
       : base;
   });
+
+  const [whereToFindIt, setWhereToFindIt] = useState<WhereToFindItValue>(() => ({
+    attachment: document?.attachment,
+    externalLink: document?.externalLink,
+    physicalLocation: document?.physicalLocation,
+  }));
+  const [storageFull, setStorageFull] = useState(false);
+  const whereToFindItRef = useRef<HTMLDivElement>(null);
 
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(() => {
     if (!document) return null;
@@ -93,6 +103,13 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
     return { id: created.id, label: created.name };
   };
 
+  // Scroll to the where-to-find-it section if requested (e.g. after creating a doc).
+  useEffect(() => {
+    if (scrollToWhereToFindIt && whereToFindItRef.current) {
+      whereToFindItRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [scrollToWhereToFindIt]);
+
   const handleSubmit = () => {
     if (!title.trim()) return;
 
@@ -105,6 +122,9 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
       importantDate: importantDate || undefined,
       importantDateLabel: importantDateLabel.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
+      attachment: whereToFindIt.attachment,
+      externalLink: whereToFindIt.externalLink,
+      physicalLocation: whereToFindIt.physicalLocation,
     };
 
     if (document) {
@@ -248,6 +268,23 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
               rows={3}
             />
             <p className="text-xs text-muted-foreground mt-1">This helps someone step in if needed</p>
+          </div>
+
+          <div ref={whereToFindItRef}>
+            {storageFull && (
+              <div className="mb-3 rounded-xl border border-border bg-muted/50 p-3">
+                <p className="text-sm font-medium">There isn't room for another file right now</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your record is saved and safe. For this one, try a link or a note about where the original is kept
+                  instead.
+                </p>
+              </div>
+            )}
+            <WhereToFindIt
+              document={document}
+              onChange={setWhereToFindIt}
+              onStorageFull={() => { setStorageFull(true); setWhereToFindIt((v) => ({ ...v, attachment: undefined })); }}
+            />
           </div>
 
           <div>

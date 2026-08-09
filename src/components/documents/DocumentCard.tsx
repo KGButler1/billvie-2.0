@@ -27,13 +27,12 @@ const joinNames = (names: string[]) => {
 interface DocumentCardProps {
   document: HouseholdDocument;
   onDelete: (id: string) => void;
-  onAttach: (id: string) => void;
   onEditAccess: (id: string) => void;
   onLinks: (id: string) => void;
   onEdit: (id: string) => void;
 }
 
-const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onEdit }: DocumentCardProps) => {
+const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: DocumentCardProps) => {
   const Icon = typeIcons[document.type] || File;
   const hasAttachment = !!(document.attachment || document.externalLink || document.physicalLocation);
   const viewers = AccessService.getPeopleFor('documents', document.id).map((p) => firstName(p.name));
@@ -47,8 +46,20 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
       className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 relative">
           <Icon className="w-5 h-5 text-primary" />
+          {document.attachment && document.attachment.type.startsWith('image/') && (
+            <img
+              src={document.attachment.dataUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover rounded-lg"
+            />
+          )}
+          {document.attachment && !document.attachment.type.startsWith('image/') && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+              <Paperclip className="w-2 h-2 text-primary-foreground" />
+            </span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="min-w-0">
@@ -96,7 +107,7 @@ const DocumentCard = ({ document, onDelete, onAttach, onEditAccess, onLinks, onE
               )}
               {!hasAttachment && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onAttach(document.id); }}
+                  onClick={(e) => { e.stopPropagation(); onEdit(document.id); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Add the document itself

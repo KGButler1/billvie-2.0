@@ -90,6 +90,59 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Rename the source document to match the extracted bill name, and link
+    // the document to the bill so DocumentCard picks it up automatically.
+    // Only do this when extraction succeeded (no error branch above) and a
+    // name was actually extracted — don't rename off a failed guess.
+    if (name) {
+      const { data: bill } = await adminClient
+        .from("bills")
+        .select("source_document_id")
+        .eq("id", billId)
+        .maybeSingle();
+
+      if (bill?.source_document_id) {
+        await adminClient
+          .from("documents")
+          .update({ title: name, updated_at: new Date().toISOString() })
+          .eq("id", bill.source_document_id);
+
+        // Create the document -> bill link (same shape as the manual flow).
+        // Unlink any existing bill link for this document first.
+        const { data: existingLinks } = await adminClient
+          .from("document_links")
+          .select("id")
+          .eq("document_id", bill.source_document_id)
+          .eq("link_type", "bill")
+          .is("unlinked_at", null);
+
+        if (existingLinks && existingLinks.length > 0) {
+          await adminClient
+            .from("document_links")
+            .update({ unlinked_at: new Date().toISOString() })
+            .in("id", existingLinks.map((l: { id: string }) => l.id));
+        }
+
+        const { data: billRow } = await adminClient
+          .from("bills")
+          .select("household_id")
+          .eq("id", billId)
+          .maybeSingle();
+
+        if (billRow?.household_id) {
+          await adminClient
+            .from("document_links")
+            .insert({
+              household_id: billRow.household_id,
+              document_id: bill.source_document_id,
+              source_type: "document",
+              link_type: "bill",
+              target_id: billId,
+            });
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ ok: true, status: "needs_review" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

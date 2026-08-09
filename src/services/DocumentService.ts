@@ -22,6 +22,7 @@ function rowToDoc(row: Record<string, unknown>): HouseholdDocument {
     importantDateLabel: (row.important_date_label as string) || undefined,
     deletedAt: (row.deleted_at as string) || undefined,
     scanSourced: (row.scan_sourced as boolean) || false,
+    source: (row.source as 'manual' | 'bill_scan') || 'manual',
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -40,6 +41,7 @@ function docToRow(doc: Partial<HouseholdDocument>): Record<string, unknown> {
   if (doc.importantDateLabel !== undefined) row.important_date_label = doc.importantDateLabel || null;
   if (doc.deletedAt !== undefined) row.deleted_at = doc.deletedAt || null;
   if (doc.scanSourced !== undefined) row.scan_sourced = doc.scanSourced;
+  if (doc.source !== undefined) row.source = doc.source;
   return row;
 }
 
@@ -76,6 +78,10 @@ export const DocumentService = {
 
   getAll(): HouseholdDocument[] {
     return this.ensureLoaded().filter((d) => !d.deletedAt && !d.scanSourced);
+  },
+
+  getScanned(): HouseholdDocument[] {
+    return this.ensureLoaded().filter((d) => !d.deletedAt && d.scanSourced);
   },
 
   async add(doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>): Promise<HouseholdDocument> {
