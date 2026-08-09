@@ -40,7 +40,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
   const card = PaymentCardService.getById(bill.paymentCardId);
   const cardFlag = cardExpiryFlag(card);
   const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
-  const linkedDoc = linkedDocId ? DocumentService.getAll().find((d) => d.id === linkedDocId) : undefined;
+  const linkedDoc = linkedDocId ? DocumentService.getById(linkedDocId) : undefined;
 
 
   
@@ -70,39 +70,6 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
         needsReview && 'ring-2 ring-amber-400/50'
       )}
     >
-      {/* Sample indicator */}
-      {bill.isSample && !isProcessing && !needsReview && !isFailed && (
-        <span className="absolute top-2 right-2 text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-          Sample
-        </span>
-      )}
-
-      {/* Processing state overlay */}
-      {isProcessing && (
-        <div className="absolute top-2 right-2 flex items-center gap-1.5 text-xs text-primary">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span>Reading...</span>
-        </div>
-      )}
-
-      {/* Needs review badge */}
-      {needsReview && (
-        <motion.span
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800"
-        >
-          Review
-        </motion.span>
-      )}
-
-      {/* Failed badge */}
-      {isFailed && (
-        <span className="absolute top-2 right-2 text-xs font-medium px-2.5 py-1 rounded-full bg-destructive/10 text-destructive">
-          Couldn't read
-        </span>
-      )}
-
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Bill name and status */}
@@ -186,14 +153,37 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
 
         </div>
 
-        {/* Status + card badges */}
-        <div className={cn('flex flex-col items-end gap-1.5 flex-shrink-0', bill.isSample && 'mt-5')}>
-        <span className={cn(
-          'text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0',
-          statusStyles[bill.status]
-        )}>
-          {statusLabels[bill.status]}
-        </span>
+        {/* Status + extraction badges */}
+        <div className={cn('flex flex-col items-end gap-1.5 flex-shrink-0')}>
+        {isProcessing ? (
+          <div className="flex items-center gap-1.5 text-xs text-primary px-2.5 py-1 rounded-full bg-primary/10">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span>Reading...</span>
+          </div>
+        ) : needsReview ? (
+          <motion.span
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 flex-shrink-0"
+          >
+            Review
+          </motion.span>
+        ) : isFailed ? (
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-destructive/10 text-destructive flex-shrink-0">
+            Couldn't read
+          </span>
+        ) : bill.isSample ? (
+          <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground flex-shrink-0">
+            Sample
+          </span>
+        ) : (
+          <span className={cn(
+            'text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0',
+            statusStyles[bill.status]
+          )}>
+            {statusLabels[bill.status]}
+          </span>
+        )}
         {cardFlag && (
           <span className="text-xs font-medium px-2 py-0.5 rounded-full status-overdue inline-flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />

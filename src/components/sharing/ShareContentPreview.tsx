@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Calendar, CheckCircle2, Clock, Link2 } from 'lucide-react';
+import { Calendar, CircleCheck as CheckCircle2, Clock, Link2 } from 'lucide-react';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
@@ -52,7 +52,7 @@ const BillRow = ({ bill, viewerId }: { bill: Bill; viewerId?: string }) => {
   ].filter(Boolean);
 
   const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
-  const linkedDoc = linkedDocId ? DocumentService.getAll().find((d) => d.id === linkedDocId) : undefined;
+  const linkedDoc = linkedDocId ? DocumentService.getById(linkedDocId) : undefined;
   const viewerCanSee =
     !!linkedDoc && (!viewerId || AccessService.canSee(viewerId, 'documents', linkedDoc.id));
 

@@ -62,11 +62,23 @@ export const BillScanService = {
       return null;
     }
 
-    const { data: urlData } = await supabase.storage
+    const { data: urlData, error: signError } = await supabase.storage
       .from('bill-scans')
       .createSignedUrl(fileName, 3600);
 
-    const documentUrl = urlData?.signedUrl || '';
+    let documentUrl = urlData?.signedUrl || '';
+
+    if (signError || !documentUrl) {
+      await new Promise((r) => setTimeout(r, 500));
+      const retry = await supabase.storage
+        .from('bill-scans')
+        .createSignedUrl(fileName, 3600);
+      if (retry.error || !retry.data?.signedUrl) {
+        console.error('Signed URL failed twice:', signError, retry.error);
+        return null;
+      }
+      documentUrl = retry.data.signedUrl;
+    }
 
     const { data: docRow, error: docError } = await supabase
       .from('documents')
@@ -81,6 +93,7 @@ export const BillScanService = {
         title: file.name,
         provider: '',
         type: 'other',
+        scan_sourced: true,
       })
       .select('id')
       .single();
@@ -94,7 +107,8 @@ export const BillScanService = {
   },
 
   async deleteScanDocument(documentId: string): Promise<void> {
-    await supabase.from('documents').delete().eq('id', documentId);
+    const { error } = await supabase.from('documents').delete().eq('id', documentId);
+    if (error) console.error('Failed to delete orphaned scan document:', error);
   },
 
   async triggerScan(params: {

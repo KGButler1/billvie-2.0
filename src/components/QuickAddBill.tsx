@@ -160,7 +160,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(() => {
     if (!initialBill) return null;
     const docId = DocumentLinkService.getLinkedDocumentIdForBill(initialBill.id);
-    const doc = docId ? DocumentService.getAll().find((d) => d.id === docId) : undefined;
+    const doc = docId ? DocumentService.getById(docId) : undefined;
     return doc ? { id: doc.id, label: doc.title } : null;
   });
 
