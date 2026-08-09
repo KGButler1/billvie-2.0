@@ -93,6 +93,15 @@ const Documents = () => {
           No sensitive credentials stored — only you and people you invite can see this
         </p>
 
+        {documents.length > 0 && (
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold hidden lg:block">Important Documents</h1>
+            <Button onClick={() => setIsAdding(true)} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Add
+            </Button>
+          </div>
+        )}
+
         {documents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -75,6 +75,8 @@ const HouseholdSetupWidget = () => {
     localStorage.setItem(STORAGE_KEY, String(next));
   };
 
+  if (complete) return null;
+
   return (
     <section className="bg-card border border-border rounded-xl p-4 mb-6">
       <div className="flex items-center gap-3">

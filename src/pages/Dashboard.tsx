@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +20,6 @@ import BillScanModal from '@/components/BillScanModal';
 import BottomNav from '@/components/BottomNav';
 import DevPanel from '@/components/DevPanel';
 import DashboardHeader from '@/components/DashboardHeader';
-import DashboardStats from '@/components/DashboardStats';
 import SpendingChart from '@/components/SpendingChart';
 import ActiveEventsWidget from '@/components/ActiveEventsWidget';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -29,10 +28,12 @@ import FirstWeekNudges from '@/components/FirstWeekNudges';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
 import BillsWidget from '@/components/BillsWidget';
-import AccessWidget from '@/components/AccessWidget';
 import FinancialSnapshotWidget from '@/components/FinancialSnapshotWidget';
 import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
+import DashboardActionStrip from '@/components/DashboardActionStrip';
+import OrganizationStrip from '@/components/OrganizationStrip';
+import PeopleBubbleRow from '@/components/PeopleBubbleRow';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -46,6 +47,7 @@ const Dashboard = () => {
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFamilyView, setIsFamilyView] = useState(false);
+  const needsAttentionRef = useRef<HTMLDivElement>(null);
 
   // Initialize data on mount
   useEffect(() => {
@@ -235,23 +237,48 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* Dashboard Stats */}
-        <DashboardStats 
-          upcomingTotal={upcomingTotal}
-          dueSoonCount={dueSoonBills.length}
-          overdueCount={overdueBills.length}
-          isFamilyView={isFamilyView}
-        />
-
         {/* Trust signal */}
         <p className="text-xs text-muted-foreground text-center mb-4 flex items-center justify-center gap-1.5">
           <Shield className="w-3 h-3" />
           Only you and people you invite can see this
         </p>
 
-        <AccessWidget />
+        <DashboardActionStrip
+          overdueCount={overdueBills.length}
+          dueSoonCount={dueSoonBills.length}
+          upcomingTotal={upcomingTotal}
+          isFamilyView={isFamilyView}
+          onAttentionClick={() => needsAttentionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        />
 
-        {/* Household setup */}
+        <OrganizationStrip />
+
+        <PeopleBubbleRow />
+
+        {/* Needs Attention bill list */}
+        <div ref={needsAttentionRef}>
+          <BillList
+            bills={[...overdueBills, ...dueSoonBills]}
+            mode="grouped"
+            sectionTitle={getSectionTitle}
+            onMarkPaid={handleMarkPaid}
+            onMarkUnpaid={handleMarkUnpaid}
+            onDelete={handleDeleteBill}
+            onEdit={setEditingBill}
+            onOpen={setDetailBill}
+          />
+        </div>
+
+        {/* Household Records cluster */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
+          <DocumentsWidget />
+          <FinancialSnapshotWidget />
+          {isTaxSeason && <TaxWidget />}
+          {!isTaxSeason && <TaxWidget />}
+          <AdvisorWidget />
+        </div>
+
+        {/* Household setup (hidden when all complete) */}
         <HouseholdSetupWidget />
 
         {/* Spending Chart */}
@@ -260,35 +287,7 @@ const Dashboard = () => {
         {/* Active Events Widget */}
         <ActiveEventsWidget events={activeEvents} />
 
-
-
-        {/* Tax season (Jan-Apr) surfaces tax records earlier in the stack */}
-        {isTaxSeason && <TaxWidget />}
-
-        {/* Important Documents Widget */}
-        <DocumentsWidget />
-
-        {/* Financial Snapshot Widget */}
-        <FinancialSnapshotWidget />
-
-        {!isTaxSeason && <TaxWidget />}
-
-        {/* Advisor Widget */}
-        <AdvisorWidget />
-
         <BillsWidget onOpen={setDetailBill} />
-
-        {/* Bills needing attention */}
-        <BillList
-          bills={[...overdueBills, ...dueSoonBills]}
-          mode="grouped"
-          sectionTitle={getSectionTitle}
-          onMarkPaid={handleMarkPaid}
-          onMarkUnpaid={handleMarkUnpaid}
-          onDelete={handleDeleteBill}
-          onEdit={setEditingBill}
-          onOpen={setDetailBill}
-        />
 
         {bills.length > 0 && (
           <Link
