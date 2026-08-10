@@ -16,6 +16,7 @@ export interface InsuranceEntry {
   documentLink?: string;
   notes?: string;
   linkedBillId?: string;
+  linkedDocumentId?: string;
   contactInfo?: string;
 }
 
@@ -27,6 +28,7 @@ export interface SuperannuationEntry {
   estimatedBalance: number;
   notes?: string;
   contactInfo?: string;
+  linkedDocumentId?: string;
 }
 
 export interface MiscFinancialEntry {
@@ -34,6 +36,7 @@ export interface MiscFinancialEntry {
   key: string;
   value: string;
   notes?: string;
+  linkedDocumentId?: string;
 }
 
 export interface IncomeSourceEntry {
@@ -41,6 +44,7 @@ export interface IncomeSourceEntry {
   sourceName: string;
   approximateAmount: number;
   notes?: string;
+  linkedDocumentId?: string;
 }
 
 export interface DebtEntry {
@@ -49,6 +53,7 @@ export interface DebtEntry {
   type: DebtType;
   approximateBalance: number;
   notes?: string;
+  linkedDocumentId?: string;
 }
 
 export interface FinancialData {
@@ -123,23 +128,28 @@ export class FinancialInfoService {
       premiumFrequency: r.premium_frequency || undefined, renewalDate: r.renewal_date || undefined,
       documentLink: r.document_link || undefined, notes: r.notes || undefined,
       linkedBillId: r.linked_bill_id || undefined, contactInfo: r.contact_info || undefined,
+      linkedDocumentId: r.linked_document_id || undefined,
     }));
     this.superCache = (supRes.data || []).map((r) => ({
       id: r.id, fundName: r.fund_name, accountNumber: r.account_number || undefined,
       accountType: (r.account_type as AccountType) || undefined,
       estimatedBalance: Number(r.estimated_balance), notes: r.notes || undefined,
       contactInfo: r.contact_info || undefined,
+      linkedDocumentId: r.linked_document_id || undefined,
     }));
     this.incomeCache = (incRes.data || []).map((r) => ({
       id: r.id, sourceName: r.source_name, approximateAmount: Number(r.approximate_amount),
       notes: r.notes || undefined,
+      linkedDocumentId: r.linked_document_id || undefined,
     }));
     this.debtCache = (debtRes.data || []).map((r) => ({
       id: r.id, owedTo: r.owed_to, type: r.type, approximateBalance: Number(r.approximate_balance),
       notes: r.notes || undefined,
+      linkedDocumentId: r.linked_document_id || undefined,
     }));
     this.miscCache = (miscRes.data || []).map((r) => ({
       id: r.id, key: r.key, value: r.value, notes: r.notes || undefined,
+      linkedDocumentId: r.linked_document_id || undefined,
     }));
     this.loaded = true;
   }
@@ -163,6 +173,7 @@ export class FinancialInfoService {
       renewal_date: entry.renewalDate || null, document_link: entry.documentLink || null,
       notes: entry.notes || null, linked_bill_id: entry.linkedBillId || null,
       contact_info: entry.contactInfo || null,
+      linked_document_id: entry.linkedDocumentId || null,
     };
     const { data, error } = await supabase.from('financial_insurance').insert(row).select().single();
     if (error) throw error;
@@ -172,6 +183,7 @@ export class FinancialInfoService {
       premiumFrequency: data.premium_frequency || undefined, renewalDate: data.renewal_date || undefined,
       documentLink: data.document_link || undefined, notes: data.notes || undefined,
       linkedBillId: data.linked_bill_id || undefined, contactInfo: data.contact_info || undefined,
+      linkedDocumentId: data.linked_document_id || undefined,
     };
     this.insuranceCache.push(newEntry);
     return newEntry;
@@ -189,6 +201,7 @@ export class FinancialInfoService {
     if (updates.notes !== undefined) row.notes = updates.notes || null;
     if (updates.linkedBillId !== undefined) row.linked_bill_id = updates.linkedBillId || null;
     if (updates.contactInfo !== undefined) row.contact_info = updates.contactInfo || null;
+    if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     const { error } = await supabase.from('financial_insurance').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.insuranceCache.findIndex((i) => i.id === id);
@@ -226,6 +239,7 @@ export class FinancialInfoService {
       account_number: entry.accountNumber || null, account_type: entry.accountType || null,
       estimated_balance: entry.estimatedBalance,
       notes: entry.notes || null, contact_info: entry.contactInfo || null,
+      linked_document_id: entry.linkedDocumentId || null,
     };
     const { data, error } = await supabase.from('financial_superannuation').insert(row).select().single();
     if (error) throw error;
@@ -234,6 +248,7 @@ export class FinancialInfoService {
       accountType: (data.account_type as AccountType) || undefined,
       estimatedBalance: Number(data.estimated_balance), notes: data.notes || undefined,
       contactInfo: data.contact_info || undefined,
+      linkedDocumentId: data.linked_document_id || undefined,
     };
     this.superCache.push(newEntry);
     return newEntry;
@@ -252,6 +267,7 @@ export class FinancialInfoService {
     if (updates.notes !== undefined) row.notes = updates.notes || null;
     if (updates.contactInfo !== undefined) row.contact_info = updates.contactInfo || null;
     if (updates.accountType !== undefined) row.account_type = updates.accountType || null;
+    if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     const { error } = await supabase.from('financial_superannuation').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.superCache.findIndex((s) => s.id === id);
@@ -279,12 +295,14 @@ export class FinancialInfoService {
     const row = {
       household_id: householdId, source_name: entry.sourceName,
       approximate_amount: entry.approximateAmount, notes: entry.notes || null,
+      linked_document_id: entry.linkedDocumentId || null,
     };
     const { data, error } = await supabase.from('financial_income').insert(row).select().single();
     if (error) throw error;
     const newEntry: IncomeSourceEntry = {
       id: data.id, sourceName: data.source_name, approximateAmount: Number(data.approximate_amount),
       notes: data.notes || undefined,
+      linkedDocumentId: data.linked_document_id || undefined,
     };
     this.incomeCache.push(newEntry);
     return newEntry;
@@ -295,6 +313,7 @@ export class FinancialInfoService {
     if (updates.sourceName !== undefined) row.source_name = updates.sourceName;
     if (updates.approximateAmount !== undefined) row.approximate_amount = updates.approximateAmount;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
+    if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     const { error } = await supabase.from('financial_income').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.incomeCache.findIndex((i) => i.id === id);
@@ -322,12 +341,14 @@ export class FinancialInfoService {
     const row = {
       household_id: householdId, owed_to: entry.owedTo, type: entry.type,
       approximate_balance: entry.approximateBalance, notes: entry.notes || null,
+      linked_document_id: entry.linkedDocumentId || null,
     };
     const { data, error } = await supabase.from('financial_debts').insert(row).select().single();
     if (error) throw error;
     const newEntry: DebtEntry = {
       id: data.id, owedTo: data.owed_to, type: data.type,
       approximateBalance: Number(data.approximate_balance), notes: data.notes || undefined,
+      linkedDocumentId: data.linked_document_id || undefined,
     };
     this.debtCache.push(newEntry);
     return newEntry;
@@ -339,6 +360,7 @@ export class FinancialInfoService {
     if (updates.type !== undefined) row.type = updates.type;
     if (updates.approximateBalance !== undefined) row.approximate_balance = updates.approximateBalance;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
+    if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     const { error } = await supabase.from('financial_debts').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.debtCache.findIndex((d) => d.id === id);
@@ -366,11 +388,13 @@ export class FinancialInfoService {
     const row = {
       household_id: householdId, key: entry.key, value: entry.value,
       notes: entry.notes || null,
+      linked_document_id: entry.linkedDocumentId || null,
     };
     const { data, error } = await supabase.from('financial_misc').insert(row).select().single();
     if (error) throw error;
     const newEntry: MiscFinancialEntry = {
       id: data.id, key: data.key, value: data.value, notes: data.notes || undefined,
+      linkedDocumentId: data.linked_document_id || undefined,
     };
     this.miscCache.push(newEntry);
     return newEntry;
@@ -381,6 +405,7 @@ export class FinancialInfoService {
     if (updates.key !== undefined) row.key = updates.key;
     if (updates.value !== undefined) row.value = updates.value;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
+    if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     const { error } = await supabase.from('financial_misc').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.miscCache.findIndex((m) => m.id === id);
@@ -391,6 +416,15 @@ export class FinancialInfoService {
     const { error } = await supabase.from('financial_misc').delete().eq('id', id);
     if (error) throw error;
     this.miscCache = this.miscCache.filter((m) => m.id !== id);
+  }
+
+  static getLinkedDocumentId(entryType: 'insurance' | 'super' | 'income' | 'debts' | 'misc', entryId: string): string | undefined {
+    const cache = entryType === 'insurance' ? this.insuranceCache
+      : entryType === 'super' ? this.superCache
+      : entryType === 'income' ? this.incomeCache
+      : entryType === 'debts' ? this.debtCache
+      : this.miscCache;
+    return cache.find((e) => e.id === entryId)?.linkedDocumentId;
   }
 
   static async clearAll(): Promise<void> {

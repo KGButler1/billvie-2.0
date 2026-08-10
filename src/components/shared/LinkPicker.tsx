@@ -22,7 +22,7 @@ interface LinkPickerProps {
   options: LinkPickerOption[];
   value: LinkPickerOption | null;
   onChange: (option: LinkPickerOption | null) => void;
-  onCreate: (name: string) => LinkPickerOption | Promise<LinkPickerOption>;
+  onCreate?: (name: string) => LinkPickerOption | Promise<LinkPickerOption>;
   initialQuery?: string;
   chipIcon?: React.ElementType;
 }
@@ -97,7 +97,7 @@ const LinkPicker = ({
                 </CommandItem>
               ))}
             </CommandGroup>
-            {query.trim() && (
+            {query.trim() && onCreate && (
               <CommandGroup>
                 <CommandItem
                   value={`__create__${query}`}

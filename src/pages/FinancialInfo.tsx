@@ -42,6 +42,8 @@ import { showMilestoneToast } from '@/components/MilestoneToast';
 import BottomNav from '@/components/BottomNav';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import { BillService } from '@/services/BillService';
+import { DocumentService } from '@/services/DocumentService';
+import DismissibleIntro from '@/components/DismissibleIntro';
 import { cn } from '@/lib/utils';
 
 const OverviewTab = ({
@@ -96,11 +98,30 @@ const OverviewTab = ({
 
   return (
     <div className="space-y-8">
-      {/* Group 1: Accounts & Retirement + Income */}
-      {(superannuation.length > 0 || income.length > 0) && (
+      {/* Insurance */}
+      {insurance.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Accounts &amp; Income
+            Insurance
+          </h2>
+          <div className="space-y-4">
+            {insurance.map((entry) => (
+              <InsuranceCard
+                key={entry.id}
+                entry={entry}
+                onEdit={() => onEditInsurance(entry.id)}
+                onDelete={() => onDeleteInsurance(entry.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Accounts & Retirement */}
+      {superannuation.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Accounts &amp; Retirement
           </h2>
           <div className="space-y-4">
             {superannuation.map((entry) => (
@@ -111,11 +132,23 @@ const OverviewTab = ({
                 onDelete={() => onDeleteSuper(entry.id)}
               />
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Income */}
+      {income.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Income
+          </h2>
+          <div className="space-y-4">
             {income.map((entry) => (
               <SimpleCard
                 key={entry.id}
                 title={entry.sourceName}
                 amountLabel={`${entry.approximateAmount.toLocaleString()} approx.`}
+                linkedDocumentId={entry.linkedDocumentId}
                 notes={entry.notes}
                 onEdit={() => onEditIncome(entry.id)}
                 onDelete={() => onDeleteIncome(entry.id)}
@@ -125,7 +158,7 @@ const OverviewTab = ({
         </section>
       )}
 
-      {/* Group 2: Debts */}
+      {/* Debts */}
       {debts.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -138,6 +171,7 @@ const OverviewTab = ({
                 title={entry.owedTo}
                 badge={DEBT_TYPE_LABELS[entry.type]}
                 amountLabel={`${entry.approximateBalance.toLocaleString()} approx. balance`}
+                linkedDocumentId={entry.linkedDocumentId}
                 notes={entry.notes}
                 onEdit={() => onEditDebt(entry.id)}
                 onDelete={() => onDeleteDebt(entry.id)}
@@ -147,26 +181,19 @@ const OverviewTab = ({
         </section>
       )}
 
-      {/* Group 3: Insurance + Other */}
-      {(insurance.length > 0 || misc.length > 0) && (
+      {/* Other */}
+      {misc.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Insurance &amp; Other
+            Other
           </h2>
           <div className="space-y-4">
-            {insurance.map((entry) => (
-              <InsuranceCard
-                key={entry.id}
-                entry={entry}
-                onEdit={() => onEditInsurance(entry.id)}
-                onDelete={() => onDeleteInsurance(entry.id)}
-              />
-            ))}
             {misc.map((entry) => (
               <SimpleCard
                 key={entry.id}
                 title={entry.key}
                 amountLabel={entry.value || undefined}
+                linkedDocumentId={entry.linkedDocumentId}
                 notes={entry.notes}
                 onEdit={() => onEditMisc(entry.id)}
                 onDelete={() => onDeleteMisc(entry.id)}
@@ -228,6 +255,9 @@ const FinancialInfo = () => {
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
         <h1 className="text-2xl font-semibold hidden lg:block mb-4">Financial Snapshot</h1>
+        <DismissibleIntro storageKey="billvie_financial_intro">
+          The numbers a spouse or advisor would need to know — what's protected, what's owed, what's coming in. Not a budget, just the facts someone would need if you weren't the one explaining them.
+        </DismissibleIntro>
         <FinancialAccessCard />
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -600,6 +630,7 @@ const SimpleCard = ({
   badge,
   amountLabel,
   notes,
+  linkedDocumentId,
   onEdit,
   onDelete,
 }: {
@@ -607,9 +638,12 @@ const SimpleCard = ({
   badge?: string;
   amountLabel: string;
   notes?: string;
+  linkedDocumentId?: string;
   onEdit: () => void;
   onDelete: () => void;
-}) => (
+}) => {
+  const linkedDoc = linkedDocumentId ? DocumentService.getById(linkedDocumentId) : undefined;
+  return (
   <div className="bg-card border border-border rounded-xl p-4">
     <div className="flex justify-between items-start mb-2">
       <div>
@@ -630,9 +664,18 @@ const SimpleCard = ({
         </button>
       </div>
     </div>
+    {linkedDoc && (
+      <Link
+        to="/documents"
+        className="inline-flex items-center gap-1 mt-2 text-xs rounded-full border border-border bg-muted/60 px-2.5 py-1 hover:bg-muted transition-colors"
+      >
+        <ExternalLink className="w-3 h-3" /> Linked to {linkedDoc.title}
+      </Link>
+    )}
     {notes && <p className="text-sm text-muted-foreground mt-2">{notes}</p>}
   </div>
-);
+  );
+};
 
 // Insurance Card
 const InsuranceCard = ({ 
@@ -645,6 +688,7 @@ const InsuranceCard = ({
   onDelete: () => void;
 }) => {
   const linkedBill = entry.linkedBillId ? BillService.getBillById(entry.linkedBillId) : undefined;
+  const linkedDoc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
 
   const frequencyLabel = (freq?: string) => {
     switch (freq) {
@@ -717,6 +761,15 @@ const InsuranceCard = ({
         </Link>
       )}
 
+      {linkedDoc && (
+        <Link
+          to="/documents"
+          className="inline-flex items-center gap-1 mt-2 text-xs rounded-full border border-border bg-muted/60 px-2.5 py-1 hover:bg-muted transition-colors"
+        >
+          <ExternalLink className="w-3 h-3" /> Linked to {linkedDoc.title}
+        </Link>
+      )}
+
       {amount && entry.contactInfo && (
         <p className="text-sm text-muted-foreground mt-2">Who to contact: {entry.contactInfo}</p>
       )}
@@ -739,7 +792,9 @@ const SuperCard = ({
   entry: SuperannuationEntry; 
   onEdit: () => void; 
   onDelete: () => void;
-}) => (
+}) => {
+  const linkedDoc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+  return (
   <div className="bg-card border border-border rounded-xl p-4">
     <div className="flex justify-between items-start">
       <div>
@@ -766,13 +821,22 @@ const SuperCard = ({
         </Button>
       </div>
     </div>
+    {linkedDoc && (
+      <Link
+        to="/documents"
+        className="inline-flex items-center gap-1 mt-2 text-xs rounded-full border border-border bg-muted/60 px-2.5 py-1 hover:bg-muted transition-colors"
+      >
+        <ExternalLink className="w-3 h-3" /> Linked to {linkedDoc.title}
+      </Link>
+    )}
     {entry.notes && (
       <p className="text-sm text-muted-foreground mt-2 pt-2 border-t border-border">
         {entry.notes}
       </p>
     )}
   </div>
-);
+  );
+};
 
 // Misc Card
 const MiscCard = ({ 
@@ -828,9 +892,15 @@ const InsuranceModal = ({
   const [notes, setNotes] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(null);
+  const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
 
   const billOptions = useMemo(
     () => BillService.getAllBills().map((b) => ({ id: b.id, label: b.name })),
+    [isOpen]
+  );
+
+  const documentOptions = useMemo(
+    () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
     [isOpen]
   );
 
@@ -848,6 +918,8 @@ const InsuranceModal = ({
         setContactInfo(entry.contactInfo || '');
         const bill = entry.linkedBillId ? BillService.getBillById(entry.linkedBillId) : undefined;
         setLinkedBill(bill ? { id: bill.id, label: bill.name } : null);
+        const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+        setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
       }
     } else {
       setProvider('');
@@ -859,6 +931,7 @@ const InsuranceModal = ({
       setNotes('');
       setContactInfo('');
       setLinkedBill(null);
+      setLinkedDocument(null);
     }
   }, [editingId, isOpen]);
 
@@ -875,6 +948,7 @@ const InsuranceModal = ({
       notes: notes || undefined,
       contactInfo: contactInfo || undefined,
       linkedBillId: linkedBill?.id,
+      linkedDocumentId: linkedDocument?.id,
     };
 
     if (editingId) {
@@ -993,6 +1067,16 @@ const InsuranceModal = ({
               placeholder="e.g. Jewelry is covered under Home Insurance, plus a separate rider for the wedding ring."
             />
           </div>
+          <div>
+            <Label className="mb-1.5 block">Linked document (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing document"
+              emptyLabel="No documents yet"
+              options={documentOptions}
+              value={linkedDocument}
+              onChange={setLinkedDocument}
+            />
+          </div>
           <Button onClick={handleSave} className="w-full">Save</Button>
         </div>
       </DialogContent>
@@ -1018,6 +1102,12 @@ const SuperModal = ({
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
   const [contactInfo, setContactInfo] = useState('');
+  const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+
+  const documentOptions = useMemo(
+    () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
+    [isOpen]
+  );
 
   useEffect(() => {
     if (editingId) {
@@ -1029,6 +1119,8 @@ const SuperModal = ({
         setBalance(entry.estimatedBalance.toString());
         setNotes(entry.notes || '');
         setContactInfo(entry.contactInfo || '');
+        const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+        setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
       }
     } else {
       setFundName('');
@@ -1037,6 +1129,7 @@ const SuperModal = ({
       setBalance('');
       setNotes('');
       setContactInfo('');
+      setLinkedDocument(null);
     }
   }, [editingId, isOpen]);
 
@@ -1050,6 +1143,7 @@ const SuperModal = ({
       estimatedBalance: parseFloat(balance),
       notes: notes || undefined,
       contactInfo: contactInfo || undefined,
+      linkedDocumentId: linkedDocument?.id,
     };
 
     if (editingId) {
@@ -1104,6 +1198,16 @@ const SuperModal = ({
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional details..." />
           </div>
+          <div>
+            <Label className="mb-1.5 block">Linked document (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing document"
+              emptyLabel="No documents yet"
+              options={documentOptions}
+              value={linkedDocument}
+              onChange={setLinkedDocument}
+            />
+          </div>
           <Button onClick={handleSave} className="w-full">Save</Button>
         </div>
       </DialogContent>
@@ -1126,6 +1230,12 @@ const MiscModal = ({
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
   const [notes, setNotes] = useState('');
+  const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+
+  const documentOptions = useMemo(
+    () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
+    [isOpen]
+  );
 
   useEffect(() => {
     if (editingId) {
@@ -1134,11 +1244,14 @@ const MiscModal = ({
         setKey(entry.key);
         setValue(entry.value);
         setNotes(entry.notes || '');
+        const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+        setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
       }
     } else {
       setKey('');
       setValue('');
       setNotes('');
+      setLinkedDocument(null);
     }
   }, [editingId, isOpen]);
 
@@ -1149,6 +1262,7 @@ const MiscModal = ({
       key,
       value,
       notes: notes || undefined,
+      linkedDocumentId: linkedDocument?.id,
     };
 
     if (editingId) {
@@ -1180,6 +1294,16 @@ const MiscModal = ({
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional details..." />
           </div>
+          <div>
+            <Label className="mb-1.5 block">Linked document (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing document"
+              emptyLabel="No documents yet"
+              options={documentOptions}
+              value={linkedDocument}
+              onChange={setLinkedDocument}
+            />
+          </div>
           <Button onClick={handleSave} className="w-full">Save</Button>
         </div>
       </DialogContent>
@@ -1202,6 +1326,12 @@ const IncomeModal = ({
   const [sourceName, setSourceName] = useState('');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+
+  const documentOptions = useMemo(
+    () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
+    [isOpen]
+  );
 
   useEffect(() => {
     if (editingId) {
@@ -1210,11 +1340,14 @@ const IncomeModal = ({
         setSourceName(entry.sourceName);
         setAmount(entry.approximateAmount.toString());
         setNotes(entry.notes || '');
+        const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+        setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
       }
     } else {
       setSourceName('');
       setAmount('');
       setNotes('');
+      setLinkedDocument(null);
     }
   }, [editingId, isOpen]);
 
@@ -1224,6 +1357,7 @@ const IncomeModal = ({
       sourceName,
       approximateAmount: parseFloat(amount),
       notes: notes || undefined,
+      linkedDocumentId: linkedDocument?.id,
     };
     if (editingId) {
       await FinancialInfoService.updateIncome(editingId, data);
@@ -1254,6 +1388,16 @@ const IncomeModal = ({
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. W-2, direct deposit to joint account" />
           </div>
+          <div>
+            <Label className="mb-1.5 block">Linked document (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing document"
+              emptyLabel="No documents yet"
+              options={documentOptions}
+              value={linkedDocument}
+              onChange={setLinkedDocument}
+            />
+          </div>
           <Button onClick={handleSave} className="w-full">Save</Button>
         </div>
       </DialogContent>
@@ -1277,6 +1421,12 @@ const DebtModal = ({
   const [type, setType] = useState<DebtType>('mortgage');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
+  const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+
+  const documentOptions = useMemo(
+    () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
+    [isOpen]
+  );
 
   useEffect(() => {
     if (editingId) {
@@ -1286,12 +1436,15 @@ const DebtModal = ({
         setType(entry.type);
         setBalance(entry.approximateBalance.toString());
         setNotes(entry.notes || '');
+        const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+        setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
       }
     } else {
       setOwedTo('');
       setType('mortgage');
       setBalance('');
       setNotes('');
+      setLinkedDocument(null);
     }
   }, [editingId, isOpen]);
 
@@ -1302,6 +1455,7 @@ const DebtModal = ({
       type,
       approximateBalance: parseFloat(balance),
       notes: notes || undefined,
+      linkedDocumentId: linkedDocument?.id,
     };
     if (editingId) {
       await FinancialInfoService.updateDebt(editingId, data);
@@ -1344,6 +1498,16 @@ const DebtModal = ({
           <div>
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. refinanced 2024, autopay from checking" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Linked document (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing document"
+              emptyLabel="No documents yet"
+              options={documentOptions}
+              value={linkedDocument}
+              onChange={setLinkedDocument}
+            />
           </div>
           <Button onClick={handleSave} className="w-full">Save</Button>
         </div>

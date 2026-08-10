@@ -17,6 +17,7 @@ import { showMilestoneToast } from '@/components/MilestoneToast';
 import { AccessService } from '@/services/AccessService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { TaxTagService } from '@/services/TaxTagService';
+import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { HouseholdDocument } from '@/types/document';
 import DocumentCard from '@/components/documents/DocumentCard';
@@ -69,12 +70,20 @@ const Documents = () => {
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
     linkedBillId?: string,
-    tax?: TaxRelevanceValue
+    tax?: TaxRelevanceValue,
+    linkedFinancialEntry?: { type: 'insurance' | 'super'; id: string }
   ) => {
     const created = await DocumentService.add(doc);
     await Promise.all(personIds.map((pid) => AccessService.grantItem(pid, 'documents', created.id)));
     if (linkedBillId) await DocumentLinkService.linkToBill(created.id, linkedBillId);
     if (tax) await TaxTagService.setTag(created.id, 'document', tax);
+    if (linkedFinancialEntry) {
+      if (linkedFinancialEntry.type === 'insurance') {
+        await FinancialInfoService.updateInsurance(linkedFinancialEntry.id, { linkedDocumentId: created.id });
+      } else {
+        await FinancialInfoService.updateSuperannuation(linkedFinancialEntry.id, { linkedDocumentId: created.id });
+      }
+    }
     const msg = MilestoneService.recordMilestone('documents');
     if (msg) showMilestoneToast(msg);
     reload();

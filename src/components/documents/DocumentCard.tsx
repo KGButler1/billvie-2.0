@@ -4,6 +4,7 @@ import { HouseholdDocument, DocumentType } from '@/types/document';
 import { AccessService } from '@/services/AccessService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
+import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { PersonTagChips } from '@/components/people/PersonTags';
 
 
@@ -39,6 +40,15 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
   const linkedBillId = DocumentLinkService.getLinkedBillId(document.id);
   const linkedBill = linkedBillId ? BillService.getBillById(linkedBillId) : undefined;
   const relatedCount = DocumentLinkService.getRelatedDocumentIds(document.id).length;
+
+  // Check if any Financial Snapshot entry links to this document
+  const linkedFinancialLabel = (() => {
+    const ins = FinancialInfoService.getInsurance().find((e) => e.linkedDocumentId === document.id);
+    if (ins) return ins.provider;
+    const sup = FinancialInfoService.getSuperannuation().find((e) => e.linkedDocumentId === document.id);
+    if (sup) return sup.fundName;
+    return undefined;
+  })();
 
   return (
     <div
@@ -133,6 +143,13 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 min-w-0">
               <Link2 className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">Linked to {linkedBill.name}</span>
+            </p>
+          )}
+
+          {linkedFinancialLabel && (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 min-w-0">
+              <Link2 className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">Linked to Financial Snapshot: {linkedFinancialLabel}</span>
             </p>
           )}
 

@@ -12,6 +12,7 @@ import { PersonTagPicker } from '@/components/people/PersonTags';
 import { PeopleService } from '@/services/PeopleService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
+import { FinancialInfoService, InsuranceEntry, SuperannuationEntry } from '@/services/FinancialInfoService';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import TaxRelevanceFields, {
   TaxRelevanceValue,
@@ -27,7 +28,8 @@ interface AddDocumentModalProps {
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
     linkedBillId?: string,
-    tax?: TaxRelevanceValue
+    tax?: TaxRelevanceValue,
+    linkedFinancialEntry?: { type: 'insurance' | 'super'; id: string }
   ) => void;
   onEdit: (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => void;
   onClose: () => void;
@@ -103,6 +105,76 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
     return { id: created.id, label: created.name };
   };
 
+  // ---- Financial Snapshot reverse link ----
+  // For insurance/investment/account/superannuation documents, offer linking
+  // to (or creating) a matching Financial Snapshot entry.
+  const FINANCIAL_DOC_TYPES: DocumentType[] = ['insurance', 'investment', 'account', 'superannuation'];
+
+  const financialEntryType = (dt: DocumentType): 'insurance' | 'super' =>
+    dt === 'insurance' ? 'insurance' : 'super';
+
+  const [linkedFinancial, setLinkedFinancial] = useState<LinkPickerOption | null>(() => {
+    if (!document || !FINANCIAL_DOC_TYPES.includes(document.type)) return null;
+    const et = financialEntryType(document.type);
+    const entries = et === 'insurance' ? FinancialInfoService.getInsurance() : FinancialInfoService.getSuperannuation();
+    const match = entries.find((e) => e.linkedDocumentId === document.id);
+    return match ? { id: e.id, label: et === 'insurance' ? (e as InsuranceEntry).provider : (e as SuperannuationEntry).fundName } : null;
+  });
+
+  const financialOptions = useMemo(() => {
+    if (!FINANCIAL_DOC_TYPES.includes(type)) return [];
+    const et = financialEntryType(type);
+    const entries = et === 'insurance' ? FinancialInfoService.getInsurance() : FinancialInfoService.getSuperannuation();
+    return entries.map((e) => ({
+      id: e.id,
+      label: et === 'insurance' ? (e as InsuranceEntry).provider : (e as SuperannuationEntry).fundName,
+    }));
+  }, [type]);
+
+  const handleCreateFinancial = async (name: string): Promise<LinkPickerOption> => {
+    const et = financialEntryType(type);
+    if (et === 'insurance') {
+      const created = await FinancialInfoService.addInsurance({
+        provider: name,
+        type: 'other',
+        linkedDocumentId: document?.id,
+      });
+      return { id: created.id, label: created.provider };
+    } else {
+      const created = await FinancialInfoService.addSuperannuation({
+        fundName: name,
+        estimatedBalance: 0,
+        linkedDocumentId: document?.id,
+      });
+      return { id: created.id, label: created.fundName };
+    }
+  };
+
+  const handleLinkedFinancialChange = async (option: LinkPickerOption | null) => {
+    setLinkedFinancial(option);
+    if (!document) return; // create mode: applied after save
+
+    // Unlink previous entry
+    const et = financialEntryType(document.type);
+    const entries = et === 'insurance' ? FinancialInfoService.getInsurance() : FinancialInfoService.getSuperannuation();
+    const previous = entries.find((e) => e.linkedDocumentId === document.id);
+    if (previous && previous.id !== option?.id) {
+      if (et === 'insurance') {
+        await FinancialInfoService.updateInsurance(previous.id, { linkedDocumentId: undefined });
+      } else {
+        await FinancialInfoService.updateSuperannuation(previous.id, { linkedDocumentId: undefined });
+      }
+    }
+
+    if (option) {
+      if (et === 'insurance') {
+        await FinancialInfoService.updateInsurance(option.id, { linkedDocumentId: document.id });
+      } else {
+        await FinancialInfoService.updateSuperannuation(option.id, { linkedDocumentId: document.id });
+      }
+    }
+  };
+
   // Scroll to the where-to-find-it section if requested (e.g. after creating a doc).
   useEffect(() => {
     if (scrollToWhereToFindIt && whereToFindItRef.current) {
@@ -130,7 +202,10 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
     if (document) {
       onEdit(document.id, shared, tax);
     } else {
-      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id, tax);
+      const linkedFinancialEntry = linkedFinancial
+        ? { type: financialEntryType(type) as 'insurance' | 'super', id: linkedFinancial.id }
+        : undefined;
+      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id, tax, linkedFinancialEntry);
     }
   };
 
@@ -256,6 +331,28 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
             </p>
           </div>
 
+
+          {FINANCIAL_DOC_TYPES.includes(type) && (
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Financial Snapshot entry <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <LinkPicker
+                triggerLabel="Link to a Financial Snapshot entry"
+                emptyLabel="No entries yet — type a name to create one"
+                createLabel={(q) => `Create entry: ${q}`}
+                options={financialOptions}
+                value={linkedFinancial}
+                onChange={handleLinkedFinancialChange}
+                onCreate={handleCreateFinancial}
+                initialQuery={title}
+                chipIcon={Link2}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Connect this document to the matching entry in Financial Snapshot
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="text-sm font-medium mb-1.5 block">
