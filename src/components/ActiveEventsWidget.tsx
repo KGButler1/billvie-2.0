@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,12 +6,16 @@ import { Event, EVENT_TYPE_LABELS } from '@/types/bill';
 import { EventService } from '@/services/EventService';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { SkeletonCard } from '@/components/ui/skeleton';
 
 interface ActiveEventsWidgetProps {
   events: Event[];
 }
 
 const ActiveEventsWidget = ({ events }: ActiveEventsWidgetProps) => {
+  const [isLoading, setIsLoading] = useState(() => !EventService.isLoaded());
+  useEffect(() => { if (EventService.isLoaded()) setIsLoading(false); });
+  if (isLoading) return <SkeletonCard className="mb-6" />;
   if (events.length === 0) {
     return null;
   }

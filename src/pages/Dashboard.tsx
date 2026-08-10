@@ -34,6 +34,7 @@ import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
 import DashboardActionStrip from '@/components/DashboardActionStrip';
 import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
+import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -47,12 +48,13 @@ const Dashboard = () => {
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFamilyView, setIsFamilyView] = useState(false);
+  const [billsLoading, setBillsLoading] = useState(() => !BillService.isLoaded());
   const needsAttentionRef = useRef<HTMLDivElement>(null);
 
   // Initialize data on mount
   useEffect(() => {
     UserService.initializeTheme();
-    refreshAllData().then(loadBills).catch(console.error);
+    refreshAllData().then(loadBills).catch(console.error).finally(() => setBillsLoading(false));
     loadBills();
 
     // Dev panel keyboard shortcut
@@ -257,16 +259,26 @@ const Dashboard = () => {
 
         {/* Needs Attention bill list */}
         <div ref={needsAttentionRef}>
-          <BillList
-            bills={[...overdueBills, ...dueSoonBills]}
-            mode="grouped"
-            sectionTitle={getSectionTitle}
-            onMarkPaid={handleMarkPaid}
-            onMarkUnpaid={handleMarkUnpaid}
-            onDelete={handleDeleteBill}
-            onEdit={setEditingBill}
-            onOpen={setDetailBill}
-          />
+          <AnimatePresence mode="wait">
+            {billsLoading ? (
+              <motion.div key="skeleton" exit={{ opacity: 0 }}>
+                <SkeletonRows rows={3} />
+              </motion.div>
+            ) : (
+              <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <BillList
+                  bills={[...overdueBills, ...dueSoonBills]}
+                  mode="grouped"
+                  sectionTitle={getSectionTitle}
+                  onMarkPaid={handleMarkPaid}
+                  onMarkUnpaid={handleMarkUnpaid}
+                  onDelete={handleDeleteBill}
+                  onEdit={setEditingBill}
+                  onOpen={setDetailBill}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Household Records cluster */}

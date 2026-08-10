@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { isDemoModeActive } from '@/demo/demoFlag';
+import { SkeletonRows } from '@/components/ui/skeleton';
 
 type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
@@ -61,6 +62,7 @@ const Bills = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [demoNudge, setDemoNudge] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => !BillService.isLoaded());
 
   const loadBills = () => {
     const upcoming = BillService.getUpcomingBills();
@@ -69,7 +71,7 @@ const Bills = () => {
   };
 
   useEffect(() => {
-    BillService.refresh().then(loadBills).catch(console.error);
+    BillService.refresh().then(loadBills).catch(console.error).finally(() => setIsLoading(false));
 
     const channel = supabase
       .channel('bills-changes')
@@ -280,26 +282,36 @@ const Bills = () => {
           </div>
         </div>
 
-        <BillList
-          bills={visibleBills}
-          mode={mode}
-          onMarkPaid={handleMarkPaid}
-          onMarkUnpaid={handleMarkUnpaid}
-          onDelete={handleDelete}
-          onEdit={setEditingBill}
-          onOpen={setDetailBill}
-          emptyState={
-            <div className="text-center py-20">
-              <h2 className="text-lg font-semibold mb-1">No bills tracked yet.</h2>
-              <p className="text-muted-foreground mb-6">
-                Add your first one so someone else knows what's running.
-              </p>
-              <Button onClick={handleTryAddBill} className="gap-1.5">
-                <Plus className="w-4 h-4" /> Add bill
-              </Button>
-            </div>
-          }
-        />
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="skeleton" exit={{ opacity: 0 }}>
+              <SkeletonRows rows={4} />
+            </motion.div>
+          ) : (
+            <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <BillList
+                bills={visibleBills}
+                mode={mode}
+                onMarkPaid={handleMarkPaid}
+                onMarkUnpaid={handleMarkUnpaid}
+                onDelete={handleDelete}
+                onEdit={setEditingBill}
+                onOpen={setDetailBill}
+                emptyState={
+                  <div className="text-center py-20">
+                    <h2 className="text-lg font-semibold mb-1">No bills tracked yet.</h2>
+                    <p className="text-muted-foreground mb-6">
+                      Add your first one so someone else knows what's running.
+                    </p>
+                    <Button onClick={handleTryAddBill} className="gap-1.5">
+                      <Plus className="w-4 h-4" /> Add bill
+                    </Button>
+                  </div>
+                }
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <AnimatePresence>

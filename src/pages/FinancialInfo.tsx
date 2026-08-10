@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Plus, Shield, Wallet, FileText, Trash2, Pencil as Edit2, ExternalLink, TrendingUp, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
@@ -44,6 +44,7 @@ import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import { BillService } from '@/services/BillService';
 import { DocumentService } from '@/services/DocumentService';
 import DismissibleIntro from '@/components/DismissibleIntro';
+import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 const OverviewTab = ({
@@ -225,9 +226,10 @@ const FinancialInfo = () => {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(() => !FinancialInfoService.isLoaded());
 
   useEffect(() => {
-    loadData();
+    FinancialInfoService.refresh().then(loadData).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   const loadData = () => {
@@ -260,28 +262,37 @@ const FinancialInfo = () => {
         </DismissibleIntro>
         <FinancialAccessCard />
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Landmark className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">Owed</span>
-            </div>
-            <p className="text-xl font-bold">${totalDebt.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">
-              across {debts.length} {debts.length === 1 ? 'entry' : 'entries'}
-            </p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">Income sources</span>
-            </div>
-            <p className="text-xl font-bold">${totalIncome.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">
-              from {income.length} {income.length === 1 ? 'source' : 'sources'}
-            </p>
-          </div>
-        </div>
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="skeleton-cards" exit={{ opacity: 0 }} className="grid grid-cols-2 gap-3 mb-6">
+              <SkeletonCard />
+              <SkeletonCard />
+            </motion.div>
+          ) : (
+            <motion.div key="summary-cards" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-3 mb-6">
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Landmark className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">Owed</span>
+                </div>
+                <p className="text-xl font-bold">${totalDebt.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">
+                  across {debts.length} {debts.length === 1 ? 'entry' : 'entries'}
+                </p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">Income sources</span>
+                </div>
+                <p className="text-xl font-bold">${totalIncome.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">
+                  from {income.length} {income.length === 1 ? 'source' : 'sources'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -299,23 +310,33 @@ const FinancialInfo = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
-            <OverviewTab
-              insurance={insurance}
-              superannuation={superannuation}
-              income={income}
-              debts={debts}
-              misc={misc}
-              onEditInsurance={(id) => { setEditingItem(id); setShowInsuranceModal(true); }}
-              onEditSuper={(id) => { setEditingItem(id); setShowSuperModal(true); }}
-              onEditIncome={(id) => { setEditingItem(id); setShowIncomeModal(true); }}
-              onEditDebt={(id) => { setEditingItem(id); setShowDebtModal(true); }}
-              onEditMisc={(id) => { setEditingItem(id); setShowMiscModal(true); }}
-              onDeleteInsurance={async (id) => { await FinancialInfoService.deleteInsurance(id); loadData(); }}
-              onDeleteSuper={async (id) => { await FinancialInfoService.deleteSuperannuation(id); loadData(); }}
-              onDeleteIncome={async (id) => { await FinancialInfoService.deleteIncome(id); loadData(); }}
-              onDeleteDebt={async (id) => { await FinancialInfoService.deleteDebt(id); loadData(); }}
-              onDeleteMisc={async (id) => { await FinancialInfoService.deleteMisc(id); loadData(); }}
-            />
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div key="skeleton-rows" exit={{ opacity: 0 }}>
+                  <SkeletonRows rows={4} />
+                </motion.div>
+              ) : (
+                <motion.div key="overview-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <OverviewTab
+                    insurance={insurance}
+                    superannuation={superannuation}
+                    income={income}
+                    debts={debts}
+                    misc={misc}
+                    onEditInsurance={(id) => { setEditingItem(id); setShowInsuranceModal(true); }}
+                    onEditSuper={(id) => { setEditingItem(id); setShowSuperModal(true); }}
+                    onEditIncome={(id) => { setEditingItem(id); setShowIncomeModal(true); }}
+                    onEditDebt={(id) => { setEditingItem(id); setShowDebtModal(true); }}
+                    onEditMisc={(id) => { setEditingItem(id); setShowMiscModal(true); }}
+                    onDeleteInsurance={async (id) => { await FinancialInfoService.deleteInsurance(id); loadData(); }}
+                    onDeleteSuper={async (id) => { await FinancialInfoService.deleteSuperannuation(id); loadData(); }}
+                    onDeleteIncome={async (id) => { await FinancialInfoService.deleteIncome(id); loadData(); }}
+                    onDeleteDebt={async (id) => { await FinancialInfoService.deleteDebt(id); loadData(); }}
+                    onDeleteMisc={async (id) => { await FinancialInfoService.deleteMisc(id); loadData(); }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </TabsContent>
 
           {/* Insurance Tab */}

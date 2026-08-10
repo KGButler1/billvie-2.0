@@ -37,6 +37,11 @@ let cache: KeyPerson[] = [];
 let loaded = false;
 
 export const KeyPeopleService = {
+  isLoaded(): boolean {
+    if (isDemoModeActive()) return true;
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();

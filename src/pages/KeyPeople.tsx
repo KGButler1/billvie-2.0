@@ -11,6 +11,7 @@ import { AccessService } from '@/services/AccessService';
 import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
 import BottomNav from '@/components/BottomNav';
+import { SkeletonRows } from '@/components/ui/skeleton';
 
 const relationshipLabel = (value: string) =>
   KEY_PERSON_RELATIONSHIP_LABELS[value as KeyPersonRelationship] ?? value;
@@ -20,11 +21,12 @@ const KeyPeople = () => {
   const [searchParams] = useSearchParams();
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
   const [editing, setEditing] = useState<KeyPerson | null>(null);
+  const [isLoading, setIsLoading] = useState(() => !KeyPeopleService.isLoaded());
 
   const reload = () => setPeople(KeyPeopleService.getAllKeyPeople());
 
   useEffect(() => {
-    KeyPeopleService.refresh().then(reload).catch(console.error);
+    KeyPeopleService.refresh().then(reload).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   const handleSave = async (data: Omit<KeyPerson, 'id' | 'createdAt' | 'updatedAt'>, personIds: string[]) => {
@@ -79,81 +81,91 @@ const KeyPeople = () => {
           </Button>
         </div>
 
-        {people.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <Users className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Who would they call?</h2>
-            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Add the people who'd need to know — who to call, who holds a key, who knows the plan.
-            </p>
-            <Button onClick={() => setIsAdding(true)} className="gap-2">
-              <Plus className="w-4 h-4" /> Add someone important
-            </Button>
-          </motion.div>
-        ) : (
-          <div className="space-y-3">
-            {people.map((person, i) => (
-              <motion.div
-                key={person.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-card border border-border rounded-xl p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium truncate">{person.name}</p>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {relationshipLabel(person.relationship)}
-                      </span>
-                    </div>
-                    {person.role && (
-                      <p className="text-sm text-muted-foreground mt-1">{person.role}</p>
-                    )}
-                    {person.phone && (
-                      <a
-                        href={`tel:${person.phone}`}
-                        className="text-sm text-primary mt-1 inline-flex items-center gap-1.5 hover:underline"
-                      >
-                        <Phone className="w-3.5 h-3.5" /> {person.phone}
-                      </a>
-                    )}
-                    <button
-                      onClick={() => setEditing(person)}
-                      className="block text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
-                    >
-                      {viewersFor(person).length > 0
-                        ? `Visible to ${viewersFor(person).join(', ')}`
-                        : 'Only you can see this'}
-                    </button>
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="skeleton" exit={{ opacity: 0 }}>
+              <SkeletonRows rows={4} />
+            </motion.div>
+          ) : (
+            <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {people.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-20"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                    <Users className="w-8 h-8 text-primary" />
                   </div>
-                  <div className="flex items-center gap-1">
+                  <h2 className="text-xl font-semibold mb-2">Who would they call?</h2>
+                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                    Add the people who'd need to know — who to call, who holds a key, who knows the plan.
+                  </p>
+                  <Button onClick={() => setIsAdding(true)} className="gap-2">
+                    <Plus className="w-4 h-4" /> Add someone important
+                  </Button>
+                </motion.div>
+              ) : (
+                <div className="space-y-3">
+                  {people.map((person, i) => (
+                    <motion.div
+                      key={person.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="bg-card border border-border rounded-xl p-4"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium truncate">{person.name}</p>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                              {relationshipLabel(person.relationship)}
+                            </span>
+                          </div>
+                          {person.role && (
+                            <p className="text-sm text-muted-foreground mt-1">{person.role}</p>
+                          )}
+                          {person.phone && (
+                            <a
+                              href={`tel:${person.phone}`}
+                              className="text-sm text-primary mt-1 inline-flex items-center gap-1.5 hover:underline"
+                            >
+                              <Phone className="w-3.5 h-3.5" /> {person.phone}
+                            </a>
+                          )}
+                          <button
+                            onClick={() => setEditing(person)}
+                            className="block text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+                          >
+                            {viewersFor(person).length > 0
+                              ? `Visible to ${viewersFor(person).join(', ')}`
+                              : 'Only you can see this'}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1">
 
-                    <button
-                      onClick={() => setEditing(person)}
-                      className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(person)}
-                      className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                          <button
+                            onClick={() => setEditing(person)}
+                            className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(person)}
+                            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <AnimatePresence>

@@ -33,6 +33,10 @@ const resolveItem = (itemId: string, itemType: TaxItemType) =>
     : DocumentService.getAll().find((d) => d.id === itemId);
 
 export const TaxTagService = {
+  isLoaded(): boolean {
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const { data, error } = await supabase

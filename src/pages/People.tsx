@@ -32,6 +32,7 @@ import InvitePersonModal from '@/components/people/InvitePersonModal';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
 import ShareContentPreview from '@/components/sharing/ShareContentPreview';
 import { cn } from '@/lib/utils';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { DocumentService } from '@/services/DocumentService';
 import { KeyPeopleService as KPService } from '@/services/KeyPeopleService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
@@ -131,6 +132,7 @@ const People = () => {
     | { person?: KeyPerson; defaults?: { name?: string; email?: string }; linkTo?: string }
   >(null);
   const [confirmRemove, setConfirmRemove] = useState<DirectoryEntry | null>(null);
+  const [isLoading, setIsLoading] = useState(() => !PeopleService.isLoaded());
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
@@ -138,7 +140,7 @@ const People = () => {
   const reload = useCallback(() => setDirectory(PeopleService.getDirectory()), []);
 
   useEffect(() => {
-    PeopleService.refresh().then(reload).catch(console.error);
+    PeopleService.refresh().then(reload).catch(console.error).finally(() => setIsLoading(false));
   }, [reload]);
 
   useEffect(() => {
@@ -543,35 +545,45 @@ const People = () => {
         </div>
 
         <Section title="Your household">
-          {householdRows.some((r) => r.trustedPerson?.status === 'invited') && (
-            <p className="text-xs text-muted-foreground mb-3 px-1">
-              Haven't heard back from someone you invited? If they can't find it, ask them to check spam or junk —
-              first emails from a new sender sometimes land there.
-            </p>
-          )}
-          {householdRows.length === 0 ? (
-            <EmptyState
-              text="No one in your household can see this yet."
-              action={
-                <Button onClick={() => setInviteState({ role: 'household' })}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite someone you trust
-                </Button>
-              }
-            />
-          ) : (
-            <>
-              {householdRows.map((entry) => (
-                <Row key={entry.key} entry={entry} />
-              ))}
-              <div className="p-3">
-                <Button variant="ghost" size="sm" onClick={() => setInviteState({ role: 'household' })}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite someone you trust
-                </Button>
-              </div>
-            </>
-          )}
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div key="skeleton" exit={{ opacity: 0 }} className="p-4">
+                <SkeletonRows rows={4} />
+              </motion.div>
+            ) : (
+              <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                {householdRows.some((r) => r.trustedPerson?.status === 'invited') && (
+                  <p className="text-xs text-muted-foreground mb-3 px-1">
+                    Haven't heard back from someone you invited? If they can't find it, ask them to check spam or junk —
+                    first emails from a new sender sometimes land there.
+                  </p>
+                )}
+                {householdRows.length === 0 ? (
+                  <EmptyState
+                    text="No one in your household can see this yet."
+                    action={
+                      <Button onClick={() => setInviteState({ role: 'household' })}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Invite someone you trust
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <>
+                    {householdRows.map((entry) => (
+                      <Row key={entry.key} entry={entry} />
+                    ))}
+                    <div className="p-3">
+                      <Button variant="ghost" size="sm" onClick={() => setInviteState({ role: 'household' })}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Invite someone you trust
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Section>
 
         <Section title="Advisors & accountants" subtitle="Always free, however many you need.">

@@ -10,6 +10,7 @@ import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
 import { Button } from '@/components/ui/button';
+import { SkeletonRows } from '@/components/ui/skeleton';
 
 const Events = () => {
   const navigate = useNavigate();
@@ -17,12 +18,13 @@ const Events = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
+  const [isLoading, setIsLoading] = useState(() => !EventService.isLoaded());
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   useEffect(() => {
-    EventService.refresh().then(loadEvents).catch(console.error);
+    EventService.refresh().then(loadEvents).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   const loadEvents = () => {
@@ -129,64 +131,74 @@ const Events = () => {
         )}
 
         {/* Active Events */}
-        {activeEvents.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Active Events</h2>
-            <div className="space-y-4">
-              {activeEvents.map((event, index) => (
-                <EventCard 
-                  key={event.id} 
-                  event={event} 
-                  index={index}
-                  onDelete={handleDeleteEvent}
-                  onClick={() => navigate(`/events/${event.id}`)}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="skeleton" exit={{ opacity: 0 }}>
+              <SkeletonRows rows={4} />
+            </motion.div>
+          ) : (
+            <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {activeEvents.length > 0 && (
+                <section className="mb-8">
+                  <h2 className="text-lg font-semibold mb-4">Active Events</h2>
+                  <div className="space-y-4">
+                    {activeEvents.map((event, index) => (
+                      <EventCard 
+                        key={event.id} 
+                        event={event} 
+                        index={index}
+                        onDelete={handleDeleteEvent}
+                        onClick={() => navigate(`/events/${event.id}`)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
 
-        {/* Completed Events */}
-        {completedEvents.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-muted-foreground">Completed</h2>
-            </div>
-            <div className="space-y-4 opacity-60">
-              {completedEvents.map((event, index) => (
-                <div key={event.id} className="relative">
-                  <EventCard 
-                    event={event} 
-                    index={index}
-                    onDelete={handleDeleteEvent}
-                    onClick={() => navigate(`/events/${event.id}`)}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+              {/* Completed Events */}
+              {completedEvents.length > 0 && (
+                <section className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-muted-foreground">Completed</h2>
+                  </div>
+                  <div className="space-y-4 opacity-60">
+                    {completedEvents.map((event, index) => (
+                      <div key={event.id} className="relative">
+                        <EventCard 
+                          event={event} 
+                          index={index}
+                          onDelete={handleDeleteEvent}
+                          onClick={() => navigate(`/events/${event.id}`)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
-        {/* Empty State */}
-        {events.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <Calendar className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Plan your first event</h2>
-            <p className="text-muted-foreground mb-6">
-              Track trips, weddings, moves, and more!
-            </p>
-            <Button onClick={handleTryCreateEvent} className="btn-hero">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Event
-            </Button>
-          </motion.div>
-        )}
+              {/* Empty State */}
+              {events.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-20"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                    <Calendar className="w-8 h-8 text-primary" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2">Plan your first event</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Track trips, weddings, moves, and more!
+                  </p>
+                  <Button onClick={handleTryCreateEvent} className="btn-hero">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Event
+                  </Button>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* FAB */}

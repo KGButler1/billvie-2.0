@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { AccessService } from '@/services/AccessService';
 import { PeopleService } from '@/services/PeopleService';
 import { getAccessState } from '@/utils/accessState';
 import { isDemoModeActive } from '@/demo/demoFlag';
+import { SkeletonCard } from '@/components/ui/skeleton';
 
 const initials = (name: string) =>
   name
@@ -16,6 +18,9 @@ const initials = (name: string) =>
 
 const PeopleBubbleRow = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(() => !(PeopleService.isLoaded() && AccessService.isLoaded()));
+  useEffect(() => { if (PeopleService.isLoaded() && AccessService.isLoaded()) setIsLoading(false); });
+  if (isLoading) return <SkeletonCard className="mb-6" />;
   const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
   const state = getAccessState();
   const activePeople = AccessService.getActivePeople();

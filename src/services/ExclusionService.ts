@@ -26,6 +26,10 @@ let cache: Exclusion[] = [];
 let loaded = false;
 
 export const ExclusionService = {
+  isLoaded(): boolean {
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const { data, error } = await supabase

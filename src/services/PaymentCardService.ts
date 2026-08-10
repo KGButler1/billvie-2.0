@@ -32,6 +32,10 @@ let cache: PaymentCard[] = [];
 let loaded = false;
 
 export const PaymentCardService = {
+  isLoaded(): boolean {
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const { data, error } = await supabase

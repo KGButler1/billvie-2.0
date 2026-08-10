@@ -105,6 +105,11 @@ export class FinancialInfoService {
   private static miscCache: MiscFinancialEntry[] = [];
   private static loaded = false;
 
+  static isLoaded(): boolean {
+    if (isDemoModeActive()) return true;
+    return this.loaded;
+  }
+
   static async refresh(): Promise<void> {
     if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, FolderOpen, Shield, ScanLine } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { DocumentService } from '@/services/DocumentService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
@@ -60,6 +61,11 @@ const Documents = () => {
   const [demoNudge, setDemoNudge] = useState(false);
   const [typeFilter, setTypeFilter] = useState<DocType | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('updated');
+  const [isLoading, setIsLoading] = useState(() => !DocumentService.isLoaded());
+
+  useEffect(() => {
+    DocumentService.refresh().then(reload).catch(console.error).finally(() => setIsLoading(false));
+  }, []);
 
   const reload = () => {
     setDocuments(DocumentService.getAll());
@@ -206,7 +212,7 @@ const Documents = () => {
             {/* Important Documents section */}
             {documents.length > 0 && (
               <div className="mb-8">
-                {/* Toolbar */}
+                {/* Toolbar (visible even while loading) */}
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
@@ -253,40 +259,48 @@ const Documents = () => {
                 </div>
 
                 {/* Grouped documents */}
-                <div className="space-y-6">
-                  {TYPE_ORDER.filter((t) => groupedDocs[t]?.length).map((type) => (
-                    <div key={type}>
-                      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                        {TYPE_LABELS[type] || type}
-                      </h3>
-                      <div className="space-y-3">
-                        {groupedDocs[type].map((doc, i) => (
-                          <motion.div
-                            key={doc.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                          >
-                            <DocumentCard
-                              document={doc}
-                              onEditAccess={(id) => setAccessId(id)}
-                              onLinks={(id) => setLinkingId(id)}
-                              onEdit={(id) => {
-                                setEditingId(id);
-                                setEditScrollToWhereToFindIt(false);
-                              }}
-                              onDelete={async (id) => {
-                                if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
-                                await DocumentService.delete(id);
-                                reload();
-                              }}
-                            />
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <AnimatePresence mode="wait">
+                  {isLoading ? (
+                    <motion.div key="skeleton" exit={{ opacity: 0 }}>
+                      <SkeletonRows rows={4} />
+                    </motion.div>
+                  ) : (
+                    <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                      {TYPE_ORDER.filter((t) => groupedDocs[t]?.length).map((type) => (
+                        <div key={type}>
+                          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                            {TYPE_LABELS[type] || type}
+                          </h3>
+                          <div className="space-y-3">
+                            {groupedDocs[type].map((doc, i) => (
+                              <motion.div
+                                key={doc.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                              >
+                                <DocumentCard
+                                  document={doc}
+                                  onEditAccess={(id) => setAccessId(id)}
+                                  onLinks={(id) => setLinkingId(id)}
+                                  onEdit={(id) => {
+                                    setEditingId(id);
+                                    setEditScrollToWhereToFindIt(false);
+                                  }}
+                                  onDelete={async (id) => {
+                                    if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
+                                    await DocumentService.delete(id);
+                                    reload();
+                                  }}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 

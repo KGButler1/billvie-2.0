@@ -1,10 +1,15 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt } from 'lucide-react';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import HouseholdRecordRow from '@/components/HouseholdRecordRow';
+import { SkeletonCard } from '@/components/ui/skeleton';
 
 const TaxWidget = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(() => !TaxDocumentService.isLoaded());
+  useEffect(() => { if (TaxDocumentService.isLoaded()) setIsLoading(false); });
+  if (isLoading) return <SkeletonCard className="mb-2" />;
   const documents = TaxDocumentService.getAllDocuments();
   const total = documents.length;
 

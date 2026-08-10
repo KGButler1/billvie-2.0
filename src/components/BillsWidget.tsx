@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, ChevronRight } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { RECURRING_LABELS, RecurringInterval } from '@/types/bill';
 import { Bill } from '@/types/bill';
 import { isDemoModeActive } from '@/demo/demoFlag';
+import { SkeletonCard } from '@/components/ui/skeleton';
 
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : undefined;
@@ -18,6 +20,9 @@ const metaLine = (bill: { isRecurring?: boolean; recurringInterval?: RecurringIn
 
 const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(() => !BillService.isLoaded());
+  useEffect(() => { if (BillService.isLoaded()) setIsLoading(false); });
+  if (isLoading) return <SkeletonCard className="mb-6" />;
   const bills = BillService.getAllBills();
   const quiet = bills.filter((b) => b.status !== 'overdue' && b.status !== 'due_soon');
 

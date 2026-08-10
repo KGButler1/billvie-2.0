@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Lock } from 'lucide-react';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
@@ -5,11 +6,14 @@ import { UserService } from '@/services/UserService';
 import UpgradeModal from '@/components/UpgradeModal';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import HouseholdRecordRow from '@/components/HouseholdRecordRow';
-import { useState } from 'react';
+import { SkeletonCard } from '@/components/ui/skeleton';
 
 const FinancialSnapshotWidget = () => {
   const navigate = useNavigate();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => !FinancialInfoService.isLoaded());
+  useEffect(() => { if (FinancialInfoService.isLoaded()) setIsLoading(false); });
+  if (isLoading) return <SkeletonCard className="mb-2" />;
   const goFinancial = () => navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
 
   const settings = UserService.getSettings();

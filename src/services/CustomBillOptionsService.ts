@@ -17,6 +17,10 @@ let cache: Record<CustomOptionType, CustomOption[]> = {
 let loaded = false;
 
 export class CustomBillOptionsService {
+  static isLoaded(): boolean {
+    return loaded;
+  }
+
   static async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const { data, error } = await supabase

@@ -55,6 +55,11 @@ export interface DirectoryEntry {
 }
 
 export const PeopleService = {
+  isLoaded(): boolean {
+    if (isDemoModeActive()) return true;
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     if (isDemoModeActive()) return;
     const householdId = await getHouseholdId();

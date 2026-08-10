@@ -37,6 +37,7 @@ import { UserService } from '@/services/UserService';
 import { Bill } from '@/types/bill';
 import { HouseholdDocument } from '@/types/document';
 import BottomNav from '@/components/BottomNav';
+import DismissibleIntro from '@/components/DismissibleIntro';
 import UpgradeModal from '@/components/UpgradeModal';
 import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
 import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
@@ -46,6 +47,7 @@ import LinkTaxItemsSheet from '@/components/tax/LinkTaxItemsSheet';
 import { FileAttachmentInput, AttachmentBadge } from '@/components/shared/FileAttachmentInput';
 import { arrayToCSV, downloadCSV } from '@/utils/csvExport';
 import { cn } from '@/lib/utils';
+import { SkeletonRows } from '@/components/ui/skeleton';
 
 type RowSource = 'tax' | 'bill' | 'document';
 
@@ -81,6 +83,7 @@ const TaxDocuments = () => {
   const [categoriesVersion, setCategoriesVersion] = useState(0);
   const [accessTarget, setAccessTarget] = useState<{ id: string; title: string } | null>(null);
   const [linkingTaxDoc, setLinkingTaxDoc] = useState<TaxDocument | null>(null);
+  const [isLoading, setIsLoading] = useState(() => !TaxDocumentService.isLoaded());
 
   const settings = UserService.getSettings();
   const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
@@ -90,7 +93,7 @@ const TaxDocuments = () => {
   };
 
   useEffect(() => {
-    TaxDocumentService.refresh().then(loadDocuments).catch(console.error);
+    TaxDocumentService.refresh().then(loadDocuments).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   // Carrying forward means nobody has to re-tag a year from scratch. It only
@@ -260,10 +263,200 @@ const TaxDocuments = () => {
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8">
         <h1 className="text-2xl font-semibold hidden lg:block mb-2">Tax Documents</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Everything that matters at tax time, in one place — including bills and documents you've
-          marked as relevant.
-        </p>
+        <DismissibleIntro storageKey="billvie_tax_intro">
+          Anything tagged relevant for tax on a bill or a document shows up here automatically. Add something here directly too, if it doesn't live anywhere else.
+        </DismissibleIntro>
+
+        {/* Year Summary */}
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="skeleton" exit={{ opacity: 0 }} className="mb-6">
+              <SkeletonRows rows={4} />
+            </motion.div>
+          ) : (
+            <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
+              {rows.length > 0 && (
+                <div className="bg-card rounded-xl border border-border p-4 mb-6">
+                  <p className="text-sm text-muted-foreground">{yearFilter} total</p>
+                  <p className="text-3xl font-semibold">${grandTotal.toLocaleString()}</p>
+                  {unpricedCount > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {unpricedCount} {unpricedCount === 1 ? 'item has' : 'items have'} no amount — counted,
+                      not added up.
+                    </p>
+                  )}
+
+                  {businessTotal > 0 && (
+                    <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Personal</p>
+                        <p className="font-medium">${personalTotal.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Business</p>
+                        <p className="font-medium">${businessTotal.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
+                    {sections.map(([cat, catRows]) => (
+                      <div key={cat} className="flex items-center gap-2 text-sm">
+                        <span>{getCategoryIcon(cat)}</span>
+                        <span className="text-muted-foreground flex-1 truncate">{getCategoryLabel(cat)}</span>
+                        <span className="font-medium">
+                          ${catRows.reduce((s, r) => s + (r.amount ?? 0), 0).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Grouped list */}
+              <div className="space-y-4">
+                {sections.map(([cat, catRows]) => {
+                  const isCollapsed = !!collapsed[cat];
+                  return (
+                    <section key={cat}>
+                      <button
+                        onClick={() => setCollapsed((prev) => ({ ...prev, [cat]: !prev[cat] }))}
+                        className="w-full flex items-center gap-2 py-2 text-left"
+                        aria-expanded={!isCollapsed}
+                      >
+                        {isCollapsed ? (
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <span>{getCategoryIcon(cat)}</span>
+                        <h2 className="text-sm font-medium">{getCategoryLabel(cat)}</h2>
+                        <span className="text-sm text-muted-foreground">({catRows.length})</span>
+                      </button>
+
+                      {!isCollapsed && (
+                        <div className="space-y-3">
+                          {catRows.map((row, index) => (
+                            <motion.div
+                              key={row.key}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.03 }}
+                              className="bg-card rounded-xl border border-border p-4"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg shrink-0">
+                                  {getCategoryIcon(row.categories[0])}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-medium truncate flex items-center gap-1.5">
+                                    <SourceIcon source={row.source} />
+                                    {row.name}
+                                  </h3>
+                                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                    <div className="flex flex-wrap gap-1">
+                                      {row.categories.map((catId) => (
+                                        <span
+                                          key={catId}
+                                          className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs"
+                                        >
+                                          {getCategoryIcon(catId)} {getCategoryLabel(catId)}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    {row.amount !== undefined && (
+                                      <span className="font-medium text-foreground">
+                                        ${row.amount.toLocaleString()}
+                                      </span>
+                                    )}
+                                    {row.businessName && <span>{row.businessName}</span>}
+                                    {row.attachmentName && (
+                                      <span className="inline-flex items-center gap-1 text-xs text-primary">
+                                        <Paperclip className="w-3 h-3" />
+                                        {row.attachmentName.length > 15
+                                          ? row.attachmentName.substring(0, 12) + '...'
+                                          : row.attachmentName}
+                                      </span>
+                                    )}
+                                    {row.carriedFromYear && (
+                                      <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs">
+                                        Carried from {row.carriedFromYear}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {row.notes && (
+                                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{row.notes}</p>
+                                  )}
+
+                                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
+                                    <button
+                                      onClick={() => setAccessTarget({ id: row.itemId, title: row.name })}
+                                      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                                    >
+                                      <Users className="w-3.5 h-3.5" /> Who can see this
+                                    </button>
+                                    {row.source === 'tax' && row.taxDoc && (
+                                      <button
+                                        onClick={() => setLinkingTaxDoc(row.taxDoc!)}
+                                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                                      >
+                                        <Link2 className="w-3.5 h-3.5" /> What is this about?
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {row.source === 'tax' ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(row.itemId)}
+                                    className="text-destructive hover:bg-destructive/10"
+                                    aria-label="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveFromTax(row)}
+                                    className="text-muted-foreground hover:text-foreground shrink-0"
+                                  >
+                                    <X className="w-4 h-4 mr-1" />
+                                    <span className="hidden sm:inline">Remove from tax</span>
+                                  </Button>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+
+                {rows.length === 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+                    <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Nothing here for {yearFilter} yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {searchQuery || categoryFilter !== 'all' || businessFilter !== 'all'
+                        ? 'Try adjusting your filters'
+                        : "Add a receipt here, or tick “Relevant for tax?” on a bill or document."}
+                    </p>
+                    <Button onClick={() => setIsAddingDocument(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Document
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Search and Filters */}
         <div className="space-y-3 mb-6">
@@ -357,185 +550,6 @@ const TaxDocuments = () => {
 
         {/* Sharing Panel */}
         <TaxSharingPanel />
-
-        {/* Year Summary */}
-        {rows.length > 0 && (
-          <div className="bg-card rounded-xl border border-border p-4 mb-6">
-            <p className="text-sm text-muted-foreground">{yearFilter} total</p>
-            <p className="text-3xl font-semibold">${grandTotal.toLocaleString()}</p>
-            {unpricedCount > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {unpricedCount} {unpricedCount === 1 ? 'item has' : 'items have'} no amount — counted,
-                not added up.
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
-              <div>
-                <p className="text-xs text-muted-foreground">Personal</p>
-                <p className="font-medium">${personalTotal.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Business</p>
-                <p className="font-medium">${businessTotal.toLocaleString()}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
-              {sections.map(([cat, catRows]) => (
-                <div key={cat} className="flex items-center gap-2 text-sm">
-                  <span>{getCategoryIcon(cat)}</span>
-                  <span className="text-muted-foreground flex-1 truncate">{getCategoryLabel(cat)}</span>
-                  <span className="font-medium">
-                    ${catRows.reduce((s, r) => s + (r.amount ?? 0), 0).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Grouped list */}
-        <div className="space-y-4">
-          {sections.map(([cat, catRows]) => {
-            const isCollapsed = !!collapsed[cat];
-            return (
-              <section key={cat}>
-                <button
-                  onClick={() => setCollapsed((prev) => ({ ...prev, [cat]: !prev[cat] }))}
-                  className="w-full flex items-center gap-2 py-2 text-left"
-                  aria-expanded={!isCollapsed}
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                  )}
-                  <span>{getCategoryIcon(cat)}</span>
-                  <h2 className="text-sm font-medium">{getCategoryLabel(cat)}</h2>
-                  <span className="text-sm text-muted-foreground">({catRows.length})</span>
-                </button>
-
-                {!isCollapsed && (
-                  <div className="space-y-3">
-                    {catRows.map((row, index) => (
-                      <motion.div
-                        key={row.key}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="bg-card rounded-xl border border-border p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg shrink-0">
-                            {getCategoryIcon(row.categories[0])}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate flex items-center gap-1.5">
-                              <SourceIcon source={row.source} />
-                              {row.name}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                              <div className="flex flex-wrap gap-1">
-                                {row.categories.map((catId) => (
-                                  <span
-                                    key={catId}
-                                    className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs"
-                                  >
-                                    {getCategoryIcon(catId)} {getCategoryLabel(catId)}
-                                  </span>
-                                ))}
-                              </div>
-                              {row.amount !== undefined && (
-                                <span className="font-medium text-foreground">
-                                  ${row.amount.toLocaleString()}
-                                </span>
-                              )}
-                              {row.businessName && <span>{row.businessName}</span>}
-                              {row.attachmentName && (
-                                <span className="inline-flex items-center gap-1 text-xs text-primary">
-                                  <Paperclip className="w-3 h-3" />
-                                  {row.attachmentName.length > 15
-                                    ? row.attachmentName.substring(0, 12) + '...'
-                                    : row.attachmentName}
-                                </span>
-                              )}
-                              {row.carriedFromYear && (
-                                <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs">
-                                  Carried from {row.carriedFromYear}
-                                </span>
-                              )}
-                            </div>
-                            {row.notes && (
-                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{row.notes}</p>
-                            )}
-
-                            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
-                              <button
-                                onClick={() => setAccessTarget({ id: row.itemId, title: row.name })}
-                                className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                              >
-                                <Users className="w-3.5 h-3.5" /> Who can see this
-                              </button>
-                              {row.source === 'tax' && row.taxDoc && (
-                                <button
-                                  onClick={() => setLinkingTaxDoc(row.taxDoc!)}
-                                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                                >
-                                  <Link2 className="w-3.5 h-3.5" /> What is this about?
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {row.source === 'tax' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(row.itemId)}
-                              className="text-destructive hover:bg-destructive/10"
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveFromTax(row)}
-                              className="text-muted-foreground hover:text-foreground shrink-0"
-                            >
-                              <X className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">Remove from tax</span>
-                            </Button>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })}
-
-          {rows.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold mb-2">Nothing here for {yearFilter} yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {searchQuery || categoryFilter !== 'all' || businessFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : "Add a receipt here, or tick “Relevant for tax?” on a bill or document."}
-              </p>
-              <Button onClick={() => setIsAddingDocument(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Document
-              </Button>
-            </motion.div>
-          )}
-        </div>
       </main>
 
       {/* FAB */}

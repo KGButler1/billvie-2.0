@@ -49,6 +49,10 @@ let cache: Event[] = [];
 let loaded = false;
 
 export class EventService {
+  static isLoaded(): boolean {
+    return loaded;
+  }
+
   static async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const [eventsRes, expensesRes] = await Promise.all([

@@ -1,12 +1,17 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FolderOpen } from 'lucide-react';
 import { DocumentService } from '@/services/DocumentService';
 import { HouseholdDocument } from '@/types/document';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import HouseholdRecordRow from '@/components/HouseholdRecordRow';
+import { SkeletonCard } from '@/components/ui/skeleton';
 
 const DocumentsWidget = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(() => !DocumentService.isLoaded());
+  useEffect(() => { if (DocumentService.isLoaded()) setIsLoading(false); });
+  if (isLoading) return <SkeletonCard className="mb-2" />;
   const recent = DocumentService.getRecent(3);
   const total = DocumentService.getCount();
   const go = () => navigate(isDemoModeActive() ? '/demo/documents' : '/documents');

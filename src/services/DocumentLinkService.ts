@@ -20,6 +20,10 @@ let cache: DocumentLink[] = [];
 let loaded = false;
 
 export const DocumentLinkService = {
+  isLoaded(): boolean {
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const { data, error } = await supabase

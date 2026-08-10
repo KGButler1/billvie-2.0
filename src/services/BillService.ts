@@ -105,6 +105,11 @@ let cache: Bill[] = [];
 let loaded = false;
 
 export class BillService {
+  static isLoaded(): boolean {
+    if (isDemoModeActive()) return true;
+    return loaded;
+  }
+
   // Fetch all bills from Supabase and populate the cache. Pages call this on
   // mount and after mutations, then read from the synchronous getters.
   static async refresh(): Promise<void> {

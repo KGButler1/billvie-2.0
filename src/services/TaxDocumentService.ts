@@ -25,6 +25,10 @@ let cache: TaxDocument[] = [];
 let loaded = false;
 
 export class TaxDocumentService {
+  static isLoaded(): boolean {
+    return loaded;
+  }
+
   static async refresh(): Promise<void> {
     const householdId = await getHouseholdId();
     const { data, error } = await supabase

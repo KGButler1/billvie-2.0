@@ -22,6 +22,11 @@ let cache: AccessGrant[] = [];
 let loaded = false;
 
 export const AccessService = {
+  isLoaded(): boolean {
+    if (isDemoModeActive()) return true;
+    return loaded;
+  },
+
   async refresh(): Promise<void> {
     if (isDemoModeActive()) {
       cache = DEMO_ACCESS_GRANTS.map((g) => ({ ...g }));
