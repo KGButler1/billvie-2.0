@@ -27,6 +27,9 @@ import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import ErrorBoundary from "./components/ErrorBoundary";
 import GlobalSearch from "./components/search/GlobalSearch";
 
 import { useEffect } from "react";
@@ -78,6 +81,7 @@ const App = () => {
           <Sonner />
           <MilestoneToastHost />
           <BrowserRouter>
+          <ErrorBoundary>
             <Routes>
               <Route path="/" element={<RootRoute />} />
               <Route path="/auth" element={<Auth />} />
@@ -108,8 +112,12 @@ const App = () => {
               <Route path="/key-people" element={<ProtectedRoute><KeyPeople /></ProtectedRoute>} />
               <Route path="/readiness" element={<ProtectedRoute><Readiness /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/cookies" element={<Privacy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+          </ErrorBoundary>
             <GlobalSearch />
           </BrowserRouter>
         </TooltipProvider>

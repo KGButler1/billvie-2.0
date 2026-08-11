@@ -1,17 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Settings, 
-  FileText, 
-  Shield, 
-  HelpCircle, 
-  Lock,
-  ChevronRight,
-  Building,
-  Receipt,
-  Users,
-  Calendar
-} from 'lucide-react';
+import { Settings, FileText, Shield, CircleHelp as HelpCircle, Lock, ChevronRight, Building, Receipt, Users, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserService } from '@/services/UserService';
 import BottomNav from '@/components/BottomNav';
@@ -171,12 +160,12 @@ const More = () => {
             <MenuItem
               icon={FileText}
               label="Terms of Service"
-              onClick={() => {}}
+              onClick={() => navigate('/terms')}
             />
             <MenuItem
               icon={Shield}
               label="Privacy Policy"
-              onClick={() => {}}
+              onClick={() => navigate('/privacy')}
             />
           </div>
         </section>

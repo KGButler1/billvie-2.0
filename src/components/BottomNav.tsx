@@ -73,10 +73,10 @@ const AccountDropdownContent = () => {
         <HelpCircle className="w-4 h-4 mr-2" /> Help &amp; Support
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem>
+      <DropdownMenuItem onClick={() => navigate('/terms')}>
         <FileText className="w-4 h-4 mr-2" /> Terms of Service
       </DropdownMenuItem>
-      <DropdownMenuItem>
+      <DropdownMenuItem onClick={() => navigate('/privacy')}>
         <Shield className="w-4 h-4 mr-2" /> Privacy Policy
       </DropdownMenuItem>
       <DropdownMenuSeparator />

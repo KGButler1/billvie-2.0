@@ -306,7 +306,7 @@ const LandingPage = () => {
                 Terms of Service
               </a>
               <a
-                href="https://form.typeform.com/to/ruIhYIAz"
+                href="https://form.typeform.com/to/bYWbF6lG"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground transition-colors"

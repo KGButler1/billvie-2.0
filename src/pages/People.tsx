@@ -140,7 +140,10 @@ const People = () => {
   const reload = useCallback(() => setDirectory(PeopleService.getDirectory()), []);
 
   useEffect(() => {
-    PeopleService.refresh().then(reload).catch(console.error).finally(() => setIsLoading(false));
+    Promise.all([PeopleService.refresh(), KeyPeopleService.refresh()])
+      .then(reload)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, [reload]);
 
   useEffect(() => {
