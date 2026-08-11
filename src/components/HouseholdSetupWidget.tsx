@@ -63,12 +63,8 @@ const ProgressRing = ({ covered, total }: { covered: number; total: number }) =>
   );
 };
 
-const HouseholdSetupWidget = () => {
+const HouseholdSetupContent = () => {
   const navigate = useNavigate();
-  const allLoaded = BillService.isLoaded() && DocumentService.isLoaded() && FinancialInfoService.isLoaded() && PeopleService.isLoaded() && AccessService.isLoaded();
-  const [isLoading, setIsLoading] = useState(() => !allLoaded);
-  useEffect(() => { if (allLoaded) setIsLoading(false); });
-  if (isLoading) return <SkeletonCard className="mb-6" />;
   const { checks, covered, total } = getReadinessSummary();
   const complete = covered === total;
 
@@ -193,6 +189,24 @@ const HouseholdSetupWidget = () => {
       </AnimatePresence>
     </section>
   );
+};
+
+const HouseholdSetupWidget = () => {
+  const allLoaded =
+    BillService.isLoaded() &&
+    DocumentService.isLoaded() &&
+    FinancialInfoService.isLoaded() &&
+    PeopleService.isLoaded() &&
+    AccessService.isLoaded();
+
+  const [isLoading, setIsLoading] = useState(!allLoaded);
+
+  useEffect(() => {
+    if (allLoaded) setIsLoading(false);
+  }, [allLoaded]);
+
+  if (isLoading) return <SkeletonCard className="mb-6" />;
+  return <HouseholdSetupContent />;
 };
 
 export default HouseholdSetupWidget;
