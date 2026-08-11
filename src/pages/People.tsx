@@ -36,6 +36,7 @@ import { SkeletonRows } from '@/components/ui/skeleton';
 import { DocumentService } from '@/services/DocumentService';
 import { KeyPeopleService as KPService } from '@/services/KeyPeopleService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
+import { usePlan } from '@/hooks/usePlan';
 
 const firstName = (name: string) => name.trim().split(' ')[0] || name;
 
@@ -134,8 +135,7 @@ const People = () => {
   const [confirmRemove, setConfirmRemove] = useState<DirectoryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(() => !PeopleService.isLoaded());
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { isPaid } = usePlan();
 
   const reload = useCallback(() => setDirectory(PeopleService.getDirectory()), []);
 

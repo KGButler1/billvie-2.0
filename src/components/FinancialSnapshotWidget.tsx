@@ -7,17 +7,18 @@ import UpgradeModal from '@/components/UpgradeModal';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import HouseholdRecordRow from '@/components/HouseholdRecordRow';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { usePlan } from '@/hooks/usePlan';
+import { startCheckout } from '@/services/CheckoutService';
 
 const FinancialSnapshotWidget = () => {
   const navigate = useNavigate();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isLoading, setIsLoading] = useState(() => !FinancialInfoService.isLoaded());
+  const { isPaid } = usePlan();
   useEffect(() => { if (FinancialInfoService.isLoaded()) setIsLoading(false); });
   if (isLoading) return <SkeletonCard className="mb-2" />;
   const goFinancial = () => navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   const insurance = FinancialInfoService.getInsurance();
   const superannuation = FinancialInfoService.getSuperannuation();
@@ -25,10 +26,12 @@ const FinancialSnapshotWidget = () => {
   const debts = FinancialInfoService.getDebts();
   const total = insurance.length + superannuation.length + income.length + debts.length;
 
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgrade(false);
-    navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
+  const handleUpgrade = async () => {
+    try {
+      await startCheckout();
+    } catch (error) {
+      console.error('Unable to start checkout:', error);
+    }
   };
 
   if (!isPaid) {

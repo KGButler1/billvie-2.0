@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { UserService } from './UserService';
 
 export interface ScanQuota {
   used: number;
@@ -38,11 +37,6 @@ export const BillScanService = {
       return { used: 0, limit: 5, remaining: 5 };
     }
     return res.json();
-  },
-
-  isUnlimitedTier(): boolean {
-    const settings = UserService.getSettings();
-    return settings.userType === 'paid' || settings.userType === 'accountant';
   },
 
   async uploadScanFile(file: File): Promise<{ documentId: string; documentUrl: string } | null> {

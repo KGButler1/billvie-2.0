@@ -6,6 +6,7 @@ import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
 import { useNavigate } from 'react-router-dom';
+import { usePlan } from '@/hooks/usePlan';
 
 type HintType = 'events' | 'upgrade_events' | 'upgrade_bills' | 'sharing';
 
@@ -25,8 +26,7 @@ const ProgressiveHints = () => {
   const [activeHint, setActiveHint] = useState<HintType | null>(null);
   const [dismissedHints, setDismissedHints] = useState<HintType[]>([]);
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { isPaid } = usePlan();
 
   const hints: HintConfig[] = [
     {
@@ -101,7 +101,7 @@ const ProgressiveHints = () => {
     } else {
       setActiveHint(null);
     }
-  }, [dismissedHints, settings.userType]);
+  }, [dismissedHints, isPaid]);
 
   const dismissHint = (hintId: HintType) => {
     const updated = [...dismissedHints, hintId];

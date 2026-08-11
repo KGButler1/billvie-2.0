@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import FileCapture, { CapturedFile } from '@/components/shared/FileCapture';
 import { BillScanService } from '@/services/BillScanService';
+import { usePlan } from '@/hooks/usePlan';
 
 interface BillScanModalProps {
   onClose: () => void;
@@ -22,7 +23,7 @@ const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
   const [isCommitting, setIsCommitting] = useState(false);
   const [error, setError] = useState('');
 
-  const isUnlimited = BillScanService.isUnlimitedTier();
+  const { isPaid: isUnlimited } = usePlan();
 
   useEffect(() => {
     if (!isUnlimited) {

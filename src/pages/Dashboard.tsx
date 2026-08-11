@@ -35,6 +35,8 @@ import DashboardActionStrip from '@/components/DashboardActionStrip';
 import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
 import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
+import { usePlan } from '@/hooks/usePlan';
+import { startCheckout } from '@/services/CheckoutService';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -49,6 +51,7 @@ const Dashboard = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFamilyView, setIsFamilyView] = useState(false);
   const [billsLoading, setBillsLoading] = useState(() => !BillService.isLoaded());
+  const { isPaid } = usePlan();
   const needsAttentionRef = useRef<HTMLDivElement>(null);
 
   // Initialize data on mount
@@ -83,7 +86,7 @@ const Dashboard = () => {
 
 
   const handleTryAddBill = () => {
-    if (canAddBill()) {
+    if (canAddBill(isPaid)) {
       setIsAddingBill(true);
     } else {
       setShowUpgradeModal(true);
@@ -92,7 +95,7 @@ const Dashboard = () => {
   };
 
   const handleTryScanBill = () => {
-    if (canAddBill()) {
+    if (canAddBill(isPaid)) {
       setIsScanningBill(true);
     } else {
       setShowUpgradeModal(true);
@@ -113,9 +116,12 @@ const Dashboard = () => {
     setIsScanningBill(false);
   };
 
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
+  const handleUpgrade = async () => {
+    try {
+      await startCheckout();
+    } catch (error) {
+      console.error('Unable to start checkout:', error);
+    }
   };
 
   const handleUpdateBill = async (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {

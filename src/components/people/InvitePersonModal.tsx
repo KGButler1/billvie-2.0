@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PersonRole, TrustedPerson } from '@/types/people';
 import { PeopleService } from '@/services/PeopleService';
 import { EntitlementService } from '@/services/EntitlementService';
+import { usePlan } from '@/hooks/usePlan';
 
 interface InvitePersonModalProps {
   defaultName?: string;
@@ -37,12 +38,13 @@ const InvitePersonModal = ({
   const [email, setEmail] = useState(defaultEmail);
   const [role, setRole] = useState<PersonRole>(defaultRole);
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
+  const { isPaid } = usePlan();
 
   // Checked on role change, not on submit — the wall should be visible before effort is spent.
   useEffect(() => {
-    const result = EntitlementService.canAddTrustedPerson(role);
+    const result = EntitlementService.canAddTrustedPerson(role, isPaid);
     setBlockedReason(result.allowed ? undefined : result.reason);
-  }, [role]);
+  }, [isPaid, role]);
 
   const canSubmit = name.trim().length > 0 && /^\S+@\S+\.\S+$/.test(email.trim());
 

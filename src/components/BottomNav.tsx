@@ -1,4 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal } from 'lucide-react';
 import { openSearch } from '@/components/search/GlobalSearch';
 import { useProfile } from '@/hooks/useProfile';
@@ -16,6 +17,9 @@ import {
 import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
 import UserAvatar from '@/components/UserAvatar';
+import UpgradeModal from '@/components/UpgradeModal';
+import { usePlan } from '@/hooks/usePlan';
+import { startCheckout } from '@/services/CheckoutService';
 import { isDemoModeActive } from '@/demo/demoFlag';
 
 const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
@@ -98,6 +102,8 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const demo = isDemoModeActive();
+  const { isPaid } = usePlan();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const isActive = (path: string) => location.pathname === demoPrefix(path);
 
@@ -135,6 +141,11 @@ const BottomNav = () => {
           </nav>
 
           <div className="flex items-center gap-2">
+            {!demo && !isPaid && (
+              <Button variant="outline" size="sm" onClick={() => setShowUpgradeModal(true)}>
+                See Pro
+              </Button>
+            )}
             {!demo && (
               <Button variant="ghost" size="sm" className="gap-1.5" onClick={openSearch}>
                 <Search className="w-4 h-4" />
@@ -201,6 +212,12 @@ const BottomNav = () => {
           </DropdownMenu>
         )}
       </nav>
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="general"
+        onUpgrade={() => void startCheckout().catch((error: unknown) => console.error('Unable to start checkout:', error))}
+      />
     </>
   );
 };
