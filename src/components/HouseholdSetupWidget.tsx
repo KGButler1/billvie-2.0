@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -14,12 +14,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { getReadinessSummary } from '@/utils/readiness';
-import { BillService } from '@/services/BillService';
-import { DocumentService } from '@/services/DocumentService';
-import { FinancialInfoService } from '@/services/FinancialInfoService';
-import { PeopleService } from '@/services/PeopleService';
-import { AccessService } from '@/services/AccessService';
-import { SkeletonCard } from '@/components/ui/skeleton';
 
 const STORAGE_KEY = 'billvie_setup_widget_collapsed';
 
@@ -65,10 +59,6 @@ const ProgressRing = ({ covered, total }: { covered: number; total: number }) =>
 
 const HouseholdSetupWidget = () => {
   const navigate = useNavigate();
-  const allLoaded = BillService.isLoaded() && DocumentService.isLoaded() && FinancialInfoService.isLoaded() && PeopleService.isLoaded() && AccessService.isLoaded();
-  const [isLoading, setIsLoading] = useState(() => !allLoaded);
-  useEffect(() => { if (allLoaded) setIsLoading(false); });
-  if (isLoading) return <SkeletonCard className="mb-6" />;
   const { checks, covered, total } = getReadinessSummary();
   const complete = covered === total;
 
