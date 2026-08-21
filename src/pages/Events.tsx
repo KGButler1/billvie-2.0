@@ -11,8 +11,6 @@ import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/skeleton';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 const Events = () => {
   const navigate = useNavigate();
@@ -21,9 +19,9 @@ const Events = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
   const [isLoading, setIsLoading] = useState(() => !EventService.isLoaded());
-  const { isPaid } = usePlan();
 
   const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   useEffect(() => {
     EventService.refresh().then(loadEvents).catch(console.error).finally(() => setIsLoading(false));
@@ -36,7 +34,7 @@ const Events = () => {
   const canAddEvent = (): boolean => {
     if (!settings.hasEventsAccess) return false;
     const currentCount = EventService.getEventCount();
-    const limit = isPaid ? Infinity : EVENT_LIMITS.free;
+    const limit = EVENT_LIMITS[settings.userType];
     return currentCount < limit;
   };
 
@@ -60,12 +58,9 @@ const Events = () => {
     loadEvents();
   };
 
-  const handleUpgrade = async () => {
-    try {
-      await startCheckout();
-    } catch (error) {
-      console.error('Unable to start checkout:', error);
-    }
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
   };
 
   const handleCompare = () => {
@@ -80,7 +75,7 @@ const Events = () => {
   const activeEvents = events.filter(e => e.status === 'active' || e.status === 'planning');
   const completedEvents = events.filter(e => e.status === 'completed' || e.status === 'archived');
   const hasSampleEvents = events.some(e => e.isSample);
-  const eventLimit = isPaid ? Infinity : EVENT_LIMITS.free;
+  const eventLimit = EVENT_LIMITS[settings.userType];
   const currentEventCount = EventService.getEventCount();
 
   return (

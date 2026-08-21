@@ -48,8 +48,6 @@ import { FileAttachmentInput, AttachmentBadge } from '@/components/shared/FileAt
 import { arrayToCSV, downloadCSV } from '@/utils/csvExport';
 import { cn } from '@/lib/utils';
 import { SkeletonRows } from '@/components/ui/skeleton';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 type RowSource = 'tax' | 'bill' | 'document';
 
@@ -87,7 +85,8 @@ const TaxDocuments = () => {
   const [linkingTaxDoc, setLinkingTaxDoc] = useState<TaxDocument | null>(null);
   const [isLoading, setIsLoading] = useState(() => !TaxDocumentService.isLoaded());
 
-  const { isPaid } = usePlan();
+  const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   const loadDocuments = () => {
     setDocuments(TaxDocumentService.getAllDocuments());
@@ -207,12 +206,9 @@ const TaxDocuments = () => {
     setTagVersion((v) => v + 1);
   };
 
-  const handleUpgrade = async () => {
-    try {
-      await startCheckout();
-    } catch (error) {
-      console.error('Unable to start checkout:', error);
-    }
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
   };
 
   const handleExportCSV = () => {

@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, FileText, Shield, CircleHelp as HelpCircle, Lock, ChevronRight, Building, Receipt, Users, Calendar, Sparkles } from 'lucide-react';
+import { Settings, FileText, Shield, CircleHelp as HelpCircle, Lock, ChevronRight, Building, Receipt, Users, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserService } from '@/services/UserService';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -50,7 +48,7 @@ const More = () => {
   const [upgradeReason, setUpgradeReason] = useState<'financial' | 'general'>('financial');
   
   const settings = UserService.getSettings();
-  const { isPaid } = usePlan();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
   const isAccountant = settings.userType === 'accountant';
 
   const handleLockedFeature = (feature: 'financial') => {
@@ -62,12 +60,10 @@ const More = () => {
     }
   };
 
-  const handleUpgrade = async () => {
-    try {
-      await startCheckout();
-    } catch (error) {
-      console.error('Unable to start checkout:', error);
-    }
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
+    navigate('/financial');
   };
 
   const handlePreviewAnyway = () => {
@@ -140,17 +136,6 @@ const More = () => {
             App
           </h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
-            {!isPaid && (
-              <MenuItem
-                icon={Sparkles}
-                label="Upgrade to Pro"
-                description="See what's included in Pro"
-                onClick={() => {
-                  setUpgradeReason('general');
-                  setShowUpgradeModal(true);
-                }}
-              />
-            )}
             <MenuItem
               icon={Settings}
               label="Settings"

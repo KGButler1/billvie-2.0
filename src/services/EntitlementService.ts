@@ -1,5 +1,6 @@
 import { PersonRole } from '@/types/people';
 import { PeopleService } from './PeopleService';
+import { UserService } from './UserService';
 
 // Free-tier rule: we count PEOPLE, not grants. One free household person who may
 // see any combination of scopes. The alternative — one person per scope — creates
@@ -8,10 +9,12 @@ import { PeopleService } from './PeopleService';
 // per-item grants. If this is ever reversed, this function is the only place
 // that changes.
 export const EntitlementService = {
-  canAddTrustedPerson(role: PersonRole, isPaid: boolean): { allowed: boolean; reason?: string } {
+  canAddTrustedPerson(role: PersonRole): { allowed: boolean; reason?: string } {
     // Advisors and accountants are always free, however many are added.
     if (role === 'advisor' || role === 'accountant') return { allowed: true };
 
+    const settings = UserService.getSettings();
+    const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
     if (isPaid) return { allowed: true };
 
     const householdCount = PeopleService.getRaw().filter(

@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { getHouseholdId } from '@/services/supabaseData';
-import { usePlan } from '@/hooks/usePlan';
 import { motion } from 'framer-motion';
 import { X, Database, User, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,22 +23,11 @@ interface DevPanelProps {
 const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
   const [settings, setSettings] = useState(UserService.getSettings());
   const [showStorage, setShowStorage] = useState(false);
-  const { refreshPlan } = usePlan();
 
-  const handleUserTypeChange = async (userType: UserSettings['userType']) => {
-    try {
-      const householdId = await getHouseholdId();
-      const { error } = await supabase
-        .from('households')
-        .update({ plan_status: userType === 'paid' || userType === 'accountant' ? 'active' : 'not_started' })
-        .eq('id', householdId);
-      if (error) throw error;
-      setSettings((current) => ({ ...current, userType }));
-      await refreshPlan();
-      onDataChange();
-    } catch (error) {
-      console.error('Unable to update development plan:', error);
-    }
+  const handleUserTypeChange = (userType: UserSettings['userType']) => {
+    UserService.setUserType(userType);
+    setSettings(UserService.getSettings());
+    onDataChange();
   };
 
   const handleToggleEvents = () => {

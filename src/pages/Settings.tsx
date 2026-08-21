@@ -22,15 +22,12 @@ import { useAuth } from '@/hooks/useAuth';
 import UserAvatar, { getInitials } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { PRO_PRICE, PRO_PERIOD } from '@/constants/pricing';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 const Settings = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(UserService.getSettings());
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showCardsSheet, setShowCardsSheet] = useState(false);
-  const { isPaid } = usePlan();
 
   useEffect(() => {
     // Apply theme on mount
@@ -62,17 +59,17 @@ const Settings = () => {
     }
   };
 
-  const handleUpgrade = async () => {
-    try {
-      await startCheckout();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to start checkout.');
-    }
+  const handleUpgrade = () => {
+    // Mock upgrade
+    const updated = UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setSettings(updated);
+    setShowUpgradeModal(false);
   };
 
   const sampleBillCount = BillService.getAllBills().filter(b => b.isSample).length;
   const sampleEventCount = EventService.getAllEvents().filter(e => e.isSample).length;
   const hasSampleData = sampleBillCount > 0 || sampleEventCount > 0;
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   return (
     <div className="min-h-screen bg-background pb-24">

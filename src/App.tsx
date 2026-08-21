@@ -27,7 +27,6 @@ import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
-import UpgradeSuccess from "./pages/UpgradeSuccess";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -36,7 +35,6 @@ import GlobalSearch from "./components/search/GlobalSearch";
 import { useEffect } from "react";
 import { UserService } from "./services/UserService";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
-import { PlanProvider } from "./hooks/usePlan";
 
 const queryClient = new QueryClient();
 
@@ -77,7 +75,6 @@ const App = () => {
 
   return (
     <AuthProvider>
-      <PlanProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -105,7 +102,6 @@ const App = () => {
               <Route path="/export/summary" element={<ProtectedRoute><HouseholdSummary /></ProtectedRoute>} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/upgrade/success" element={<ProtectedRoute><UpgradeSuccess /></ProtectedRoute>} />
               <Route path="/demo" element={<DemoRoute><Navigate to="/demo/dashboard" replace /></DemoRoute>} />
               <Route path="/demo/dashboard" element={<DemoRoute><Dashboard /></DemoRoute>} />
               <Route path="/demo/bills" element={<DemoRoute><Bills /></DemoRoute>} />
@@ -126,7 +122,6 @@ const App = () => {
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
-      </PlanProvider>
     </AuthProvider>
   );
 };

@@ -18,8 +18,6 @@ import {
 import { UserService } from '@/services/UserService';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
 import UpgradeModal from '@/components/UpgradeModal';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 const money = (n?: number) =>
   typeof n === 'number' ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—';
@@ -43,16 +41,15 @@ const Empty = ({ text }: { text: string }) => (
 
 const HouseholdSummary = () => {
   const navigate = useNavigate();
-  const { isPaid } = usePlan();
+  const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
   const [bypassGate, setBypassGate] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(!isPaid);
 
-  const handleUpgrade = async () => {
-    try {
-      await startCheckout();
-    } catch (error) {
-      console.error('Unable to start checkout:', error);
-    }
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
+    setBypassGate(true);
   };
 
   const bills = BillService.getAllBills();

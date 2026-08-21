@@ -15,8 +15,6 @@ import AddExpenseModal from '@/components/events/AddExpenseModal';
 import EventAnalytics from '@/components/events/EventAnalytics';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,9 +23,9 @@ const EventDetail = () => {
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { isPaid } = usePlan();
   
   const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
 
   useEffect(() => {
     loadEvent();
@@ -59,12 +57,9 @@ const EventDetail = () => {
     setIsAddingExpense(true);
   };
 
-  const handleUpgrade = async () => {
-    try {
-      await startCheckout();
-    } catch (error) {
-      console.error('Unable to start checkout:', error);
-    }
+  const handleUpgrade = () => {
+    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+    setShowUpgradeModal(false);
   };
 
   const handleShare = () => {

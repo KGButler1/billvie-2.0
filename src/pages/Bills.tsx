@@ -30,8 +30,6 @@ import {
 import { cn } from '@/lib/utils';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { SkeletonRows } from '@/components/ui/skeleton';
-import { usePlan } from '@/hooks/usePlan';
-import { startCheckout } from '@/services/CheckoutService';
 
 type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
@@ -65,7 +63,6 @@ const Bills = () => {
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [demoNudge, setDemoNudge] = useState(false);
   const [isLoading, setIsLoading] = useState(() => !BillService.isLoaded());
-  const { isPaid } = usePlan();
 
   const loadBills = () => {
     const upcoming = BillService.getUpcomingBills();
@@ -140,13 +137,13 @@ const Bills = () => {
   const superCount = FinancialInfoService.getSuperannuation().length;
 
   const handleTryAddBill = () => {
-    if (canAddBill(isPaid)) setIsAddingBill(true);
+    if (canAddBill()) setIsAddingBill(true);
     else setShowUpgradeModal(true);
     setShowFabMenu(false);
   };
 
   const handleTryScanBill = () => {
-    if (canAddBill(isPaid)) setIsScanningBill(true);
+    if (canAddBill()) setIsScanningBill(true);
     else setShowUpgradeModal(true);
     setShowFabMenu(false);
   };
@@ -355,7 +352,8 @@ const Bills = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason="scan"
         onUpgrade={() => {
-          void startCheckout().catch((error: unknown) => console.error('Unable to start checkout:', error));
+          UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+          setShowUpgradeModal(false);
         }}
         onPreviewAnyway={() => {
           setShowUpgradeModal(false);
