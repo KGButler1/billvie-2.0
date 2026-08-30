@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { DEMO_DOCUMENTS } from '@/demo/demoData';
+import { AttachmentService } from './AttachmentService';
 
 let demoCache: HouseholdDocument[] = DEMO_DOCUMENTS.map((d) => ({ ...d }));
 
@@ -150,6 +151,7 @@ export const DocumentService = {
   },
 
   async permanentlyDelete(id: string): Promise<void> {
+    await AttachmentService.removeAllForOwner('document', id);
     const { error } = await supabase.from('documents').delete().eq('id', id);
     if (error) throw error;
     cache = cache.filter((d) => d.id !== id);

@@ -1,12 +1,3 @@
-// File Attachment Type
-export interface FileAttachment {
-  name: string;
-  type: string; // e.g., 'application/pdf', 'image/jpeg'
-  size: number;
-  dataUrl: string; // Base64-encoded file content
-}
-
-
 // Tax Document Types
 export type TaxCategory = string; // Now supports custom categories
 
@@ -29,7 +20,6 @@ export interface TaxDocument {
   year: number;
   amount?: number;
   notes?: string;
-  attachment?: FileAttachment; // New: file attachment support
   isTaxRelevant: boolean;
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;

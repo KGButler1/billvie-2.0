@@ -50,46 +50,26 @@ export const BillScanService = {
     if (!session) return null;
 
     const userId = session.user.id;
-    const ext = file.name.split('.').pop() || 'bin';
-    const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('bill-scans')
-      .upload(fileName, file, { contentType: file.type });
+    // Resolve household first so it is available before upload
+    const { data: tpData } = await supabase
+      .from('trusted_person')
+      .select('household_id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
 
-    if (uploadError) {
-      console.error('Upload failed:', uploadError);
+    const householdId = tpData?.household_id;
+    if (!householdId) {
+      console.error('No household found for scan upload');
       return null;
     }
 
-    const { data: urlData, error: signError } = await supabase.storage
-      .from('bill-scans')
-      .createSignedUrl(fileName, 3600);
-
-    let documentUrl = urlData?.signedUrl || '';
-
-    if (signError || !documentUrl) {
-      await new Promise((r) => setTimeout(r, 500));
-      const retry = await supabase.storage
-        .from('bill-scans')
-        .createSignedUrl(fileName, 3600);
-      if (retry.error || !retry.data?.signedUrl) {
-        console.error('Signed URL failed twice:', signError, retry.error);
-        return null;
-      }
-      documentUrl = retry.data.signedUrl;
-    }
-
+    // Create the documents row first to get its id
     const { data: docRow, error: docError } = await supabase
       .from('documents')
       .insert({
-        household_id: (await supabase
-          .from('trusted_person')
-          .select('household_id')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle()
-        ).data?.household_id,
+        household_id: householdId,
         title: file.name,
         provider: '',
         type: 'other',
@@ -104,7 +84,62 @@ export const BillScanService = {
       return null;
     }
 
-    return { documentId: docRow.id, documentUrl };
+    const documentId = docRow.id;
+    const attachmentId = crypto.randomUUID();
+    const ext = file.name.split('.').pop() || 'bin';
+    const storagePath = `${householdId}/document/${documentId}/${attachmentId}.${ext}`;
+
+    // Upload to the shared household-documents bucket
+    const { error: uploadError } = await supabase.storage
+      .from('household-documents')
+      .upload(storagePath, file, { contentType: file.type });
+
+    if (uploadError) {
+      console.error('Upload failed:', uploadError);
+      return null;
+    }
+
+    // Insert the attachment metadata row
+    const { error: attachError } = await supabase
+      .from('document_attachments')
+      .insert({
+        id: attachmentId,
+        household_id: householdId,
+        owner_type: 'document',
+        owner_id: documentId,
+        storage_path: storagePath,
+        file_name: file.name,
+        mime_type: file.type,
+        file_size: file.size,
+      });
+
+    if (attachError) {
+      console.error('Failed to create attachment row:', attachError);
+      // Clean up orphaned storage object
+      await supabase.storage.from('household-documents').remove([storagePath]);
+      // Still return the doc — the scan can proceed, the file just isn't tracked
+    }
+
+    // Generate signed URL from the new location
+    const { data: urlData, error: signError } = await supabase.storage
+      .from('household-documents')
+      .createSignedUrl(storagePath, 3600);
+
+    let documentUrl = urlData?.signedUrl || '';
+
+    if (signError || !documentUrl) {
+      await new Promise((r) => setTimeout(r, 500));
+      const retry = await supabase.storage
+        .from('household-documents')
+        .createSignedUrl(storagePath, 3600);
+      if (retry.error || !retry.data?.signedUrl) {
+        console.error('Signed URL failed twice:', signError, retry.error);
+        return null;
+      }
+      documentUrl = retry.data.signedUrl;
+    }
+
+    return { documentId, documentUrl };
   },
 
   async deleteScanDocument(documentId: string): Promise<void> {

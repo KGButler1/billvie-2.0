@@ -19,7 +19,7 @@ import TaxRelevanceFields, {
   emptyTaxRelevance,
 } from '@/components/tax/TaxRelevanceFields';
 import { TaxTagService } from '@/services/TaxTagService';
-import WhereToFindIt, { WhereToFindItValue } from '@/components/documents/WhereToFindIt';
+import AttachmentManager from '@/components/documents/AttachmentManager';
 
 interface AddDocumentModalProps {
   document?: HouseholdDocument;
@@ -65,12 +65,8 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
       : base;
   });
 
-  const [whereToFindIt, setWhereToFindIt] = useState<WhereToFindItValue>(() => ({
-    attachment: document?.attachment,
-    externalLink: document?.externalLink,
-    physicalLocation: document?.physicalLocation,
-  }));
-  const [storageFull, setStorageFull] = useState(false);
+  const [externalLink, setExternalLink] = useState(document?.externalLink ?? '');
+  const [physicalLocation, setPhysicalLocation] = useState(document?.physicalLocation ?? '');
   const whereToFindItRef = useRef<HTMLDivElement>(null);
 
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(() => {
@@ -194,9 +190,9 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
       importantDate: importantDate || undefined,
       importantDateLabel: importantDateLabel.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
-      attachment: whereToFindIt.attachment,
-      externalLink: whereToFindIt.externalLink,
-      physicalLocation: whereToFindIt.physicalLocation,
+      attachment: undefined,
+      externalLink: externalLink.trim() || undefined,
+      physicalLocation: physicalLocation.trim() || undefined,
     };
 
     if (document) {
@@ -368,20 +364,39 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
           </div>
 
           <div ref={whereToFindItRef}>
-            {storageFull && (
-              <div className="mb-3 rounded-xl border border-border bg-muted/50 p-3">
-                <p className="text-sm font-medium">There isn't room for another file right now</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Your record is saved and safe. For this one, try a link or a note about where the original is kept
-                  instead.
-                </p>
+            <label className="text-sm font-medium block mb-2">
+              Where to find it <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+
+            {document && (
+              <div className="mb-3">
+                <AttachmentManager ownerType="document" ownerId={document.id} />
               </div>
             )}
-            <WhereToFindIt
-              document={document}
-              onChange={setWhereToFindIt}
-              onStorageFull={() => { setStorageFull(true); setWhereToFindIt((v) => ({ ...v, attachment: undefined })); }}
-            />
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Link2 className="w-3.5 h-3.5" /> Link to it
+                </div>
+                <Input
+                  placeholder="https://..."
+                  value={externalLink}
+                  onChange={(e) => setExternalLink(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <span className="text-xs">or just say where it is</span>
+                </div>
+                <Input
+                  placeholder="e.g. Fireproof box in the study, top shelf"
+                  value={physicalLocation}
+                  onChange={(e) => setPhysicalLocation(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           <div>

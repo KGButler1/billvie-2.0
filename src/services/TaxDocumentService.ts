@@ -1,6 +1,7 @@
 import { TaxDocument, TaxCategory, CustomTaxCategory, DEFAULT_TAX_CATEGORIES, TAX_CATEGORY_LABELS, TAX_CATEGORY_ICONS } from '@/types/sharing';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { AttachmentService } from './AttachmentService';
 
 const CATEGORIES_KEY = 'billvie_tax_categories';
 const CUSTOM_YEARS_KEY = 'billvie_tax_custom_years';
@@ -140,6 +141,7 @@ export class TaxDocumentService {
   }
 
   static async permanentlyDeleteDocument(id: string): Promise<void> {
+    await AttachmentService.removeAllForOwner('tax_document', id);
     const { error } = await supabase.from('tax_documents').delete().eq('id', id);
     if (error) throw error;
     cache = cache.filter((d) => d.id !== id);

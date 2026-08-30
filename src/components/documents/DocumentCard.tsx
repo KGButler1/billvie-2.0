@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Shield, TrendingUp, Building, Landmark, FileText, File, Trash2, Paperclip, Link2, MapPin, CalendarClock, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { HouseholdDocument, DocumentType } from '@/types/document';
@@ -6,7 +7,8 @@ import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { PersonTagChips } from '@/components/people/PersonTags';
-
+import { AttachmentService, DocumentAttachment } from '@/services/AttachmentService';
+import DocumentViewerModal from './DocumentViewerModal';
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
   insurance: Shield,
@@ -35,13 +37,36 @@ interface DocumentCardProps {
 
 const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: DocumentCardProps) => {
   const Icon = typeIcons[document.type] || File;
-  const hasAttachment = !!(document.attachment || document.externalLink || document.physicalLocation);
+  const [attachments, setAttachments] = useState<DocumentAttachment[]>([]);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const atts = await AttachmentService.getForOwner('document', document.id);
+      if (!active) return;
+      setAttachments(atts);
+      if (atts.length > 0) {
+        const first = atts[0];
+        if (first.thumbnailPath) {
+          const url = await AttachmentService.getSignedUrl(first.thumbnailPath);
+          if (active) setThumbnailUrl(url);
+        } else if (first.mimeType.startsWith('image/')) {
+          const url = await AttachmentService.getSignedUrl(first.storagePath);
+          if (active) setThumbnailUrl(url);
+        }
+      }
+    })();
+    return () => { active = false; };
+  }, [document.id]);
+
+  const hasAttachment = attachments.length > 0 || !!document.externalLink || !!document.physicalLocation;
   const viewers = AccessService.getPeopleFor('documents', document.id).map((p) => firstName(p.name));
   const linkedBillId = DocumentLinkService.getLinkedBillId(document.id);
   const linkedBill = linkedBillId ? BillService.getBillById(linkedBillId) : undefined;
   const relatedCount = DocumentLinkService.getRelatedDocumentIds(document.id).length;
 
-  // Check if any Financial Snapshot entry links to this document
   const linkedFinancialLabel = (() => {
     const ins = FinancialInfoService.getInsurance().find((e) => e.linkedDocumentId === document.id);
     if (ins) return ins.provider;
@@ -56,16 +81,21 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
       className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 relative">
-          <Icon className="w-5 h-5 text-primary" />
-          {document.attachment && document.attachment.type.startsWith('image/') && (
-            <img
-              src={document.attachment.dataUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover rounded-lg"
-            />
+        <div
+          className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 relative overflow-hidden"
+          onClick={(e) => {
+            if (attachments.length > 0) {
+              e.stopPropagation();
+              setViewerIndex(0);
+            }
+          }}
+        >
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" />
+          ) : (
+            <Icon className="w-5 h-5 text-primary" />
           )}
-          {document.attachment && !document.attachment.type.startsWith('image/') && (
+          {attachments.length > 0 && !thumbnailUrl && (
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
               <Paperclip className="w-2 h-2 text-primary-foreground" />
             </span>
@@ -86,17 +116,14 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
             </button>
 
             <div className="mt-1 space-y-0.5">
-              {document.attachment && (
-                <a
-                  href={document.attachment.dataUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+              {attachments.length > 0 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setViewerIndex(0); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
                 >
                   <Paperclip className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">{document.attachment.name}</span>
-                </a>
+                  <span className="truncate">{attachments.length} file{attachments.length === 1 ? '' : 's'} attached</span>
+                </button>
               )}
               {document.externalLink && (
                 <a
@@ -104,7 +131,7 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 min-w-0"
                 >
                   <Link2 className="w-3 h-3 flex-shrink-0" /> Opens at provider
                 </a>
@@ -125,7 +152,6 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
               )}
             </div>
           </div>
-
 
           <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
 
@@ -186,9 +212,16 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
               <Trash2 className="w-3 h-3" /> Remove
             </button>
           </div>
-
         </div>
       </div>
+
+      {viewerIndex !== null && (
+        <DocumentViewerModal
+          attachments={attachments}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
+      )}
     </div>
   );
 };

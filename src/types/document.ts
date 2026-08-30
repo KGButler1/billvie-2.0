@@ -1,5 +1,3 @@
-import { FileAttachment } from '@/types/sharing';
-
 export type DocumentType = 'insurance' | 'investment' | 'account' | 'superannuation' | 'will' | 'other';
 
 export interface HouseholdDocument {
@@ -9,7 +7,6 @@ export interface HouseholdDocument {
   type: DocumentType;
   keyDetail?: string;
   notes?: string;
-  attachment?: FileAttachment;
   externalLink?: string;
   physicalLocation?: string;
   importantDate?: string; // ISO date — expiry, renewal, term end

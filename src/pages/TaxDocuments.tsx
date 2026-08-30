@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TaxDocument, TaxCategory, FileAttachment } from '@/types/sharing';
+import { TaxDocument, TaxCategory } from '@/types/sharing';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { TaxTagService } from '@/services/TaxTagService';
 import { UserService } from '@/services/UserService';
@@ -44,11 +44,11 @@ import { ManageYearsModal } from '@/components/tax/ManageYearsModal';
 import { TaxSharingPanel } from '@/components/tax/TaxSharingPanel';
 import TaxAccessSheet from '@/components/tax/TaxAccessSheet';
 import LinkTaxItemsSheet from '@/components/tax/LinkTaxItemsSheet';
-import { FileAttachmentInput, AttachmentBadge } from '@/components/shared/FileAttachmentInput';
 import { arrayToCSV, downloadCSV } from '@/utils/csvExport';
 import { cn } from '@/lib/utils';
-import { SkeletonRows } from '@/components/ui/skeleton';
+import AttachmentManager from '@/components/documents/AttachmentManager';
 
+import { SkeletonRows } from '@/components/ui/skeleton';
 type RowSource = 'tax' | 'bill' | 'document';
 
 interface TaxRow {
@@ -61,6 +61,7 @@ interface TaxRow {
   amount?: number;
   notes?: string;
   attachmentName?: string;
+  hasAttachment?: boolean;
   taxType: 'personal' | 'business';
   businessName?: string;
   carriedFromYear?: number;
@@ -83,6 +84,7 @@ const TaxDocuments = () => {
   const [categoriesVersion, setCategoriesVersion] = useState(0);
   const [accessTarget, setAccessTarget] = useState<{ id: string; title: string } | null>(null);
   const [linkingTaxDoc, setLinkingTaxDoc] = useState<TaxDocument | null>(null);
+  const [attachTarget, setAttachTarget] = useState<{ id: string; name: string } | null>(null);
   const [isLoading, setIsLoading] = useState(() => !TaxDocumentService.isLoaded());
 
   const settings = UserService.getSettings();
@@ -132,7 +134,8 @@ const TaxDocuments = () => {
         year: doc.year,
         amount: doc.amount,
         notes: doc.notes,
-        attachmentName: doc.attachment?.name,
+        attachmentName: undefined,
+        hasAttachment: false,
         taxType: 'personal' as const,
         taxDoc: doc,
       }));
@@ -370,13 +373,14 @@ const TaxDocuments = () => {
                                       </span>
                                     )}
                                     {row.businessName && <span>{row.businessName}</span>}
-                                    {row.attachmentName && (
-                                      <span className="inline-flex items-center gap-1 text-xs text-primary">
+                                    {row.source === 'tax' && (
+                                      <button
+                                        onClick={() => setAttachTarget({ id: row.itemId, name: row.name })}
+                                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                      >
                                         <Paperclip className="w-3 h-3" />
-                                        {row.attachmentName.length > 15
-                                          ? row.attachmentName.substring(0, 12) + '...'
-                                          : row.attachmentName}
-                                      </span>
+                                        Attach files
+                                      </button>
                                     )}
                                     {row.carriedFromYear && (
                                       <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full text-xs">
@@ -589,6 +593,17 @@ const TaxDocuments = () => {
         )}
       </AnimatePresence>
 
+      {/* Attachment sheet for a tax document */}
+      <AnimatePresence>
+        {attachTarget && (
+          <TaxAttachSheet
+            taxDocId={attachTarget.id}
+            taxDocName={attachTarget.name}
+            onClose={() => setAttachTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
@@ -636,7 +651,7 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
   const [year, setYear] = useState(new Date().getFullYear());
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
-  const [attachment, setAttachment] = useState<FileAttachment | undefined>(undefined);
+  const [createdDoc, setCreatedDoc] = useState<TaxDocument | null>(null);
 
   const allCategories = TaxDocumentService.getCategories();
   const availableYears = TaxDocumentService.getAvailableYears();
@@ -655,18 +670,17 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
   const handleSave = async () => {
     if (!name.trim() || selectedCategories.length === 0) return;
 
-    await TaxDocumentService.createDocument({
+    const created = await TaxDocumentService.createDocument({
       name: name.trim(),
       categories: selectedCategories,
       year,
       amount: amount ? parseFloat(amount) : undefined,
       notes: notes.trim() || undefined,
-      attachment,
       isTaxRelevant: true,
     });
 
     onSave();
-    onClose();
+    setCreatedDoc(created);
   };
 
   return (
@@ -765,14 +779,9 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Attach File (optional)</Label>
-            <FileAttachmentInput
-              attachment={attachment}
-              onAttach={setAttachment}
-              onRemove={() => setAttachment(undefined)}
-            />
-          </div>
+          <p className="text-xs text-muted-foreground">
+            You can attach files right after saving.
+          </p>
 
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
@@ -783,6 +792,54 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
             </Button>
           </div>
         </div>
+      </motion.div>
+
+      {createdDoc && (
+        <TaxAttachSheet
+          taxDocId={createdDoc.id}
+          taxDocName={createdDoc.name}
+          onClose={() => {
+            setCreatedDoc(null);
+            onClose();
+          }}
+        />
+      )}
+    </motion.div>
+  );
+};
+
+interface TaxAttachSheetProps {
+  taxDocId: string;
+  taxDocName: string;
+  onClose: () => void;
+}
+
+const TaxAttachSheet = ({ taxDocId, taxDocName, onClose }: TaxAttachSheetProps) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold">Attach files</h2>
+            <p className="text-sm text-muted-foreground truncate">{taxDocName}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <AttachmentManager ownerType="tax_document" ownerId={taxDocId} />
       </motion.div>
     </motion.div>
   );

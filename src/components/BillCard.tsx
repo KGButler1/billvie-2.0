@@ -11,6 +11,10 @@ import { PaymentCardService } from '@/services/PaymentCardService';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { DocumentService } from '@/services/DocumentService';
+import { AttachmentService } from '@/services/AttachmentService';
+import { useState, useEffect } from 'react';
+import DocumentViewerModal from '@/components/documents/DocumentViewerModal';
+import type { DocumentAttachment } from '@/services/AttachmentService';
 
 interface BillCardProps {
   bill: Bill;
@@ -41,6 +45,18 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
   const cardFlag = cardExpiryFlag(card);
   const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
   const linkedDoc = linkedDocId ? DocumentService.getById(linkedDocId) : undefined;
+  const [linkedAttachments, setLinkedAttachments] = useState<DocumentAttachment[]>([]);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!linkedDoc) { setLinkedAttachments([]); return; }
+    let active = true;
+    (async () => {
+      const atts = await AttachmentService.getForOwner('document', linkedDoc.id);
+      if (active) setLinkedAttachments(atts);
+    })();
+    return () => { active = false; };
+  }, [linkedDoc]);
 
 
   
@@ -59,6 +75,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
   };
 
   return (
+    <>
     <motion.div
       layout
       onClick={() => onOpen?.(bill)}
@@ -143,7 +160,13 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
           )}
 
           {linkedDoc && (
-            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1 min-w-0">
+            <p
+              className={cn(
+                'text-xs text-muted-foreground mt-1.5 flex items-center gap-1 min-w-0',
+                linkedAttachments.length > 0 && 'cursor-pointer hover:text-foreground transition-colors'
+              )}
+              onClick={linkedAttachments.length > 0 ? (e) => { e.stopPropagation(); setViewerIndex(0); } : undefined}
+            >
               <Link2 className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">Linked to {linkedDoc.title}</span>
             </p>
@@ -266,6 +289,15 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
         </div>
       </div>
     </motion.div>
+
+    {viewerIndex !== null && linkedAttachments.length > 0 && (
+      <DocumentViewerModal
+        attachments={linkedAttachments}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerIndex(null)}
+      />
+    )}
+    </>
   );
 };
 
