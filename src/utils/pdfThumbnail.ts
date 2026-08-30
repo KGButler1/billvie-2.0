@@ -32,13 +32,30 @@ export async function generatePdfThumbnail(file: File): Promise<Blob | null> {
   }
 }
 
+// pdf.js treats an ArrayBuffer passed to getDocument() as transferable: the
+// browser hands ownership of it to the worker thread, which detaches the
+// original buffer (it becomes zero-length) the moment that first call runs.
+// Calling getDocument() a second time with the same buffer, for example once
+// to count pages and again per page to render, silently fails on every call
+// after the first. The fix is to load the document exactly once and reuse
+// the resulting PDFDocumentProxy for every page.
+export type LoadedPdf = Awaited<ReturnType<typeof pdfjsLib.getDocument>['promise']>;
+
+export async function loadPdfDocument(data: ArrayBuffer): Promise<LoadedPdf | null> {
+  try {
+    return await pdfjsLib.getDocument({ data }).promise;
+  } catch (e) {
+    console.error('PDF load failed:', e);
+    return null;
+  }
+}
+
 export async function renderPdfPage(
-  pdfData: ArrayBuffer,
+  pdf: LoadedPdf,
   pageNumber: number,
   canvas: HTMLCanvasElement
 ): Promise<boolean> {
   try {
-    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
     if (pageNumber > pdf.numPages) return false;
     const page = await pdf.getPage(pageNumber);
 
@@ -57,14 +74,5 @@ export async function renderPdfPage(
   } catch (e) {
     console.error('PDF page render failed:', e);
     return false;
-  }
-}
-
-export async function getPdfPageCount(data: ArrayBuffer): Promise<number> {
-  try {
-    const pdf = await pdfjsLib.getDocument({ data }).promise;
-    return pdf.numPages;
-  } catch {
-    return 0;
   }
 }

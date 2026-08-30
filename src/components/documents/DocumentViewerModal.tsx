@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, ExternalLink, Trash2, FileText, CircleAlert as AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentAttachment, AttachmentService } from '@/services/AttachmentService';
-import { getPdfPageCount, renderPdfPage } from '@/utils/pdfThumbnail';
+import { loadPdfDocument, renderPdfPage, LoadedPdf } from '@/utils/pdfThumbnail';
 
 interface DocumentViewerModalProps {
   attachments: DocumentAttachment[];
@@ -15,7 +15,7 @@ interface DocumentViewerModalProps {
 const DocumentViewerModal = ({ attachments, initialIndex, onClose, onRemoved }: DocumentViewerModalProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [pdfDoc, setPdfDoc] = useState<LoadedPdf | null>(null);
   const [pdfPageCount, setPdfPageCount] = useState(0);
   const [pdfRenderedPages, setPdfRenderedPages] = useState<Set<number>>(new Set());
   const [pdfError, setPdfError] = useState(false);
@@ -23,6 +23,7 @@ const DocumentViewerModal = ({ attachments, initialIndex, onClose, onRemoved }: 
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const currentPdfRef = useRef<LoadedPdf | null>(null);
 
   const attachment = attachments[currentIndex];
   const isPdf = attachment?.mimeType === 'application/pdf';
@@ -32,10 +33,16 @@ const DocumentViewerModal = ({ attachments, initialIndex, onClose, onRemoved }: 
     if (!attachment) return;
     setIsLoading(true);
     setSignedUrl(null);
-    setPdfData(null);
+    setPdfDoc(null);
     setPdfPageCount(0);
     setPdfRenderedPages(new Set());
     setPdfError(false);
+
+    // Release the previous PDF's worker-side resources before loading the next one.
+    if (currentPdfRef.current) {
+      currentPdfRef.current.destroy();
+      currentPdfRef.current = null;
+    }
 
     const url = await AttachmentService.getSignedUrl(attachment.storagePath);
     if (!url) {
@@ -48,9 +55,14 @@ const DocumentViewerModal = ({ attachments, initialIndex, onClose, onRemoved }: 
       try {
         const res = await fetch(url);
         const buffer = await res.arrayBuffer();
-        setPdfData(buffer);
-        const count = await getPdfPageCount(buffer);
-        setPdfPageCount(count);
+        // Load the document once here, then reuse this same loaded object for
+        // every page. Calling getDocument() again per page would fail: pdf.js
+        // detaches the source ArrayBuffer on first use.
+        const pdf = await loadPdfDocument(buffer);
+        if (!pdf) throw new Error('PDF failed to load');
+        currentPdfRef.current = pdf;
+        setPdfDoc(pdf);
+        setPdfPageCount(pdf.numPages);
       } catch {
         setPdfError(true);
       }
@@ -62,9 +74,19 @@ const DocumentViewerModal = ({ attachments, initialIndex, onClose, onRemoved }: 
     loadAttachment();
   }, [loadAttachment]);
 
+  // Release the worker-side PDF resources when the viewer closes entirely.
+  useEffect(() => {
+    return () => {
+      if (currentPdfRef.current) {
+        currentPdfRef.current.destroy();
+        currentPdfRef.current = null;
+      }
+    };
+  }, []);
+
   // Lazy PDF page rendering on scroll
   const renderVisiblePages = useCallback(async () => {
-    if (!pdfData || pdfPageCount === 0) return;
+    if (!pdfDoc || pdfPageCount === 0) return;
     const container = scrollRef.current;
     if (!container) return;
 
@@ -78,19 +100,19 @@ const DocumentViewerModal = ({ attachments, initialIndex, onClose, onRemoved }: 
       const isVisible =
         rect.bottom > containerRect.top - 200 && rect.top < containerRect.bottom + 200;
       if (isVisible) {
-        const success = await renderPdfPage(pdfData, i + 1, canvas);
+        const success = await renderPdfPage(pdfDoc, i + 1, canvas);
         if (success) {
           setPdfRenderedPages((prev) => new Set(prev).add(i));
         }
       }
     }
-  }, [pdfData, pdfPageCount, pdfRenderedPages]);
+  }, [pdfDoc, pdfPageCount, pdfRenderedPages]);
 
   useEffect(() => {
-    if (!pdfData) return;
+    if (!pdfDoc) return;
     // Initial render of visible pages
     setTimeout(renderVisiblePages, 100);
-  }, [pdfData, renderVisiblePages]);
+  }, [pdfDoc, renderVisiblePages]);
 
   const handleScroll = () => renderVisiblePages();
 

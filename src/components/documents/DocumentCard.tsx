@@ -81,21 +81,9 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
       className="bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer"
     >
       <div className="flex items-start gap-3">
-        <div
-          className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 relative overflow-hidden"
-          onClick={(e) => {
-            if (attachments.length > 0) {
-              e.stopPropagation();
-              setViewerIndex(0);
-            }
-          }}
-        >
-          {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg" />
-          ) : (
-            <Icon className="w-5 h-5 text-primary" />
-          )}
-          {attachments.length > 0 && !thumbnailUrl && (
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 relative">
+          <Icon className="w-5 h-5 text-primary" />
+          {attachments.length > 0 && (
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
               <Paperclip className="w-2 h-2 text-primary-foreground" />
             </span>
@@ -213,6 +201,16 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
             </button>
           </div>
         </div>
+
+        {thumbnailUrl && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setViewerIndex(0); }}
+            className="flex-shrink-0 w-16 h-16 rounded-lg border-2 border-border shadow-sm overflow-hidden bg-muted hover:shadow-md hover:border-primary/40 transition-all"
+            aria-label="View attached file"
+          >
+            <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
+          </button>
+        )}
       </div>
 
       {viewerIndex !== null && (
