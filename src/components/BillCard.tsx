@@ -55,7 +55,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
     paid: 'Paid',
     due_soon: 'Due Soon',
     overdue: 'Overdue',
-    pending: 'Pending',
+    pending: 'Upcoming',
   };
 
   return (
@@ -202,7 +202,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
 
       {/* Actions */}
       <div
-        className="flex items-center gap-1 mt-4 pt-3 border-t border-border"
+        className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-border"
         onClick={(e) => e.stopPropagation()}
       >
         {isProcessing ? (
@@ -215,9 +215,9 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
             variant="ghost"
             size="sm"
             onClick={() => onEdit?.(bill)}
-            className="flex-1 text-primary hover:text-primary"
+            className="text-primary hover:text-primary px-2.5"
           >
-            <Pencil className="w-4 h-4 mr-2" />
+            <Pencil className="w-3.5 h-3.5 mr-1.5" />
             Enter manually
           </Button>
         ) : isPaid ? (
@@ -225,9 +225,9 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
             variant="ghost"
             size="sm"
             onClick={() => onMarkUnpaid(bill.id)}
-            className="flex-1 text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground px-2.5"
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
             Mark Unpaid
           </Button>
         ) : (
@@ -235,32 +235,35 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
             variant="ghost"
             size="sm"
             onClick={() => onMarkPaid(bill.id)}
-            className="flex-1 text-status-paid hover:bg-status-paid/10"
+            className="text-status-paid hover:bg-status-paid/10 px-2.5"
           >
-            <Check className="w-4 h-4 mr-2" />
+            <Check className="w-3.5 h-3.5 mr-1.5" />
             Mark as Handled
           </Button>
         )}
-        {onEdit && (
+
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {onEdit && !isFailed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Edit ${bill.name}`}
+              onClick={() => onEdit(bill)}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
-            size="sm"
-            aria-label={`Edit ${bill.name}`}
-            onClick={() => onEdit(bill)}
-            className="text-muted-foreground hover:text-foreground"
+            size="icon"
+            aria-label={`Delete ${bill.name}`}
+            onClick={() => onDelete(bill.id)}
+            className="h-8 w-8 text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10"
           >
-            <Pencil className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`Delete ${bill.name}`}
-          onClick={() => onDelete(bill.id)}
-          className="h-8 w-8 text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        </div>
       </div>
     </motion.div>
   );

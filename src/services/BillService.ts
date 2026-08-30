@@ -198,6 +198,8 @@ export class BillService {
     const updatedBill = await this.updateBill(id, {
       status: 'paid',
       paidDate: new Date().toISOString(),
+      extractionStatus: '',
+      extractionConfidence: undefined,
     });
 
     if (createNextRecurrence && bill.isRecurring && bill.dueDate && bill.recurringInterval && bill.recurringInterval !== 'one_time') {
