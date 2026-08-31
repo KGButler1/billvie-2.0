@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal, Lock } from 'lucide-react';
 import { openSearch } from '@/components/search/GlobalSearch';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
+import { UserService } from '@/services/UserService';
+import UpgradeModal from '@/components/UpgradeModal';
 
 import { cn } from '@/lib/utils';
 import {
@@ -30,6 +33,7 @@ const desktopNav = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/bills', icon: Receipt, label: 'Bills' },
   { path: '/documents', icon: FolderOpen, label: 'Documents' },
+  { path: '/financial', icon: Building, label: 'Snapshot' },
   { path: '/people', icon: Users, label: 'People' },
 ];
 
@@ -98,8 +102,20 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const demo = isDemoModeActive();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const isActive = (path: string) => location.pathname === demoPrefix(path);
+
+  const settings = UserService.getSettings();
+  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+
+  const handleNavClick = (path: string) => {
+    if (path === '/financial' && !isPaid) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    navigate(demoPrefix(path));
+  };
 
   return (
     <>
@@ -116,10 +132,11 @@ const BottomNav = () => {
           <nav className="flex items-center gap-1">
             {desktopNav.map(({ path, icon: Icon, label }) => {
               const active = isActive(path);
+              const locked = path === '/financial' && !isPaid;
               return (
-                <Link
+                <button
                   key={path}
-                  to={demoPrefix(path)}
+                  onClick={() => handleNavClick(path)}
                   className={cn(
                     'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors relative',
                     active
@@ -127,9 +144,13 @@ const BottomNav = () => {
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                   )}
                 >
-                  <Icon className="w-4 h-4" />
+                  {locked ? (
+                    <Lock className="w-3.5 h-3.5" />
+                  ) : (
+                    <Icon className="w-4 h-4" />
+                  )}
                   {label}
-                </Link>
+                </button>
               );
             })}
           </nav>
@@ -163,6 +184,23 @@ const BottomNav = () => {
           </div>
         </div>
       </header>
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="financial"
+          onUpgrade={() => {
+            UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
+            setShowUpgradeModal(false);
+            navigate(demoPrefix('/financial'));
+          }}
+          onPreviewAnyway={() => {
+            setShowUpgradeModal(false);
+            navigate(demoPrefix('/financial'));
+          }}
+        />
+      )}
 
       {/* Mobile bottom nav */}
       <nav className="bottom-nav lg:hidden">

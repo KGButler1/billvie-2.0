@@ -1,5 +1,6 @@
 import { BankAccount } from '@/types/bankAccount';
 import { BillService } from './BillService';
+import { FinancialInfoService } from './FinancialInfoService';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 
@@ -100,6 +101,18 @@ export const BankAccountService = {
 
   countLinkedBills(id: string): number {
     return BillService.getAllBills().filter((b) => b.bankAccountId === id).length;
+  },
+
+  countLinkedIncome(id: string): number {
+    return FinancialInfoService.getIncome().filter((i) => i.linkedBankAccountId === id).length;
+  },
+
+  countLinkedDebts(id: string): number {
+    return FinancialInfoService.getDebts().filter((d) => d.linkedBankAccountId === id).length;
+  },
+
+  countLinkedSuperannuation(id: string): number {
+    return FinancialInfoService.getSuperannuation().filter((s) => s.linkedBankAccountId === id).length;
   },
 
   async archive(id: string): Promise<void> {

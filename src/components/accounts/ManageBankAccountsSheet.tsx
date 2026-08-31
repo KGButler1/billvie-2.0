@@ -142,7 +142,15 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
           <>
             <div className="space-y-2">
               {accounts.map((account) => {
-                const linked = BankAccountService.countLinkedBills(account.id);
+                const bills = BankAccountService.countLinkedBills(account.id);
+                const income = BankAccountService.countLinkedIncome(account.id);
+                const debts = BankAccountService.countLinkedDebts(account.id);
+                const superannuation = BankAccountService.countLinkedSuperannuation(account.id);
+                const parts: string[] = [];
+                if (bills) parts.push(`${bills} ${bills === 1 ? 'bill' : 'bills'}`);
+                if (income) parts.push(`${income} income ${income === 1 ? 'source' : 'sources'}`);
+                if (debts) parts.push(`${debts} ${debts === 1 ? 'debt' : 'debts'}`);
+                if (superannuation) parts.push(`${superannuation} ${superannuation === 1 ? 'account' : 'accounts'}`);
                 return (
                   <div
                     key={account.id}
@@ -157,7 +165,7 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
                         {[
                           account.institution,
                           account.lastDigits && `···${account.lastDigits}`,
-                          `${linked} ${linked === 1 ? 'bill' : 'bills'}`,
+                          parts.join(', '),
                         ].filter(Boolean).join(' · ')}
                       </p>
                     </div>

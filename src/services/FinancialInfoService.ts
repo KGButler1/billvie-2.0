@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 
 export type InsuranceType = 'auto' | 'home' | 'life' | 'health' | 'travel' | 'other';
-export type DebtType = 'mortgage' | 'car' | 'personal' | 'other';
+export type DebtType = 'mortgage' | 'car' | 'personal' | 'credit_card' | 'other';
 export type AccountType = 'checking' | 'savings' | 'retirement' | 'investment' | 'other';
 
 export interface InsuranceEntry {
@@ -29,6 +29,7 @@ export interface SuperannuationEntry {
   notes?: string;
   contactInfo?: string;
   linkedDocumentId?: string;
+  linkedBankAccountId?: string;
 }
 
 export interface MiscFinancialEntry {
@@ -45,6 +46,7 @@ export interface IncomeSourceEntry {
   approximateAmount: number;
   notes?: string;
   linkedDocumentId?: string;
+  linkedBankAccountId?: string;
 }
 
 export interface DebtEntry {
@@ -54,6 +56,10 @@ export interface DebtEntry {
   approximateBalance: number;
   notes?: string;
   linkedDocumentId?: string;
+  linkedBankAccountId?: string;
+  linkedPaymentCardId?: string;
+  accountNumber?: string;
+  contactInfo?: string;
 }
 
 export interface FinancialData {
@@ -79,6 +85,7 @@ export const DEBT_TYPE_LABELS: Record<DebtType, string> = {
   mortgage: 'Mortgage',
   car: 'Car Loan',
   personal: 'Personal loan / owed to someone',
+  credit_card: 'Credit Card',
   other: 'Other',
 };
 
@@ -141,16 +148,22 @@ export class FinancialInfoService {
       estimatedBalance: Number(r.estimated_balance), notes: r.notes || undefined,
       contactInfo: r.contact_info || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
+      linkedBankAccountId: r.linked_bank_account_id || undefined,
     }));
     this.incomeCache = (incRes.data || []).map((r) => ({
       id: r.id, sourceName: r.source_name, approximateAmount: Number(r.approximate_amount),
       notes: r.notes || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
+      linkedBankAccountId: r.linked_bank_account_id || undefined,
     }));
     this.debtCache = (debtRes.data || []).map((r) => ({
       id: r.id, owedTo: r.owed_to, type: r.type, approximateBalance: Number(r.approximate_balance),
       notes: r.notes || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
+      linkedBankAccountId: r.linked_bank_account_id || undefined,
+      linkedPaymentCardId: r.linked_payment_card_id || undefined,
+      accountNumber: r.account_number || undefined,
+      contactInfo: r.contact_info || undefined,
     }));
     this.miscCache = (miscRes.data || []).map((r) => ({
       id: r.id, key: r.key, value: r.value, notes: r.notes || undefined,
@@ -245,6 +258,7 @@ export class FinancialInfoService {
       estimated_balance: entry.estimatedBalance,
       notes: entry.notes || null, contact_info: entry.contactInfo || null,
       linked_document_id: entry.linkedDocumentId || null,
+      linked_bank_account_id: entry.linkedBankAccountId || null,
     };
     const { data, error } = await supabase.from('financial_superannuation').insert(row).select().single();
     if (error) throw error;
@@ -254,6 +268,7 @@ export class FinancialInfoService {
       estimatedBalance: Number(data.estimated_balance), notes: data.notes || undefined,
       contactInfo: data.contact_info || undefined,
       linkedDocumentId: data.linked_document_id || undefined,
+      linkedBankAccountId: data.linked_bank_account_id || undefined,
     };
     this.superCache.push(newEntry);
     return newEntry;
@@ -273,6 +288,7 @@ export class FinancialInfoService {
     if (updates.contactInfo !== undefined) row.contact_info = updates.contactInfo || null;
     if (updates.accountType !== undefined) row.account_type = updates.accountType || null;
     if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
+    if (updates.linkedBankAccountId !== undefined) row.linked_bank_account_id = updates.linkedBankAccountId || null;
     const { error } = await supabase.from('financial_superannuation').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.superCache.findIndex((s) => s.id === id);
@@ -301,6 +317,7 @@ export class FinancialInfoService {
       household_id: householdId, source_name: entry.sourceName,
       approximate_amount: entry.approximateAmount, notes: entry.notes || null,
       linked_document_id: entry.linkedDocumentId || null,
+      linked_bank_account_id: entry.linkedBankAccountId || null,
     };
     const { data, error } = await supabase.from('financial_income').insert(row).select().single();
     if (error) throw error;
@@ -308,6 +325,7 @@ export class FinancialInfoService {
       id: data.id, sourceName: data.source_name, approximateAmount: Number(data.approximate_amount),
       notes: data.notes || undefined,
       linkedDocumentId: data.linked_document_id || undefined,
+      linkedBankAccountId: data.linked_bank_account_id || undefined,
     };
     this.incomeCache.push(newEntry);
     return newEntry;
@@ -319,6 +337,7 @@ export class FinancialInfoService {
     if (updates.approximateAmount !== undefined) row.approximate_amount = updates.approximateAmount;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
     if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
+    if (updates.linkedBankAccountId !== undefined) row.linked_bank_account_id = updates.linkedBankAccountId || null;
     const { error } = await supabase.from('financial_income').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.incomeCache.findIndex((i) => i.id === id);
@@ -347,6 +366,10 @@ export class FinancialInfoService {
       household_id: householdId, owed_to: entry.owedTo, type: entry.type,
       approximate_balance: entry.approximateBalance, notes: entry.notes || null,
       linked_document_id: entry.linkedDocumentId || null,
+      linked_bank_account_id: entry.linkedBankAccountId || null,
+      linked_payment_card_id: entry.linkedPaymentCardId || null,
+      account_number: entry.accountNumber || null,
+      contact_info: entry.contactInfo || null,
     };
     const { data, error } = await supabase.from('financial_debts').insert(row).select().single();
     if (error) throw error;
@@ -354,6 +377,10 @@ export class FinancialInfoService {
       id: data.id, owedTo: data.owed_to, type: data.type,
       approximateBalance: Number(data.approximate_balance), notes: data.notes || undefined,
       linkedDocumentId: data.linked_document_id || undefined,
+      linkedBankAccountId: data.linked_bank_account_id || undefined,
+      linkedPaymentCardId: data.linked_payment_card_id || undefined,
+      accountNumber: data.account_number || undefined,
+      contactInfo: data.contact_info || undefined,
     };
     this.debtCache.push(newEntry);
     return newEntry;
@@ -366,6 +393,10 @@ export class FinancialInfoService {
     if (updates.approximateBalance !== undefined) row.approximate_balance = updates.approximateBalance;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
     if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
+    if (updates.linkedBankAccountId !== undefined) row.linked_bank_account_id = updates.linkedBankAccountId || null;
+    if (updates.linkedPaymentCardId !== undefined) row.linked_payment_card_id = updates.linkedPaymentCardId || null;
+    if (updates.accountNumber !== undefined) row.account_number = updates.accountNumber || null;
+    if (updates.contactInfo !== undefined) row.contact_info = updates.contactInfo || null;
     const { error } = await supabase.from('financial_debts').update(row).eq('id', id);
     if (error) throw error;
     const idx = this.debtCache.findIndex((d) => d.id === id);

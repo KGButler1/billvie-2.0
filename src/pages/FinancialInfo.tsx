@@ -42,11 +42,14 @@ import { showMilestoneToast } from '@/components/MilestoneToast';
 import BottomNav from '@/components/BottomNav';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import { BillService } from '@/services/BillService';
+import { BankAccountService } from '@/services/BankAccountService';
 import { DocumentService } from '@/services/DocumentService';
 import DismissibleIntro from '@/components/DismissibleIntro';
 import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/utils/currency';
+import BankAccountPicker from '@/components/bills/BankAccountPicker';
+import CardPicker from '@/components/bills/CardPicker';
 
 const OverviewTab = ({
   insurance,
@@ -64,6 +67,11 @@ const OverviewTab = ({
   onDeleteIncome,
   onDeleteDebt,
   onDeleteMisc,
+  onAddInsurance,
+  onAddSuper,
+  onAddIncome,
+  onAddDebt,
+  onAddMisc,
 }: {
   insurance: InsuranceEntry[];
   superannuation: SuperannuationEntry[];
@@ -80,6 +88,11 @@ const OverviewTab = ({
   onDeleteIncome: (id: string) => Promise<void>;
   onDeleteDebt: (id: string) => Promise<void>;
   onDeleteMisc: (id: string) => Promise<void>;
+  onAddInsurance: () => void;
+  onAddSuper: () => void;
+  onAddIncome: () => void;
+  onAddDebt: () => void;
+  onAddMisc: () => void;
 }) => {
   const isEmpty =
     insurance.length === 0 &&
@@ -103,8 +116,11 @@ const OverviewTab = ({
       {/* Insurance */}
       {insurance.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Insurance
+            <button onClick={onAddInsurance} className="p-1 rounded-lg hover:bg-muted transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
           </h2>
           <div className="space-y-4">
             {insurance.map((entry) => (
@@ -122,8 +138,11 @@ const OverviewTab = ({
       {/* Accounts & Retirement */}
       {superannuation.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Accounts &amp; Retirement
+            <button onClick={onAddSuper} className="p-1 rounded-lg hover:bg-muted transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
           </h2>
           <div className="space-y-4">
             {superannuation.map((entry) => (
@@ -141,8 +160,11 @@ const OverviewTab = ({
       {/* Income */}
       {income.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Income
+            <button onClick={onAddIncome} className="p-1 rounded-lg hover:bg-muted transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
           </h2>
           <div className="space-y-4">
             {income.map((entry) => (
@@ -163,8 +185,11 @@ const OverviewTab = ({
       {/* Debts */}
       {debts.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Debts
+            <button onClick={onAddDebt} className="p-1 rounded-lg hover:bg-muted transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
           </h2>
           <div className="space-y-4">
             {debts.map((entry) => (
@@ -186,8 +211,11 @@ const OverviewTab = ({
       {/* Other */}
       {misc.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Other
+            <button onClick={onAddMisc} className="p-1 rounded-lg hover:bg-muted transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
           </h2>
           <div className="space-y-4">
             {misc.map((entry) => (
@@ -334,6 +362,11 @@ const FinancialInfo = () => {
                     onDeleteIncome={async (id) => { await FinancialInfoService.deleteIncome(id); loadData(); }}
                     onDeleteDebt={async (id) => { await FinancialInfoService.deleteDebt(id); loadData(); }}
                     onDeleteMisc={async (id) => { await FinancialInfoService.deleteMisc(id); loadData(); }}
+                    onAddInsurance={() => { setEditingItem(null); setShowInsuranceModal(true); }}
+                    onAddSuper={() => { setEditingItem(null); setShowSuperModal(true); }}
+                    onAddIncome={() => { setEditingItem(null); setShowIncomeModal(true); }}
+                    onAddDebt={() => { setEditingItem(null); setShowDebtModal(true); }}
+                    onAddMisc={() => { setEditingItem(null); setShowMiscModal(true); }}
                   />
                 </motion.div>
               )}
@@ -816,6 +849,7 @@ const SuperCard = ({
   onDelete: () => void;
 }) => {
   const linkedDoc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
+  const linkedAccount = entry.linkedBankAccountId ? BankAccountService.getById(entry.linkedBankAccountId) : undefined;
   return (
   <div className="bg-card border border-border rounded-xl p-4">
     <div className="flex justify-between items-start">
@@ -843,6 +877,11 @@ const SuperCard = ({
         </Button>
       </div>
     </div>
+    {linkedAccount && (
+      <span className="inline-flex items-center gap-1 mt-2 text-xs rounded-full border border-border bg-muted/60 px-2.5 py-1">
+        <Landmark className="w-3 h-3" /> Linked to {linkedAccount.nickname}
+      </span>
+    )}
     {linkedDoc && (
       <Link
         to="/documents"
@@ -1125,6 +1164,7 @@ const SuperModal = ({
   const [notes, setNotes] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+  const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1143,6 +1183,7 @@ const SuperModal = ({
         setContactInfo(entry.contactInfo || '');
         const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
         setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
+        setLinkedBankAccountId(entry.linkedBankAccountId || undefined);
       }
     } else {
       setFundName('');
@@ -1152,6 +1193,7 @@ const SuperModal = ({
       setNotes('');
       setContactInfo('');
       setLinkedDocument(null);
+      setLinkedBankAccountId(undefined);
     }
   }, [editingId, isOpen]);
 
@@ -1166,6 +1208,7 @@ const SuperModal = ({
       notes: notes || undefined,
       contactInfo: contactInfo || undefined,
       linkedDocumentId: linkedDocument?.id,
+      linkedBankAccountId,
     };
 
     if (editingId) {
@@ -1203,6 +1246,13 @@ const SuperModal = ({
           <div>
             <Label>Account Number (optional)</Label>
             <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="12345678" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Linked bank account (optional)</Label>
+            <BankAccountPicker value={linkedBankAccountId} onChange={setLinkedBankAccountId} />
+            <p className="text-xs text-muted-foreground mt-1">
+              If bills are already paid from this account, link it here so they stay in sync.
+            </p>
           </div>
           <div>
             <Label>Estimated Balance</Label>
@@ -1349,6 +1399,7 @@ const IncomeModal = ({
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+  const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1364,12 +1415,14 @@ const IncomeModal = ({
         setNotes(entry.notes || '');
         const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
         setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
+        setLinkedBankAccountId(entry.linkedBankAccountId || undefined);
       }
     } else {
       setSourceName('');
       setAmount('');
       setNotes('');
       setLinkedDocument(null);
+      setLinkedBankAccountId(undefined);
     }
   }, [editingId, isOpen]);
 
@@ -1380,6 +1433,7 @@ const IncomeModal = ({
       approximateAmount: parseFloat(amount),
       notes: notes || undefined,
       linkedDocumentId: linkedDocument?.id,
+      linkedBankAccountId,
     };
     if (editingId) {
       await FinancialInfoService.updateIncome(editingId, data);
@@ -1409,6 +1463,13 @@ const IncomeModal = ({
           <div>
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. W-2, direct deposit to joint account" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Goes into (optional)</Label>
+            <BankAccountPicker value={linkedBankAccountId} onChange={setLinkedBankAccountId} />
+            <p className="text-xs text-muted-foreground mt-1">
+              Which account this income is deposited into, if you've already added one.
+            </p>
           </div>
           <div>
             <Label className="mb-1.5 block">Linked document (optional)</Label>
@@ -1444,6 +1505,10 @@ const DebtModal = ({
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+  const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
+  const [linkedPaymentCardId, setLinkedPaymentCardId] = useState<string | undefined>(undefined);
+  const [accountNumber, setAccountNumber] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1460,6 +1525,10 @@ const DebtModal = ({
         setNotes(entry.notes || '');
         const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
         setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
+        setLinkedBankAccountId(entry.linkedBankAccountId || undefined);
+        setLinkedPaymentCardId(entry.linkedPaymentCardId || undefined);
+        setAccountNumber(entry.accountNumber || '');
+        setContactInfo(entry.contactInfo || '');
       }
     } else {
       setOwedTo('');
@@ -1467,6 +1536,10 @@ const DebtModal = ({
       setBalance('');
       setNotes('');
       setLinkedDocument(null);
+      setLinkedBankAccountId(undefined);
+      setLinkedPaymentCardId(undefined);
+      setAccountNumber('');
+      setContactInfo('');
     }
   }, [editingId, isOpen]);
 
@@ -1478,6 +1551,10 @@ const DebtModal = ({
       approximateBalance: parseFloat(balance),
       notes: notes || undefined,
       linkedDocumentId: linkedDocument?.id,
+      linkedBankAccountId,
+      linkedPaymentCardId: type === 'credit_card' ? linkedPaymentCardId : undefined,
+      accountNumber: accountNumber || undefined,
+      contactInfo: contactInfo || undefined,
     };
     if (editingId) {
       await FinancialInfoService.updateDebt(editingId, data);
@@ -1517,6 +1594,28 @@ const DebtModal = ({
             <Label>Approximate Balance</Label>
             <Input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="$0" />
           </div>
+          <div>
+            <Label>Account number (optional)</Label>
+            <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="e.g. last 4 digits or reference number" />
+          </div>
+          <div>
+            <Label>Who to contact (optional)</Label>
+            <Input value={contactInfo} onChange={(e) => setContactInfo(e.target.value)} placeholder="e.g. lender phone, online portal" />
+          </div>
+          {type === 'credit_card' ? (
+            <div>
+              <Label className="mb-1.5 block">Linked card (optional)</Label>
+              <CardPicker value={linkedPaymentCardId} onChange={setLinkedPaymentCardId} />
+            </div>
+          ) : (
+            <div>
+              <Label className="mb-1.5 block">Paid from (optional)</Label>
+              <BankAccountPicker value={linkedBankAccountId} onChange={setLinkedBankAccountId} />
+              <p className="text-xs text-muted-foreground mt-1">
+                If bills are already paid from this account, link it here so they stay in sync.
+              </p>
+            </div>
+          )}
           <div>
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. refinanced 2024, autopay from checking" />
