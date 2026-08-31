@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 import { BillCategory, CATEGORY_LABELS, CATEGORY_COLORS } from '@/types/bill';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/utils/currency';
 
 interface SpendingChartProps {
   spending: Record<BillCategory, number>;
@@ -50,7 +51,7 @@ const SpendingChart = ({ spending }: SpendingChartProps) => {
                 tickLine={false}
               />
               <Tooltip
-                formatter={(value: number) => [`${value.toFixed(2)}`, 'Amount']}
+                formatter={(value: number) => [formatCurrency(value), 'Amount']}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',

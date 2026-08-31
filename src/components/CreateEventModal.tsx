@@ -102,7 +102,7 @@ const CreateEventModal = ({ onAdd, onClose }: CreateEventModalProps) => {
                 id="budget"
                 type="number"
                 step="0.01"
-                placeholder="0.00"
+                placeholder="0"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 className="h-12 pl-7"

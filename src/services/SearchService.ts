@@ -8,6 +8,7 @@ import { PaymentCardService } from '@/services/PaymentCardService';
 import { CATEGORY_KEYWORDS } from '@/utils/billCategorizer';
 import { CATEGORY_LABELS, BillCategory } from '@/types/bill';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
+import { formatCurrency } from '@/utils/currency';
 
 export type SearchResultType =
   | 'bill'
@@ -91,7 +92,7 @@ export const SearchService = {
           id: bill.id,
           type: 'bill',
           title: bill.name,
-          subtitle: bill.amount !== undefined ? `$${bill.amount.toFixed(2)}` : undefined,
+          subtitle: bill.amount !== undefined ? formatCurrency(bill.amount) : undefined,
           path: '/bills',
           score,
           matchedVia,

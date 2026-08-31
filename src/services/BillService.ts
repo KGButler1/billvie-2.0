@@ -56,6 +56,7 @@ function rowToBill(row: Record<string, unknown>): Bill {
     recurringInterval: row.recurring_interval as RecurringInterval | undefined,
     paymentMethod: row.payment_method as string | undefined,
     paymentCardId: row.payment_card_id as string | undefined,
+    bankAccountId: row.bank_account_id as string | undefined,
     category: row.category as BillCategory | string | undefined,
     notes: row.notes as string | undefined,
     isAutoDebited: row.is_auto_debited as boolean | undefined,
@@ -85,6 +86,7 @@ function billToRow(bill: Partial<Bill>): Record<string, unknown> {
   if (bill.recurringInterval !== undefined) row.recurring_interval = bill.recurringInterval;
   if (bill.paymentMethod !== undefined) row.payment_method = bill.paymentMethod || null;
   if (bill.paymentCardId !== undefined) row.payment_card_id = bill.paymentCardId || null;
+  if (bill.bankAccountId !== undefined) row.bank_account_id = bill.bankAccountId || null;
   if (bill.category !== undefined) row.category = bill.category || null;
   if (bill.notes !== undefined) row.notes = bill.notes || null;
   if (bill.isAutoDebited !== undefined) row.is_auto_debited = bill.isAutoDebited;

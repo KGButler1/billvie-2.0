@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2 } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2 } from 'lucide-react';
 import { downloadBackup } from '@/utils/dataBackup';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { UserSettings } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
 import ManageCardsSheet from '@/components/cards/ManageCardsSheet';
+import ManageBankAccountsSheet from '@/components/accounts/ManageBankAccountsSheet';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/hooks/useProfile';
@@ -28,6 +29,7 @@ const Settings = () => {
   const [settings, setSettings] = useState<UserSettings>(UserService.getSettings());
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showCardsSheet, setShowCardsSheet] = useState(false);
+  const [showBankAccountsSheet, setShowBankAccountsSheet] = useState(false);
 
   useEffect(() => {
     // Apply theme on mount
@@ -165,6 +167,19 @@ const Settings = () => {
                 ))}
               </div>
             </div>
+            <div className="p-4 flex items-center justify-between border-t border-border">
+              <div>
+                <Label htmlFor="show-cents" className="font-medium">Show cents</Label>
+                <p className="text-sm text-muted-foreground">
+                  Off shows whole dollars where possible; amounts with real cents still show them
+                </p>
+              </div>
+              <Switch
+                id="show-cents"
+                checked={settings.showCents ?? false}
+                onCheckedChange={(checked) => setSettings(UserService.saveSettings({ showCents: checked }))}
+              />
+            </div>
           </div>
         </section>
 
@@ -297,6 +312,23 @@ const Settings = () => {
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
 
+            {/* Bank Accounts — a sheet, not a route */}
+            <button
+              onClick={() => setShowBankAccountsSheet(true)}
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Landmark className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Bank Accounts</p>
+                <p className="text-sm text-muted-foreground">
+                  So everyone knows which account each bill comes from
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
             {/* Recently Deleted — never paywalled */}
             <button
               onClick={() => navigate('/recently-deleted')}
@@ -365,6 +397,10 @@ const Settings = () => {
 
       <AnimatePresence>
         {showCardsSheet && <ManageCardsSheet onClose={() => setShowCardsSheet(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBankAccountsSheet && <ManageBankAccountsSheet onClose={() => setShowBankAccountsSheet(false)} />}
       </AnimatePresence>
 
       <BottomNav />

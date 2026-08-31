@@ -6,6 +6,7 @@ import { RECURRING_LABELS, RecurringInterval } from '@/types/bill';
 import { Bill } from '@/types/bill';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/utils/currency';
 
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : undefined;
@@ -60,7 +61,7 @@ const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
               <p className="text-xs text-muted-foreground truncate">{metaLine(bill)}</p>
             </div>
             {bill.amount != null && (
-              <p className="text-sm font-medium flex-shrink-0">${bill.amount.toFixed(2)}</p>
+              <p className="text-sm font-medium flex-shrink-0">{formatCurrency(bill.amount)}</p>
             )}
           </button>
         ))}

@@ -30,6 +30,7 @@ export interface Bill {
   recurringInterval?: RecurringInterval;
   paymentMethod?: PaymentMethod | string; // Supports custom payment methods
   paymentCardId?: string; // References a PaymentCard — set only when paid by credit card
+  bankAccountId?: string; // References a BankAccount — set for account-based payment methods
   category?: BillCategory | string; // Supports custom categories
   notes?: string;
   taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
@@ -84,6 +85,7 @@ export interface UserSettings {
   userType: 'anonymous' | 'free' | 'paid' | 'accountant';
   hasSeenOnboarding: boolean;
   hasEventsAccess: boolean;
+  showCents?: boolean; // Currency display preference. Default false: whole dollars unless the amount has real cents.
   theme: 'light' | 'dark' | 'system';
   // Only used to pre-select a sensible default tax year. 7 = July (AU financial year).
   taxYearStartMonth?: 1 | 7;

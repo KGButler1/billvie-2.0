@@ -10,6 +10,7 @@ import { TaxTagService } from '@/services/TaxTagService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
+import { formatCurrency } from '@/utils/currency';
 import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
 import BillList from '@/components/bills/BillList';
@@ -217,7 +218,7 @@ const Bills = () => {
 
         {/* Totals strip */}
         <p className="text-sm text-muted-foreground mb-4">
-          <span>${upcomingTotal.toFixed(2)} coming up</span>
+          <span>{formatCurrency(upcomingTotal)} coming up</span>
           {' · '}
           <Link to="/financial" className="hover:text-foreground underline-offset-2 hover:underline">
             {insuranceCount} insurance {insuranceCount === 1 ? 'policy' : 'policies'}

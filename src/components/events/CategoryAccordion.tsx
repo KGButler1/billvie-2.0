@@ -5,6 +5,7 @@ import { CategorySummary, EXPENSE_UNIT_LABELS } from '@/types/event';
 import ExpenseItem from './ExpenseItem';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/utils/currency';
 
 interface CategoryAccordionProps {
   summary: CategorySummary;
@@ -57,7 +58,7 @@ const CategoryAccordion = ({
 
         <div className="text-right">
           <span className="font-bold text-lg">
-            ${summary.totalAmount.toLocaleString()}
+            {formatCurrency(summary.totalAmount)}
           </span>
           <div className="text-xs text-muted-foreground">
             {summary.paidCount}/{summary.itemCount} paid

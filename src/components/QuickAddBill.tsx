@@ -25,6 +25,7 @@ import {
 } from '@/types/bill';
 import { PersonTagPicker } from '@/components/people/PersonTags';
 import CardPicker from '@/components/bills/CardPicker';
+import BankAccountPicker from '@/components/bills/BankAccountPicker';
 import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { DocumentService } from '@/services/DocumentService';
@@ -65,6 +66,14 @@ const MONTHS = [
   { value: 11, label: 'December' },
 ];
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+// Builds a YYYY-MM-DD string directly from components — never goes through a
+// local-timezone Date object, so it can't shift by a day when converted to UTC.
+function toDateOnlyString(year: number, month: number, day: number): string {
+  return `${year}-${pad2(month + 1)}-${pad2(day)}`;
+}
+
 function computeRecurringDueDate(
   interval: RecurringInterval,
   dayOfMonth: number,
@@ -92,7 +101,7 @@ function computeRecurringDueDate(
       }
     }
     const d = clampDay(targetYear, targetMonth, dayOfMonth);
-    return new Date(targetYear, targetMonth, d).toISOString().slice(0, 10);
+    return toDateOnlyString(targetYear, targetMonth, d);
   }
 
   if (interval === 'quarterly' || interval === 'yearly') {
@@ -105,7 +114,7 @@ function computeRecurringDueDate(
       targetYear = year + 1;
     }
     const d2 = clampDay(targetYear, month, dayOfMonth);
-    return new Date(targetYear, month, d2).toISOString().slice(0, 10);
+    return toDateOnlyString(targetYear, month, d2);
   }
 
   return undefined;
@@ -136,6 +145,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
     initialBill?.paymentMethod ?? ''
   );
   const [paymentCardId, setPaymentCardId] = useState<string | undefined>(initialBill?.paymentCardId);
+  const [bankAccountId, setBankAccountId] = useState<string | undefined>(initialBill?.bankAccountId);
   const [isAutoDebited, setIsAutoDebited] = useState(initialBill?.isAutoDebited ?? false);
   const [category, setCategory] = useState<BillCategory | string>(initialBill?.category ?? '');
   const [notes, setNotes] = useState(initialBill?.notes ?? '');
@@ -265,6 +275,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
       recurringInterval: isRecurring ? recurringInterval : undefined,
       paymentMethod: paymentMethod || undefined,
       paymentCardId: paymentMethod === 'credit_card' ? paymentCardId : undefined,
+      bankAccountId: paymentMethod && paymentMethod !== 'credit_card' && paymentMethod !== 'cash' && paymentMethod !== 'check' ? bankAccountId : undefined,
       isAutoDebited,
       category: category || undefined,
       notes: notes.trim() || undefined,
@@ -348,7 +359,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
                 id="amount"
                 type="number"
                 step="0.01"
-                placeholder="0.00"
+                placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className={cn('h-12 pl-7', isLowConfidence('amount') && 'border-amber-400')}
@@ -596,6 +607,15 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
               <CardPicker value={paymentCardId} onChange={setPaymentCardId} />
             </div>
           )}
+          {paymentMethod &&
+            paymentMethod !== 'credit_card' &&
+            paymentMethod !== 'cash' &&
+            paymentMethod !== 'check' && (
+              <div className="space-y-2">
+                <Label>Which account?</Label>
+                <BankAccountPicker value={bankAccountId} onChange={setBankAccountId} />
+              </div>
+            )}
 
           {/* Auto-debited toggle — sits with the payment-mechanics cluster */}
           <div className="flex items-center justify-between py-2">

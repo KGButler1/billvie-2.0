@@ -16,11 +16,9 @@ import {
   DEBT_TYPE_LABELS,
 } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
+import { formatCurrency } from '@/utils/currency';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
 import UpgradeModal from '@/components/UpgradeModal';
-
-const money = (n?: number) =>
-  typeof n === 'number' ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—';
 
 const titleCase = (s?: string) =>
   s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—';
@@ -155,7 +153,7 @@ const HouseholdSummary = () => {
                         {catBills.map((b) => (
                           <tr key={b.id} className="border-t border-border/60">
                             <td className="py-1">{b.name}</td>
-                            <td className="py-1">{money(b.amount)}</td>
+                            <td className="py-1">{formatCurrency(b.amount)}</td>
                             <td className="py-1">
                               {b.isRecurring ? titleCase(b.recurringInterval) : 'One time'}
                             </td>
@@ -173,7 +171,7 @@ const HouseholdSummary = () => {
                         <tr className="border-t border-border font-medium">
                           <td className="py-1">Subtotal</td>
                           <td className="py-1" colSpan={5}>
-                            {money(subtotal)}
+                            {formatCurrency(subtotal)}
                           </td>
                         </tr>
                       </tbody>
@@ -204,14 +202,14 @@ const HouseholdSummary = () => {
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(event.startDate)} – {formatDate(event.endDate)} · Committed{' '}
-                      {money(committed)} · Paid {money(paid)}
+                      {formatCurrency(committed)} · Paid {formatCurrency(paid)}
                     </p>
                     {expenses.length > 0 && (
                       <ul className="mt-2 text-sm space-y-1">
                         {expenses.map((e) => (
                           <li key={e.id} className="border-t border-border/60 pt-1">
                             {e.name}
-                            {e.vendor ? ` — ${e.vendor}` : ''} · {money(e.amount)} ·{' '}
+                            {e.vendor ? ` — ${e.vendor}` : ''} · {formatCurrency(e.amount)} ·{' '}
                             {e.isPaid ? 'Paid' : 'Not paid'}
                             {e.isCancellable !== 'no' && (
                               <span className="text-muted-foreground">
@@ -242,9 +240,9 @@ const HouseholdSummary = () => {
                   {insurance.map((i) => {
                     const bill = i.linkedBillId ? BillService.getBillById(i.linkedBillId) : undefined;
                     const cost = bill
-                      ? `${money(bill.amount)}${bill.recurringInterval ? ` ${bill.recurringInterval.replace('_', ' ')}` : ''}`
+                      ? `${formatCurrency(bill.amount)}${bill.recurringInterval ? ` ${bill.recurringInterval.replace('_', ' ')}` : ''}`
                       : i.premium !== undefined
-                        ? `${money(i.premium)}${i.premiumFrequency ? ` ${i.premiumFrequency}` : ''}`
+                        ? `${formatCurrency(i.premium)}${i.premiumFrequency ? ` ${i.premiumFrequency}` : ''}`
                         : null;
                     return (
                       <li key={i.id} className="border-t border-border/60 pt-1">
@@ -271,7 +269,7 @@ const HouseholdSummary = () => {
                 <ul className="space-y-1">
                   {superannuation.map((s) => (
                     <li key={s.id} className="border-t border-border/60 pt-1">
-                      {s.fundName} · {money(s.estimatedBalance)}
+                      {s.fundName} · {formatCurrency(s.estimatedBalance)}
                       {s.contactInfo ? ` · Contact: ${s.contactInfo}` : ''}
                       {s.notes ? ` · ${s.notes}` : ''}
                     </li>
@@ -288,7 +286,7 @@ const HouseholdSummary = () => {
                 <ul className="space-y-1">
                   {income.map((i) => (
                     <li key={i.id} className="border-t border-border/60 pt-1">
-                      {i.sourceName} · {money(i.approximateAmount)}
+                      {i.sourceName} · {formatCurrency(i.approximateAmount)}
                       {i.notes ? ` · ${i.notes}` : ''}
                     </li>
                   ))}
@@ -304,7 +302,7 @@ const HouseholdSummary = () => {
                 <ul className="space-y-1">
                   {debts.map((d) => (
                     <li key={d.id} className="border-t border-border/60 pt-1">
-                      {d.owedTo} — {DEBT_TYPE_LABELS[d.type]} · {money(d.approximateBalance)}
+                      {d.owedTo} — {DEBT_TYPE_LABELS[d.type]} · {formatCurrency(d.approximateBalance)}
                       {d.notes ? ` · ${d.notes}` : ''}
                     </li>
                   ))}

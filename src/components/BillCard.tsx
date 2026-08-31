@@ -8,10 +8,12 @@ import CategoryBadge from './CategoryBadge';
 import { PersonTagChips } from '@/components/people/PersonTags';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 import { PaymentCardService } from '@/services/PaymentCardService';
+import { BankAccountService } from '@/services/BankAccountService';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { DocumentService } from '@/services/DocumentService';
 import { AttachmentService } from '@/services/AttachmentService';
+import { formatCurrency } from '@/utils/currency';
 import { useState, useEffect } from 'react';
 import DocumentViewerModal from '@/components/documents/DocumentViewerModal';
 import type { DocumentAttachment } from '@/services/AttachmentService';
@@ -42,6 +44,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
   const needsReview = bill.extractionStatus === 'needs_review';
   const isFailed = bill.extractionStatus === 'failed';
   const card = PaymentCardService.getById(bill.paymentCardId);
+  const account = BankAccountService.getById(bill.bankAccountId);
   const cardFlag = cardExpiryFlag(card);
   const linkedDocId = DocumentLinkService.getLinkedDocumentIdForBill(bill.id);
   const linkedDoc = linkedDocId ? DocumentService.getById(linkedDocId) : undefined;
@@ -127,7 +130,7 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
               <>
                 {bill.amount !== undefined && (
                   <span className="font-medium text-foreground">
-                    ${bill.amount.toFixed(2)}
+                    {formatCurrency(bill.amount)}
                   </span>
                 )}
                 {bill.dueDate && (
@@ -145,6 +148,9 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
             )}
             {card && (
               <span className="text-xs">{card.nickname}</span>
+            )}
+            {account && (
+              <span className="text-xs">{account.nickname}</span>
             )}
             {bill.isRecurring && bill.recurringInterval && (
               <span className="text-xs">

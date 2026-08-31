@@ -6,6 +6,7 @@ import { EventExpenseService } from '@/services/EventExpenseService';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { formatCurrency } from '@/utils/currency';
 
 interface ExpenseItemProps {
   expense: EventExpenseExtended;
@@ -100,7 +101,7 @@ const ExpenseItem = ({ expense, eventId, onUpdate, onEdit }: ExpenseItemProps) =
             'font-bold',
             expense.isPaid && 'text-muted-foreground'
           )}>
-            ${expense.amount.toLocaleString()}
+            {formatCurrency(expense.amount)}
           </div>
           <div className="flex items-center gap-1 justify-end">
             {expense.isPaid ? (

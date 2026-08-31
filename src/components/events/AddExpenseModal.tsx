@@ -10,6 +10,7 @@ import {
 } from '@/types/event';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
+import { formatCurrency } from '@/utils/currency';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -249,7 +250,7 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
               <Input
                 type="number"
                 step="0.01"
-                placeholder="0.00"
+                placeholder="0"
                 value={formData.amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
                 className={cn('pl-7', errors.amount && 'border-destructive')}
@@ -285,7 +286,7 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
             </div>
             {perUnitCost && perUnitCost > 0 && (
               <p className="text-sm text-primary">
-                Avg per {formData.quantityUnit.slice(0, -1)}: ${perUnitCost.toFixed(2)}
+                Avg per {formData.quantityUnit.slice(0, -1)}: {formatCurrency(perUnitCost, { showCents: true })}
               </p>
             )}
           </div>

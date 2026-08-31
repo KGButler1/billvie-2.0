@@ -1,17 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Users, 
-  UserPlus, 
-  Eye, 
-  Clock,
-  CheckCircle,
-  XCircle,
-  Copy,
-  Check,
-  Building
-} from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Eye, Clock, CircleCheck as CheckCircle, Circle as XCircle, Copy, Check, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +13,7 @@ import { Bill } from '@/types/bill';
 import { HouseholdDocument } from '@/types/document';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/utils/currency';
 
 const AccountantPortal = () => {
   const navigate = useNavigate();
@@ -363,7 +353,7 @@ const ClientTaxView = ({ client, onBack }: ClientTaxViewProps) => {
           <>
             <div className="bg-card rounded-xl border border-border p-4 mb-6">
               <p className="text-sm text-muted-foreground">{currentYear} total</p>
-              <p className="text-3xl font-semibold">${total.toLocaleString()}</p>
+              <p className="text-3xl font-semibold">{formatCurrency(total)}</p>
               <p className="text-xs text-muted-foreground mt-1">{rows.length} items shared</p>
             </div>
 
@@ -379,7 +369,7 @@ const ClientTaxView = ({ client, onBack }: ClientTaxViewProps) => {
                       <p className="text-sm text-muted-foreground">
                         {row.categories.map(categoryLabel).join(', ')}
                         {row.businessName && ` • ${row.businessName}`}
-                        {row.amount !== undefined && ` • $${row.amount.toLocaleString()}`}
+                        {row.amount !== undefined && ` • ${formatCurrency(row.amount)}`}
                       </p>
                       {row.notes && (
                         <p className="text-sm text-muted-foreground mt-1">{row.notes}</p>

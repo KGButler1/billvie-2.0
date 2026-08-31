@@ -2,6 +2,7 @@ import { BillService } from './BillService';
 import { DocumentService } from './DocumentService';
 import { EventService } from './EventService';
 import { PaymentCardService } from './PaymentCardService';
+import { BankAccountService } from './BankAccountService';
 import { KeyPeopleService } from './KeyPeopleService';
 import { PeopleService } from './PeopleService';
 import { AccessService } from './AccessService';
@@ -22,6 +23,7 @@ export async function refreshAllData(): Promise<void> {
     DocumentService.refresh(),
     EventService.refresh(),
     PaymentCardService.refresh(),
+    BankAccountService.refresh(),
     KeyPeopleService.refresh(),
     PeopleService.refresh(),
     AccessService.refresh(),

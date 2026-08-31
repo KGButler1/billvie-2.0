@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   userType: 'anonymous',
   hasSeenOnboarding: false,
   hasEventsAccess: false,
+  showCents: false,
   theme: 'light',
 };
 

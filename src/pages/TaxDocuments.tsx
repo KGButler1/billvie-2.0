@@ -49,6 +49,7 @@ import { cn } from '@/lib/utils';
 import AttachmentManager from '@/components/documents/AttachmentManager';
 
 import { SkeletonRows } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/utils/currency';
 type RowSource = 'tax' | 'bill' | 'document';
 
 interface TaxRow {
@@ -281,7 +282,7 @@ const TaxDocuments = () => {
               {rows.length > 0 && (
                 <div className="bg-card rounded-xl border border-border p-4 mb-6">
                   <p className="text-sm text-muted-foreground">{yearFilter} total</p>
-                  <p className="text-3xl font-semibold">${grandTotal.toLocaleString()}</p>
+                  <p className="text-3xl font-semibold">{formatCurrency(grandTotal)}</p>
                   {unpricedCount > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       {unpricedCount} {unpricedCount === 1 ? 'item has' : 'items have'} no amount — counted,
@@ -293,11 +294,11 @@ const TaxDocuments = () => {
                     <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
                       <div>
                         <p className="text-xs text-muted-foreground">Personal</p>
-                        <p className="font-medium">${personalTotal.toLocaleString()}</p>
+                        <p className="font-medium">{formatCurrency(personalTotal)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Business</p>
-                        <p className="font-medium">${businessTotal.toLocaleString()}</p>
+                        <p className="font-medium">{formatCurrency(businessTotal)}</p>
                       </div>
                     </div>
                   )}
@@ -308,7 +309,7 @@ const TaxDocuments = () => {
                         <span>{getCategoryIcon(cat)}</span>
                         <span className="text-muted-foreground flex-1 truncate">{getCategoryLabel(cat)}</span>
                         <span className="font-medium">
-                          ${catRows.reduce((s, r) => s + (r.amount ?? 0), 0).toLocaleString()}
+                          {formatCurrency(catRows.reduce((s, r) => s + (r.amount ?? 0), 0))}
                         </span>
                       </div>
                     ))}
@@ -369,7 +370,7 @@ const TaxDocuments = () => {
                                     </div>
                                     {row.amount !== undefined && (
                                       <span className="font-medium text-foreground">
-                                        ${row.amount.toLocaleString()}
+                                        {formatCurrency(row.amount)}
                                       </span>
                                     )}
                                     {row.businessName && <span>{row.businessName}</span>}
@@ -760,7 +761,7 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
                 id="amount"
                 type="number"
                 step="0.01"
-                placeholder="0.00"
+                placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="pl-7"

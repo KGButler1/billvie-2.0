@@ -264,7 +264,7 @@ const Onboarding = () => {
                         id="ob-amount"
                         type="number"
                         step="0.01"
-                        placeholder="0.00"
+                        placeholder="0"
                         value={billAmount}
                         onChange={(e) => setBillAmount(e.target.value)}
                         className="h-12 pl-7"

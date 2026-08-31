@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Check, ChartBar as BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -9,6 +9,7 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/utils/currency';
 
 const EventComparison = () => {
   const navigate = useNavigate();
@@ -99,7 +100,7 @@ const EventComparison = () => {
                       <span>{event.expenses.length} expenses</span>
                       <span>•</span>
                       <span className="font-medium text-foreground">
-                        ${stats.totalPlanned.toLocaleString()}
+                        {formatCurrency(stats.totalPlanned)}
                       </span>
                     </div>
                   </div>
@@ -178,7 +179,7 @@ const ComparisonView = ({ events, onBack }: ComparisonViewProps) => {
               style={{ borderLeftColor: colors[index % colors.length], borderLeftWidth: 3 }}
             >
               <h3 className="font-medium text-sm truncate mb-2">{event.name}</h3>
-              <p className="text-2xl font-bold">${s.totalPlanned.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{formatCurrency(s.totalPlanned)}</p>
               <p className="text-xs text-muted-foreground">
                 {event.expenses.length} expenses
               </p>
@@ -201,7 +202,7 @@ const ComparisonView = ({ events, onBack }: ComparisonViewProps) => {
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip 
-                  formatter={(value: number) => `$${value.toLocaleString()}`}
+                  formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
@@ -250,7 +251,7 @@ const ComparisonView = ({ events, onBack }: ComparisonViewProps) => {
                     return (
                       <p key={category} className="text-muted-foreground">
                         Biggest difference in <span className="font-medium text-foreground">{category}</span>: 
-                        ${diff.toLocaleString()} variance
+                        {formatCurrency(diff)} variance
                       </p>
                     );
                   }

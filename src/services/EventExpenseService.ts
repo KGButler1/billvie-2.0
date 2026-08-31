@@ -11,6 +11,7 @@ import { EventService } from './EventService';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 import { differenceInDays, parseISO } from 'date-fns';
+import { formatCurrency } from '@/utils/currency';
 
 const now = () => new Date().toISOString();
 
@@ -309,6 +310,6 @@ export class EventExpenseService {
     if (!quantity || quantity.value <= 0) return undefined;
     const perUnit = amount / quantity.value;
     const unitLabel = EXPENSE_UNIT_SINGULAR[quantity.unit];
-    return `$${perUnit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per ${unitLabel}`;
+    return `${formatCurrency(perUnit, { showCents: true })} per ${unitLabel}`;
   }
 }

@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
-import { X, Pencil, CreditCard, AlertTriangle } from 'lucide-react';
+import { X, Pencil, CreditCard, TriangleAlert as AlertTriangle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Bill, PaymentMethod, PAYMENT_METHOD_LABELS, RECURRING_LABELS, CATEGORY_LABELS, BillCategory } from '@/types/bill';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 import { PaymentCardService } from '@/services/PaymentCardService';
+import { BankAccountService } from '@/services/BankAccountService';
 import { formatCardExpiry } from '@/types/paymentCard';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
 import { PersonTagChips } from '@/components/people/PersonTags';
+import { formatCurrency } from '@/utils/currency';
 import ChangeHistoryLine from '@/components/bills/ChangeHistoryLine';
 
 interface BillDetailDialogProps {
@@ -30,6 +32,7 @@ const Row = ({ label: name, children }: { label: string; children: React.ReactNo
 
 const BillDetailDialog = ({ bill, onEdit, onClose }: BillDetailDialogProps) => {
   const card = PaymentCardService.getById(bill.paymentCardId);
+  const account = BankAccountService.getById(bill.bankAccountId);
   const flag = cardExpiryFlag(card);
 
   const categoryLabel = label(
@@ -67,7 +70,7 @@ const BillDetailDialog = ({ bill, onEdit, onClose }: BillDetailDialogProps) => {
 
         <div className="mb-4">
           <Row label="Amount">
-            {bill.amount !== undefined ? `$${bill.amount.toFixed(2)}` : '—'}
+            {bill.amount !== undefined ? formatCurrency(bill.amount) : '—'}
           </Row>
           <Row label="Due date">
             {bill.dueDate ? format(parseISO(bill.dueDate), 'EEEE, d MMMM yyyy') : '—'}
@@ -85,6 +88,17 @@ const BillDetailDialog = ({ bill, onEdit, onClose }: BillDetailDialogProps) => {
                     {formatCardExpiry(card) && (
                       <span className="text-muted-foreground font-normal">
                         {formatCardExpiry(card)}
+                      </span>
+                    )}
+                  </>
+                )}
+                {account && (
+                  <>
+                    <span className="text-muted-foreground">·</span>
+                    <span>{account.nickname}</span>
+                    {account.lastDigits && (
+                      <span className="text-muted-foreground font-normal">
+                        ···{account.lastDigits}
                       </span>
                     )}
                   </>

@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EventExpenseService } from '@/services/EventExpenseService';
+import { formatCurrency } from '@/utils/currency';
 
 interface EventAnalyticsProps {
   eventId: string;
@@ -39,7 +40,7 @@ const EventAnalytics = ({ eventId }: EventAnalyticsProps) => {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Amount']}
+                formatter={(value: number) => [formatCurrency(value), 'Amount']}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -67,7 +68,7 @@ const EventAnalytics = ({ eventId }: EventAnalyticsProps) => {
         {/* Total */}
         <div className="text-center pt-2 border-t border-border mt-2">
           <span className="text-muted-foreground text-sm">Total: </span>
-          <span className="font-semibold">${total.toLocaleString()}</span>
+          <span className="font-semibold">{formatCurrency(total)}</span>
         </div>
       </CardContent>
     </Card>

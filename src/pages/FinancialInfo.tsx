@@ -46,6 +46,7 @@ import { DocumentService } from '@/services/DocumentService';
 import DismissibleIntro from '@/components/DismissibleIntro';
 import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/utils/currency';
 
 const OverviewTab = ({
   insurance,
@@ -148,7 +149,7 @@ const OverviewTab = ({
               <SimpleCard
                 key={entry.id}
                 title={entry.sourceName}
-                amountLabel={`${entry.approximateAmount.toLocaleString()} approx.`}
+                amountLabel={`${formatCurrency(entry.approximateAmount)} approx.`}
                 linkedDocumentId={entry.linkedDocumentId}
                 notes={entry.notes}
                 onEdit={() => onEditIncome(entry.id)}
@@ -171,7 +172,7 @@ const OverviewTab = ({
                 key={entry.id}
                 title={entry.owedTo}
                 badge={DEBT_TYPE_LABELS[entry.type]}
-                amountLabel={`${entry.approximateBalance.toLocaleString()} approx. balance`}
+                amountLabel={`${formatCurrency(entry.approximateBalance)} approx. balance`}
                 linkedDocumentId={entry.linkedDocumentId}
                 notes={entry.notes}
                 onEdit={() => onEditDebt(entry.id)}
@@ -275,7 +276,7 @@ const FinancialInfo = () => {
                   <Landmark className="w-4 h-4 text-primary" />
                   <span className="text-sm text-muted-foreground">Owed</span>
                 </div>
-                <p className="text-xl font-bold">${totalDebt.toLocaleString()}</p>
+                <p className="text-xl font-bold">{formatCurrency(totalDebt)}</p>
                 <p className="text-xs text-muted-foreground">
                   across {debts.length} {debts.length === 1 ? 'entry' : 'entries'}
                 </p>
@@ -285,7 +286,7 @@ const FinancialInfo = () => {
                   <TrendingUp className="w-4 h-4 text-primary" />
                   <span className="text-sm text-muted-foreground">Income sources</span>
                 </div>
-                <p className="text-xl font-bold">${totalIncome.toLocaleString()}</p>
+                <p className="text-xl font-bold">{formatCurrency(totalIncome)}</p>
                 <p className="text-xs text-muted-foreground">
                   from {income.length} {income.length === 1 ? 'source' : 'sources'}
                 </p>
@@ -426,7 +427,7 @@ const FinancialInfo = () => {
                 <SimpleCard
                   key={entry.id}
                   title={entry.sourceName}
-                  amountLabel={`$${entry.approximateAmount.toLocaleString()} approx.`}
+                  amountLabel={`${formatCurrency(entry.approximateAmount)} approx.`}
                   notes={entry.notes}
                   onEdit={() => {
                     setEditingItem(entry.id);
@@ -469,7 +470,7 @@ const FinancialInfo = () => {
                   key={entry.id}
                   title={entry.owedTo}
                   badge={DEBT_TYPE_LABELS[entry.type]}
-                  amountLabel={`$${entry.approximateBalance.toLocaleString()} approx. balance`}
+                  amountLabel={`${formatCurrency(entry.approximateBalance)} approx. balance`}
                   notes={entry.notes}
                   onEdit={() => {
                     setEditingItem(entry.id);
@@ -724,11 +725,11 @@ const InsuranceCard = ({
   const premiumText = () => {
     if (linkedBill) {
       return linkedBill.amount !== undefined
-        ? `$${linkedBill.amount}${frequencyLabel(linkedBill.recurringInterval)}`
+        ? `${formatCurrency(linkedBill.amount)}${frequencyLabel(linkedBill.recurringInterval)}`
         : null;
     }
     if (entry.premium === undefined) return null;
-    return `$${entry.premium}${frequencyLabel(entry.premiumFrequency)}`;
+    return `${formatCurrency(entry.premium)}${frequencyLabel(entry.premiumFrequency)}`;
   };
 
   const amount = premiumText();
@@ -828,7 +829,7 @@ const SuperCard = ({
         {entry.accountNumber && (
           <p className="text-sm text-muted-foreground">Account: {entry.accountNumber}</p>
         )}
-        <p className="text-lg font-bold text-primary mt-2">${entry.estimatedBalance.toLocaleString()}</p>
+        <p className="text-lg font-bold text-primary mt-2">{formatCurrency(entry.estimatedBalance)}</p>
         {entry.contactInfo && (
           <p className="text-sm text-muted-foreground mt-1">Who to contact: {entry.contactInfo}</p>
         )}
@@ -1037,7 +1038,7 @@ const InsuranceModal = ({
                 return (
                   <div className="flex items-center justify-between gap-2">
                     <span>
-                      {bill.amount !== undefined ? `$${bill.amount}` : 'No amount'}
+                      {bill.amount !== undefined ? formatCurrency(bill.amount) : 'No amount'}
                       {bill.recurringInterval ? ` · ${bill.recurringInterval.replace('_', ' ')}` : ''}
                     </span>
                     <Link to="/bills" className="text-xs inline-flex items-center gap-1 hover:underline">

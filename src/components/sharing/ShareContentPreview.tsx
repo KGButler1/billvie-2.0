@@ -22,12 +22,13 @@ import {
   PaymentMethod,
   RecurringInterval,
 } from '@/types/bill';
+import { formatCurrency } from '@/utils/currency';
 
 
 const formatMoney = (amount?: number) =>
   amount === undefined || amount === null
     ? '—'
-    : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    : formatCurrency(amount);
 
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : undefined;
