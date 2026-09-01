@@ -10,6 +10,7 @@ import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { EventService } from '@/services/EventService';
 import { useProfile } from '@/hooks/useProfile';
 import { refreshAllData } from '@/services/loadAllData';
+import { UserService } from '@/services/UserService';
 import { AccessService } from '@/services/AccessService';
 import { Bill } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
