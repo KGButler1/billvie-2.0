@@ -10,14 +10,13 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 
 const FinancialSnapshotWidget = () => {
   const navigate = useNavigate();
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [isLoading, setIsLoading] = useState(() => !FinancialInfoService.isLoaded());
   useEffect(() => { if (FinancialInfoService.isLoaded()) setIsLoading(false); });
   if (isLoading) return <SkeletonCard className="mb-2" />;
   const goFinancial = () => navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
-
-  const { profile } = useProfile();
-  const isPaid = profile?.isPaid ?? false;
 
   const insurance = FinancialInfoService.getInsurance();
   const superannuation = FinancialInfoService.getSuperannuation();
