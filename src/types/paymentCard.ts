@@ -6,7 +6,7 @@ export interface PaymentCard {
   expiryMonth?: number; // 1-12
   expiryYear?: number;
   notes?: string;
-  archivedAt?: string; // soft-archive; cards referenced by bills are never hard-deleted
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }

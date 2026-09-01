@@ -11,6 +11,8 @@ import { AccessService } from '@/services/AccessService';
 import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
 import BottomNav from '@/components/BottomNav';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
+import { UserService } from '@/services/UserService';
 import { SkeletonRows } from '@/components/ui/skeleton';
 
 const relationshipLabel = (value: string) =>
@@ -22,6 +24,7 @@ const KeyPeople = () => {
   const [isAdding, setIsAdding] = useState(() => searchParams.get('add') === '1');
   const [editing, setEditing] = useState<KeyPerson | null>(null);
   const [isLoading, setIsLoading] = useState(() => !KeyPeopleService.isLoaded());
+  const [pendingDelete, setPendingDelete] = useState<KeyPerson | null>(null);
 
   const reload = () => setPeople(KeyPeopleService.getAllKeyPeople());
 
@@ -51,11 +54,12 @@ const KeyPeople = () => {
     setEditing(null);
   };
 
-  const handleDelete = async (person: KeyPerson) => {
-    if (confirm(`Remove ${person.name} from your key people?`)) {
-      await KeyPeopleService.deleteKeyPerson(person.id);
-      reload();
+  const handleDelete = (person: KeyPerson) => {
+    if (!UserService.shouldWarnBeforeDelete('keyPerson')) {
+      void KeyPeopleService.deleteKeyPerson(person.id).then(reload);
+      return;
     }
+    setPendingDelete(person);
   };
 
   const viewersFor = (person: KeyPerson) =>
@@ -177,6 +181,21 @@ const KeyPeople = () => {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDeleteDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
+        warnKey="keyPerson"
+        title={`Remove ${pendingDelete?.name ?? 'this person'}?`}
+        description="This will remove them from your key people list."
+        onConfirm={async () => {
+          if (pendingDelete) {
+            await KeyPeopleService.deleteKeyPerson(pendingDelete.id);
+            reload();
+          }
+          setPendingDelete(null);
+        }}
+      />
 
       <BottomNav />
     </div>

@@ -10,6 +10,7 @@ import { TaxTagService } from '@/services/TaxTagService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { formatCurrency } from '@/utils/currency';
 import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
@@ -193,10 +194,22 @@ const Bills = () => {
     await BillService.markAsUnpaid(id);
     loadBills();
   };
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this bill? You can restore it from Recently Deleted within 30 days.')) return;
-    await BillService.deleteBill(id);
-    loadBills();
+  const [pendingDeleteBill, setPendingDeleteBill] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    if (!UserService.shouldWarnBeforeDelete('bill')) {
+      void BillService.deleteBill(id).then(loadBills);
+      return;
+    }
+    setPendingDeleteBill(id);
+  };
+
+  const confirmDeleteBill = async () => {
+    if (pendingDeleteBill) {
+      await BillService.deleteBill(pendingDeleteBill);
+      loadBills();
+    }
+    setPendingDeleteBill(null);
   };
 
   return (
@@ -399,6 +412,14 @@ const Bills = () => {
           <Plus className="w-6 h-6" />
         </motion.button>
       </div>
+
+      <ConfirmDeleteDialog
+        open={!!pendingDeleteBill}
+        onOpenChange={(o) => { if (!o) setPendingDeleteBill(null); }}
+        warnKey="bill"
+        title="Delete this bill?"
+        onConfirm={confirmDeleteBill}
+      />
 
       <BottomNav />
     </div>

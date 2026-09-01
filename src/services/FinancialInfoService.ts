@@ -18,6 +18,7 @@ export interface InsuranceEntry {
   linkedBillId?: string;
   linkedDocumentId?: string;
   contactInfo?: string;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
 }
 
 export interface SuperannuationEntry {
@@ -30,6 +31,7 @@ export interface SuperannuationEntry {
   contactInfo?: string;
   linkedDocumentId?: string;
   linkedBankAccountId?: string;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
 }
 
 export interface MiscFinancialEntry {
@@ -38,6 +40,7 @@ export interface MiscFinancialEntry {
   value: string;
   notes?: string;
   linkedDocumentId?: string;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
 }
 
 export interface IncomeSourceEntry {
@@ -47,6 +50,7 @@ export interface IncomeSourceEntry {
   notes?: string;
   linkedDocumentId?: string;
   linkedBankAccountId?: string;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
 }
 
 export interface DebtEntry {
@@ -60,6 +64,7 @@ export interface DebtEntry {
   linkedPaymentCardId?: string;
   accountNumber?: string;
   contactInfo?: string;
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
 }
 
 export interface FinancialData {
@@ -141,6 +146,7 @@ export class FinancialInfoService {
       documentLink: r.document_link || undefined, notes: r.notes || undefined,
       linkedBillId: r.linked_bill_id || undefined, contactInfo: r.contact_info || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
+      deletedAt: r.deleted_at || undefined,
     }));
     this.superCache = (supRes.data || []).map((r) => ({
       id: r.id, fundName: r.fund_name, accountNumber: r.account_number || undefined,
@@ -149,12 +155,14 @@ export class FinancialInfoService {
       contactInfo: r.contact_info || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
       linkedBankAccountId: r.linked_bank_account_id || undefined,
+      deletedAt: r.deleted_at || undefined,
     }));
     this.incomeCache = (incRes.data || []).map((r) => ({
       id: r.id, sourceName: r.source_name, approximateAmount: Number(r.approximate_amount),
       notes: r.notes || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
       linkedBankAccountId: r.linked_bank_account_id || undefined,
+      deletedAt: r.deleted_at || undefined,
     }));
     this.debtCache = (debtRes.data || []).map((r) => ({
       id: r.id, owedTo: r.owed_to, type: r.type, approximateBalance: Number(r.approximate_balance),
@@ -164,10 +172,12 @@ export class FinancialInfoService {
       linkedPaymentCardId: r.linked_payment_card_id || undefined,
       accountNumber: r.account_number || undefined,
       contactInfo: r.contact_info || undefined,
+      deletedAt: r.deleted_at || undefined,
     }));
     this.miscCache = (miscRes.data || []).map((r) => ({
       id: r.id, key: r.key, value: r.value, notes: r.notes || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
+      deletedAt: r.deleted_at || undefined,
     }));
     this.loaded = true;
   }
@@ -179,7 +189,11 @@ export class FinancialInfoService {
   // Insurance
   static getInsurance(): InsuranceEntry[] {
     if (isDemoModeActive()) return DEMO_INSURANCE as InsuranceEntry[];
-    return this.ensureLoaded() ? this.insuranceCache : [];
+    return this.ensureLoaded() ? this.insuranceCache.filter((e) => !e.deletedAt) : [];
+  }
+
+  static getDeletedInsurance(): InsuranceEntry[] {
+    return this.ensureLoaded() ? this.insuranceCache.filter((e) => !!e.deletedAt) : [];
   }
 
   static async addInsurance(entry: Omit<InsuranceEntry, 'id'>): Promise<InsuranceEntry> {
@@ -227,6 +241,20 @@ export class FinancialInfoService {
   }
 
   static async deleteInsurance(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_insurance').update({ deleted_at: now() }).eq('id', id);
+    if (error) throw error;
+    const idx = this.insuranceCache.findIndex((i) => i.id === id);
+    if (idx !== -1) this.insuranceCache[idx] = { ...this.insuranceCache[idx], deletedAt: now() };
+  }
+
+  static async restoreInsurance(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_insurance').update({ deleted_at: null }).eq('id', id);
+    if (error) throw error;
+    const idx = this.insuranceCache.findIndex((i) => i.id === id);
+    if (idx !== -1) this.insuranceCache[idx] = { ...this.insuranceCache[idx], deletedAt: undefined };
+  }
+
+  static async permanentlyDeleteInsurance(id: string): Promise<void> {
     const { error } = await supabase.from('financial_insurance').delete().eq('id', id);
     if (error) throw error;
     this.insuranceCache = this.insuranceCache.filter((i) => i.id !== id);
@@ -247,7 +275,11 @@ export class FinancialInfoService {
   // Superannuation
   static getSuperannuation(): SuperannuationEntry[] {
     if (isDemoModeActive()) return demoSuperCache;
-    return this.ensureLoaded() ? this.superCache : [];
+    return this.ensureLoaded() ? this.superCache.filter((e) => !e.deletedAt) : [];
+  }
+
+  static getDeletedSuperannuation(): SuperannuationEntry[] {
+    return this.ensureLoaded() ? this.superCache.filter((e) => !!e.deletedAt) : [];
   }
 
   static async addSuperannuation(entry: Omit<SuperannuationEntry, 'id'>): Promise<SuperannuationEntry> {
@@ -296,6 +328,20 @@ export class FinancialInfoService {
   }
 
   static async deleteSuperannuation(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_superannuation').update({ deleted_at: now() }).eq('id', id);
+    if (error) throw error;
+    const idx = this.superCache.findIndex((s) => s.id === id);
+    if (idx !== -1) this.superCache[idx] = { ...this.superCache[idx], deletedAt: now() };
+  }
+
+  static async restoreSuperannuation(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_superannuation').update({ deleted_at: null }).eq('id', id);
+    if (error) throw error;
+    const idx = this.superCache.findIndex((s) => s.id === id);
+    if (idx !== -1) this.superCache[idx] = { ...this.superCache[idx], deletedAt: undefined };
+  }
+
+  static async permanentlyDeleteSuperannuation(id: string): Promise<void> {
     const { error } = await supabase.from('financial_superannuation').delete().eq('id', id);
     if (error) throw error;
     this.superCache = this.superCache.filter((s) => s.id !== id);
@@ -308,7 +354,11 @@ export class FinancialInfoService {
   // Income
   static getIncome(): IncomeSourceEntry[] {
     if (isDemoModeActive()) return DEMO_INCOME as IncomeSourceEntry[];
-    return this.ensureLoaded() ? this.incomeCache : [];
+    return this.ensureLoaded() ? this.incomeCache.filter((e) => !e.deletedAt) : [];
+  }
+
+  static getDeletedIncome(): IncomeSourceEntry[] {
+    return this.ensureLoaded() ? this.incomeCache.filter((e) => !!e.deletedAt) : [];
   }
 
   static async addIncome(entry: Omit<IncomeSourceEntry, 'id'>): Promise<IncomeSourceEntry> {
@@ -345,6 +395,20 @@ export class FinancialInfoService {
   }
 
   static async deleteIncome(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_income').update({ deleted_at: now() }).eq('id', id);
+    if (error) throw error;
+    const idx = this.incomeCache.findIndex((i) => i.id === id);
+    if (idx !== -1) this.incomeCache[idx] = { ...this.incomeCache[idx], deletedAt: now() };
+  }
+
+  static async restoreIncome(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_income').update({ deleted_at: null }).eq('id', id);
+    if (error) throw error;
+    const idx = this.incomeCache.findIndex((i) => i.id === id);
+    if (idx !== -1) this.incomeCache[idx] = { ...this.incomeCache[idx], deletedAt: undefined };
+  }
+
+  static async permanentlyDeleteIncome(id: string): Promise<void> {
     const { error } = await supabase.from('financial_income').delete().eq('id', id);
     if (error) throw error;
     this.incomeCache = this.incomeCache.filter((i) => i.id !== id);
@@ -357,7 +421,11 @@ export class FinancialInfoService {
   // Debts
   static getDebts(): DebtEntry[] {
     if (isDemoModeActive()) return DEMO_DEBTS as DebtEntry[];
-    return this.ensureLoaded() ? this.debtCache : [];
+    return this.ensureLoaded() ? this.debtCache.filter((e) => !e.deletedAt) : [];
+  }
+
+  static getDeletedDebts(): DebtEntry[] {
+    return this.ensureLoaded() ? this.debtCache.filter((e) => !!e.deletedAt) : [];
   }
 
   static async addDebt(entry: Omit<DebtEntry, 'id'>): Promise<DebtEntry> {
@@ -404,6 +472,20 @@ export class FinancialInfoService {
   }
 
   static async deleteDebt(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_debts').update({ deleted_at: now() }).eq('id', id);
+    if (error) throw error;
+    const idx = this.debtCache.findIndex((d) => d.id === id);
+    if (idx !== -1) this.debtCache[idx] = { ...this.debtCache[idx], deletedAt: now() };
+  }
+
+  static async restoreDebt(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_debts').update({ deleted_at: null }).eq('id', id);
+    if (error) throw error;
+    const idx = this.debtCache.findIndex((d) => d.id === id);
+    if (idx !== -1) this.debtCache[idx] = { ...this.debtCache[idx], deletedAt: undefined };
+  }
+
+  static async permanentlyDeleteDebt(id: string): Promise<void> {
     const { error } = await supabase.from('financial_debts').delete().eq('id', id);
     if (error) throw error;
     this.debtCache = this.debtCache.filter((d) => d.id !== id);
@@ -416,7 +498,11 @@ export class FinancialInfoService {
   // Misc
   static getMisc(): MiscFinancialEntry[] {
     if (isDemoModeActive()) return DEMO_MISC as MiscFinancialEntry[];
-    return this.ensureLoaded() ? this.miscCache : [];
+    return this.ensureLoaded() ? this.miscCache.filter((e) => !e.deletedAt) : [];
+  }
+
+  static getDeletedMisc(): MiscFinancialEntry[] {
+    return this.ensureLoaded() ? this.miscCache.filter((e) => !!e.deletedAt) : [];
   }
 
   static async addMisc(entry: Omit<MiscFinancialEntry, 'id'>): Promise<MiscFinancialEntry> {
@@ -449,6 +535,20 @@ export class FinancialInfoService {
   }
 
   static async deleteMisc(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_misc').update({ deleted_at: now() }).eq('id', id);
+    if (error) throw error;
+    const idx = this.miscCache.findIndex((m) => m.id === id);
+    if (idx !== -1) this.miscCache[idx] = { ...this.miscCache[idx], deletedAt: now() };
+  }
+
+  static async restoreMisc(id: string): Promise<void> {
+    const { error } = await supabase.from('financial_misc').update({ deleted_at: null }).eq('id', id);
+    if (error) throw error;
+    const idx = this.miscCache.findIndex((m) => m.id === id);
+    if (idx !== -1) this.miscCache[idx] = { ...this.miscCache[idx], deletedAt: undefined };
+  }
+
+  static async permanentlyDeleteMisc(id: string): Promise<void> {
     const { error } = await supabase.from('financial_misc').delete().eq('id', id);
     if (error) throw error;
     this.miscCache = this.miscCache.filter((m) => m.id !== id);

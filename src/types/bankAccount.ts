@@ -6,7 +6,7 @@ export interface BankAccount {
   institution?: string; // "Commonwealth Bank" — free text, optional
   lastDigits?: string; // last 2-4 digits, optional, stored as text to preserve leading zeros
   notes?: string;
-  archivedAt?: string; // soft-archive; accounts referenced by bills are never hard-deleted
+  deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;
 }

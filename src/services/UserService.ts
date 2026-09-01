@@ -79,6 +79,16 @@ export class UserService {
     return currentEventCount < 3;
   }
 
+  static shouldWarnBeforeDelete(key: string): boolean {
+    const muted = this.getSettings().mutedDeleteWarnings ?? [];
+    return !muted.includes(key);
+  }
+
+  static muteDeleteWarning(key: string): void {
+    const current = this.getSettings().mutedDeleteWarnings ?? [];
+    if (!current.includes(key)) this.saveSettings({ mutedDeleteWarnings: [...current, key] });
+  }
+
   // Clear all user data
   static clearAllData(): void {
     localStorage.removeItem(SETTINGS_KEY);

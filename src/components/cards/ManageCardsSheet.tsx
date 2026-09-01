@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, CreditCard, Pencil, Archive, ArchiveRestore, TriangleAlert as AlertTriangle } from 'lucide-react';
+import { X, CreditCard, Pencil, Trash2, TriangleAlert as AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PaymentCard, formatCardExpiry } from '@/types/paymentCard';
 import { PaymentCardService } from '@/services/PaymentCardService';
+import { UserService } from '@/services/UserService';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
 import FieldError from '@/components/ui/field-error';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 
 interface ManageCardsSheetProps {
   onClose: () => void;
@@ -26,13 +28,12 @@ const emptyDraft: Draft = { nickname: '', month: '', year: '', notes: '' };
 
 const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
   const [cards, setCards] = useState<PaymentCard[]>([]);
-  const [archived, setArchived] = useState<PaymentCard[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [nicknameError, setNicknameError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const refresh = () => {
     setCards(PaymentCardService.getAll());
-    setArchived(PaymentCardService.getArchived());
   };
 
   useEffect(() => {
@@ -62,6 +63,23 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
     else await PaymentCardService.add(payload);
     setDraft(null);
     refresh();
+  };
+
+  const handleDelete = (card: PaymentCard) => {
+    const warnKey = 'paymentCard';
+    if (!UserService.shouldWarnBeforeDelete(warnKey)) {
+      void PaymentCardService.remove(card.id).then(refresh);
+      return;
+    }
+    setPendingDelete({ id: card.id, name: card.nickname });
+  };
+
+  const confirmDelete = async () => {
+    if (pendingDelete) {
+      await PaymentCardService.remove(pendingDelete.id);
+      refresh();
+    }
+    setPendingDelete(null);
   };
 
   return (
@@ -154,7 +172,7 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
             <div className="space-y-2">
               {cards.map((card) => {
                 const flag = cardExpiryFlag(card);
-                const linked = PaymentCardService.countLinkedBills(card.id);
+                const summary = PaymentCardService.linkedSummary(card.id);
                 return (
                   <div
                     key={card.id}
@@ -167,8 +185,7 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
                       <p className="font-medium truncate">{card.nickname}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatCardExpiry(card) ?? 'No expiry recorded'}
-                        {' · '}
-                        {linked} {linked === 1 ? 'bill' : 'bills'}
+                        {summary ? ` · ${summary}` : ''}
                       </p>
                     </div>
                     {flag && (
@@ -184,12 +201,9 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
                       variant="ghost"
                       size="sm"
                       className="text-muted-foreground"
-                      onClick={async () => {
-                        await PaymentCardService.remove(card.id);
-                        refresh();
-                      }}
+                      onClick={() => handleDelete(card)}
                     >
-                      <Archive className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 );
@@ -202,44 +216,21 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
               )}
             </div>
 
-            {!!archived.length && (
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Archived</h3>
-                <div className="space-y-2">
-                  {archived.map((card) => (
-                    <div
-                      key={card.id}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-border opacity-70"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{card.nickname}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatCardExpiry(card) ?? 'No expiry recorded'}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          await PaymentCardService.restore(card.id);
-                          refresh();
-                        }}
-                      >
-                        <ArchiveRestore className="w-4 h-4 mr-1" />
-                        Restore
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <Button className="w-full mt-6" onClick={() => setDraft({ ...emptyDraft })}>
               Add a card
             </Button>
           </>
         )}
       </motion.div>
+
+      <ConfirmDeleteDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
+        warnKey="paymentCard"
+        title={`Delete ${pendingDelete?.name ?? 'this card'}?`}
+        linkedSummary={pendingDelete ? PaymentCardService.linkedSummary(pendingDelete.id) : undefined}
+        onConfirm={confirmDelete}
+      />
     </motion.div>
   );
 };

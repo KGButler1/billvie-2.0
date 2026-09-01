@@ -52,6 +52,8 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/utils/currency';
 import BankAccountPicker from '@/components/bills/BankAccountPicker';
 import CardPicker from '@/components/bills/CardPicker';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
+import { UserService } from '@/services/UserService';
 
 const OverviewTab = ({
   insurance,
@@ -258,6 +260,26 @@ const FinancialInfo = () => {
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !FinancialInfoService.isLoaded());
+  const [pendingDelete, setPendingDelete] = useState<{ type: string; id: string; name: string; warnKey: string } | null>(null);
+
+  const requestDelete = (type: string, id: string, name: string, warnKey: string) => {
+    if (!UserService.shouldWarnBeforeDelete(warnKey)) {
+      doDelete(type, id);
+      return;
+    }
+    setPendingDelete({ type, id, name, warnKey });
+  };
+
+  const doDelete = async (type: string, id: string) => {
+    switch (type) {
+      case 'insurance': await FinancialInfoService.deleteInsurance(id); break;
+      case 'super': await FinancialInfoService.deleteSuperannuation(id); break;
+      case 'income': await FinancialInfoService.deleteIncome(id); break;
+      case 'debt': await FinancialInfoService.deleteDebt(id); break;
+      case 'misc': await FinancialInfoService.deleteMisc(id); break;
+    }
+    loadData();
+  };
 
   useEffect(() => {
     FinancialInfoService.refresh().then(loadData).catch(console.error).finally(() => setIsLoading(false));
@@ -359,11 +381,11 @@ const FinancialInfo = () => {
                     onEditIncome={(id) => { setEditingItem(id); setShowIncomeModal(true); }}
                     onEditDebt={(id) => { setEditingItem(id); setShowDebtModal(true); }}
                     onEditMisc={(id) => { setEditingItem(id); setShowMiscModal(true); }}
-                    onDeleteInsurance={async (id) => { await FinancialInfoService.deleteInsurance(id); loadData(); }}
-                    onDeleteSuper={async (id) => { await FinancialInfoService.deleteSuperannuation(id); loadData(); }}
-                    onDeleteIncome={async (id) => { await FinancialInfoService.deleteIncome(id); loadData(); }}
-                    onDeleteDebt={async (id) => { await FinancialInfoService.deleteDebt(id); loadData(); }}
-                    onDeleteMisc={async (id) => { await FinancialInfoService.deleteMisc(id); loadData(); }}
+                    onDeleteInsurance={(id) => { const e = insurance.find(i => i.id === id); requestDelete('insurance', id, e?.provider ?? 'Insurance', 'financialInsurance'); }}
+                    onDeleteSuper={(id) => { const e = superannuation.find(s => s.id === id); requestDelete('super', id, e?.fundName ?? 'Account', 'financialSuperannuation'); }}
+                    onDeleteIncome={(id) => { const e = income.find(i => i.id === id); requestDelete('income', id, e?.sourceName ?? 'Income', 'financialIncome'); }}
+                    onDeleteDebt={(id) => { const e = debts.find(d => d.id === id); requestDelete('debt', id, e?.owedTo ?? 'Debt', 'financialDebt'); }}
+                    onDeleteMisc={(id) => { const e = misc.find(m => m.id === id); requestDelete('misc', id, e?.key ?? 'Info', 'financialMisc'); }}
                     onAddInsurance={() => { setEditingItem(null); setShowInsuranceModal(true); }}
                     onAddSuper={() => { setEditingItem(null); setShowSuperModal(true); }}
                     onAddIncome={() => { setEditingItem(null); setShowIncomeModal(true); }}
@@ -386,10 +408,7 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowInsuranceModal(true);
                   }}
-                  onDelete={async () => {
-                    await FinancialInfoService.deleteInsurance(entry.id);
-                    loadData();
-                  }}
+                  onDelete={() => requestDelete('insurance', entry.id, entry.provider, 'financialInsurance')}
                 />
               ))}
 
@@ -426,10 +445,7 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowSuperModal(true);
                   }}
-                  onDelete={async () => {
-                    await FinancialInfoService.deleteSuperannuation(entry.id);
-                    loadData();
-                  }}
+                  onDelete={() => requestDelete('super', entry.id, entry.fundName, 'financialSuperannuation')}
                 />
               ))}
 
@@ -468,10 +484,7 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowIncomeModal(true);
                   }}
-                  onDelete={async () => {
-                    await FinancialInfoService.deleteIncome(entry.id);
-                    loadData();
-                  }}
+                  onDelete={() => requestDelete('income', entry.id, entry.sourceName, 'financialIncome')}
                 />
               ))}
 
@@ -511,10 +524,7 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowDebtModal(true);
                   }}
-                  onDelete={async () => {
-                    await FinancialInfoService.deleteDebt(entry.id);
-                    loadData();
-                  }}
+                  onDelete={() => requestDelete('debt', entry.id, entry.owedTo, 'financialDebt')}
                 />
               ))}
 
@@ -551,10 +561,7 @@ const FinancialInfo = () => {
                     setEditingItem(entry.id);
                     setShowMiscModal(true);
                   }}
-                  onDelete={async () => {
-                    await FinancialInfoService.deleteMisc(entry.id);
-                    loadData();
-                  }}
+                  onDelete={() => requestDelete('misc', entry.id, entry.key, 'financialMisc')}
                 />
               ))}
 
@@ -655,6 +662,14 @@ const FinancialInfo = () => {
           setShowDebtModal(false);
           setEditingItem(null);
         }}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
+        warnKey={pendingDelete?.warnKey ?? ''}
+        title={`Delete ${pendingDelete?.name ?? 'this entry'}?`}
+        onConfirm={() => { if (pendingDelete) doDelete(pendingDelete.type, pendingDelete.id); }}
       />
 
       <BottomNav />

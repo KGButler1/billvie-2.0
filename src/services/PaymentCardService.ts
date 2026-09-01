@@ -1,5 +1,6 @@
 import { PaymentCard } from '@/types/paymentCard';
 import { BillService } from './BillService';
+import { FinancialInfoService } from './FinancialInfoService';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 
@@ -12,7 +13,7 @@ function rowToCard(row: Record<string, unknown>): PaymentCard {
     expiryMonth: row.expiry_month as number | undefined,
     expiryYear: row.expiry_year as number | undefined,
     notes: (row.notes as string) || undefined,
-    archivedAt: (row.archived_at as string) || undefined,
+    deletedAt: (row.deleted_at as string) || undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -24,7 +25,7 @@ function cardToRow(card: Partial<PaymentCard>): Record<string, unknown> {
   if (card.expiryMonth !== undefined) row.expiry_month = card.expiryMonth;
   if (card.expiryYear !== undefined) row.expiry_year = card.expiryYear;
   if (card.notes !== undefined) row.notes = card.notes || null;
-  if (card.archivedAt !== undefined) row.archived_at = card.archivedAt || null;
+  if (card.deletedAt !== undefined) row.deleted_at = card.deletedAt || null;
   return row;
 }
 
@@ -54,11 +55,11 @@ export const PaymentCardService = {
   },
 
   getAll(): PaymentCard[] {
-    return this.getRaw().filter((c) => !c.archivedAt);
+    return this.getRaw().filter((c) => !c.deletedAt);
   },
 
-  getArchived(): PaymentCard[] {
-    return this.getRaw().filter((c) => !!c.archivedAt);
+  getDeleted(): PaymentCard[] {
+    return this.getRaw().filter((c) => !!c.deletedAt);
   },
 
   getById(id?: string): PaymentCard | undefined {
@@ -105,22 +106,37 @@ export const PaymentCardService = {
     return BillService.getAllBills().filter((b) => b.paymentCardId === id).length;
   },
 
-  async archive(id: string): Promise<void> {
-    await this.update(id, { archivedAt: now() });
+  countLinkedDebts(id: string): number {
+    return FinancialInfoService.getDebts().filter((d) => d.linkedPaymentCardId === id).length;
+  },
+
+  linkedSummary(id: string): string | undefined {
+    const parts: string[] = [];
+    const bills = this.countLinkedBills(id);
+    const debts = this.countLinkedDebts(id);
+    if (bills) parts.push(`${bills} ${bills === 1 ? 'bill' : 'bills'}`);
+    if (debts) parts.push(`${debts} ${debts === 1 ? 'debt' : 'debts'}`);
+    if (!parts.length) return undefined;
+    return `Linked to ${parts.join(', ')}. They'll keep showing this card until you restore it or delete it permanently.`;
+  },
+
+  async remove(id: string): Promise<void> {
+    await this.update(id, { deletedAt: now() });
   },
 
   async restore(id: string): Promise<void> {
-    await this.update(id, { archivedAt: undefined });
+    const { error } = await supabase
+      .from('payment_cards')
+      .update({ deleted_at: null, updated_at: now() })
+      .eq('id', id);
+    if (error) throw error;
+    const index = cache.findIndex((c) => c.id === id);
+    if (index !== -1) cache[index] = { ...cache[index], deletedAt: undefined, updatedAt: now() };
   },
 
-  async remove(id: string): Promise<'deleted' | 'archived'> {
-    if (this.countLinkedBills(id) > 0) {
-      await this.archive(id);
-      return 'archived';
-    }
+  async permanentlyRemove(id: string): Promise<void> {
     const { error } = await supabase.from('payment_cards').delete().eq('id', id);
     if (error) throw error;
     cache = cache.filter((c) => c.id !== id);
-    return 'deleted';
   },
 };

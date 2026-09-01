@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
+import { UserService } from '@/services/UserService';
 
 interface EventHeaderProps {
   event: Event;
@@ -38,6 +40,7 @@ const EventHeader = ({ event, onUpdate }: EventHeaderProps) => {
   const navigate = useNavigate();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(event.name);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleSaveName = async () => {
     if (editedName.trim() && editedName !== event.name) {
@@ -57,11 +60,12 @@ const EventHeader = ({ event, onUpdate }: EventHeaderProps) => {
     onUpdate();
   };
 
-  const handleDelete = async () => {
-    if (confirm('Delete this event? You can restore it from Recently Deleted within 30 days.')) {
-      await EventService.deleteEvent(event.id);
-      navigate('/events');
+  const handleDelete = () => {
+    if (!UserService.shouldWarnBeforeDelete('event')) {
+      void EventService.deleteEvent(event.id).then(() => navigate('/events'));
+      return;
     }
+    setShowDeleteDialog(true);
   };
 
   const dateRange = event.startDate && event.endDate
@@ -169,6 +173,16 @@ const EventHeader = ({ event, onUpdate }: EventHeaderProps) => {
           </DropdownMenu>
         </div>
       </div>
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        warnKey="event"
+        title={`Delete ${event.name}?`}
+        onConfirm={async () => {
+          await EventService.deleteEvent(event.id);
+          navigate('/events');
+        }}
+      />
     </header>
   );
 };

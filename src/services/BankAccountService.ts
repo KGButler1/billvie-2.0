@@ -13,7 +13,7 @@ function rowToAccount(row: Record<string, unknown>): BankAccount {
     institution: (row.institution as string) || undefined,
     lastDigits: (row.last_digits as string) || undefined,
     notes: (row.notes as string) || undefined,
-    archivedAt: (row.archived_at as string) || undefined,
+    deletedAt: (row.deleted_at as string) || undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -25,7 +25,7 @@ function accountToRow(account: Partial<BankAccount>): Record<string, unknown> {
   if (account.institution !== undefined) row.institution = account.institution || null;
   if (account.lastDigits !== undefined) row.last_digits = account.lastDigits || null;
   if (account.notes !== undefined) row.notes = account.notes || null;
-  if (account.archivedAt !== undefined) row.archived_at = account.archivedAt || null;
+  if (account.deletedAt !== undefined) row.deleted_at = account.deletedAt || null;
   return row;
 }
 
@@ -55,11 +55,11 @@ export const BankAccountService = {
   },
 
   getAll(): BankAccount[] {
-    return this.getRaw().filter((a) => !a.archivedAt);
+    return this.getRaw().filter((a) => !a.deletedAt);
   },
 
-  getArchived(): BankAccount[] {
-    return this.getRaw().filter((a) => !!a.archivedAt);
+  getDeleted(): BankAccount[] {
+    return this.getRaw().filter((a) => !!a.deletedAt);
   },
 
   getById(id?: string): BankAccount | undefined {
@@ -115,22 +115,37 @@ export const BankAccountService = {
     return FinancialInfoService.getSuperannuation().filter((s) => s.linkedBankAccountId === id).length;
   },
 
-  async archive(id: string): Promise<void> {
-    await this.update(id, { archivedAt: now() });
+  linkedSummary(id: string): string | undefined {
+    const parts: string[] = [];
+    const bills = this.countLinkedBills(id);
+    const income = this.countLinkedIncome(id);
+    const debts = this.countLinkedDebts(id);
+    const superannuation = this.countLinkedSuperannuation(id);
+    if (bills) parts.push(`${bills} ${bills === 1 ? 'bill' : 'bills'}`);
+    if (income) parts.push(`${income} income ${income === 1 ? 'source' : 'sources'}`);
+    if (debts) parts.push(`${debts} ${debts === 1 ? 'debt' : 'debts'}`);
+    if (superannuation) parts.push(`${superannuation} ${superannuation === 1 ? 'account' : 'accounts'}`);
+    if (!parts.length) return undefined;
+    return `Linked to ${parts.join(', ')}. They'll keep showing this account until you restore it or delete it permanently.`;
+  },
+
+  async remove(id: string): Promise<void> {
+    await this.update(id, { deletedAt: now() });
   },
 
   async restore(id: string): Promise<void> {
-    await this.update(id, { archivedAt: undefined });
+    const { error } = await supabase
+      .from('bank_accounts')
+      .update({ deleted_at: null, updated_at: now() })
+      .eq('id', id);
+    if (error) throw error;
+    const index = cache.findIndex((a) => a.id === id);
+    if (index !== -1) cache[index] = { ...cache[index], deletedAt: undefined, updatedAt: now() };
   },
 
-  async remove(id: string): Promise<'deleted' | 'archived'> {
-    if (this.countLinkedBills(id) > 0) {
-      await this.archive(id);
-      return 'archived';
-    }
+  async permanentlyRemove(id: string): Promise<void> {
     const { error } = await supabase.from('bank_accounts').delete().eq('id', id);
     if (error) throw error;
     cache = cache.filter((a) => a.id !== id);
-    return 'deleted';
   },
 };

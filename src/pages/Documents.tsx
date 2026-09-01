@@ -27,6 +27,8 @@ import AccessSheet from '@/components/documents/AccessSheet';
 import LinkItemsSheet from '@/components/documents/LinkItemsSheet';
 import DismissibleIntro from '@/components/DismissibleIntro';
 import BottomNav from '@/components/BottomNav';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
+import { UserService } from '@/services/UserService';
 import { isDemoModeActive } from '@/demo/demoFlag';
 
 type DocType = HouseholdDocument['type'];
@@ -62,6 +64,7 @@ const Documents = () => {
   const [typeFilter, setTypeFilter] = useState<DocType | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('updated');
   const [isLoading, setIsLoading] = useState(() => !DocumentService.isLoaded());
+  const [pendingDeleteDocument, setPendingDeleteDocument] = useState<string | null>(null);
 
   useEffect(() => {
     DocumentService.refresh().then(reload).catch(console.error).finally(() => setIsLoading(false));
@@ -288,9 +291,12 @@ const Documents = () => {
                                     setEditScrollToWhereToFindIt(false);
                                   }}
                                   onDelete={async (id) => {
-                                    if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
-                                    await DocumentService.delete(id);
-                                    reload();
+                                    if (!UserService.shouldWarnBeforeDelete('document')) {
+                                      await DocumentService.delete(id);
+                                      reload();
+                                      return;
+                                    }
+                                    setPendingDeleteDocument(id);
                                   }}
                                 />
                               </motion.div>
@@ -323,9 +329,12 @@ const Documents = () => {
                         setEditScrollToWhereToFindIt(false);
                       }}
                       onDelete={async (id) => {
-                        if (!confirm('Delete this document? You can restore it from Recently Deleted within 30 days.')) return;
-                        await DocumentService.delete(id);
-                        reload();
+                        if (!UserService.shouldWarnBeforeDelete('document')) {
+                          await DocumentService.delete(id);
+                          reload();
+                          return;
+                        }
+                        setPendingDeleteDocument(id);
                       }}
                     />
                   ))}
@@ -364,6 +373,20 @@ const Documents = () => {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDeleteDialog
+        open={!!pendingDeleteDocument}
+        onOpenChange={(o) => { if (!o) setPendingDeleteDocument(null); }}
+        warnKey="document"
+        title="Delete this document?"
+        onConfirm={async () => {
+          if (pendingDeleteDocument) {
+            await DocumentService.delete(pendingDeleteDocument);
+            reload();
+          }
+          setPendingDeleteDocument(null);
+        }}
+      />
 
       <BottomNav />
     </div>

@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Undo2, Trash2, Receipt, CalendarDays, FolderOpen, FileSpreadsheet, Clock } from 'lucide-react';
+import { ArrowLeft, Undo2, Trash2, Receipt, CalendarDays, FolderOpen, FileSpreadsheet, Clock, Landmark, CreditCard, Wallet } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { DocumentService } from '@/services/DocumentService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
+import { BankAccountService } from '@/services/BankAccountService';
+import { PaymentCardService } from '@/services/PaymentCardService';
+import { FinancialInfoService, INSURANCE_TYPE_LABELS, DEBT_TYPE_LABELS } from '@/services/FinancialInfoService';
 import BottomNav from '@/components/BottomNav';
 
 interface DeletedRow {
@@ -22,6 +25,44 @@ const RecentlyDeleted = () => {
   const navigate = useNavigate();
   const [version, setVersion] = useState(0);
   const reload = () => setVersion(v => v + 1);
+
+  const financialRows: DeletedRow[] = [
+    ...FinancialInfoService.getDeletedInsurance().map(e => ({
+      id: e.id,
+      name: `Insurance, ${e.provider}`,
+      deletedAt: e.deletedAt,
+      restore: () => FinancialInfoService.restoreInsurance(e.id),
+      purge: () => FinancialInfoService.permanentlyDeleteInsurance(e.id),
+    })),
+    ...FinancialInfoService.getDeletedSuperannuation().map(e => ({
+      id: e.id,
+      name: `Account, ${e.fundName}`,
+      deletedAt: e.deletedAt,
+      restore: () => FinancialInfoService.restoreSuperannuation(e.id),
+      purge: () => FinancialInfoService.permanentlyDeleteSuperannuation(e.id),
+    })),
+    ...FinancialInfoService.getDeletedIncome().map(e => ({
+      id: e.id,
+      name: `Income, ${e.sourceName}`,
+      deletedAt: e.deletedAt,
+      restore: () => FinancialInfoService.restoreIncome(e.id),
+      purge: () => FinancialInfoService.permanentlyDeleteIncome(e.id),
+    })),
+    ...FinancialInfoService.getDeletedDebts().map(e => ({
+      id: e.id,
+      name: `Debt, ${e.owedTo}`,
+      deletedAt: e.deletedAt,
+      restore: () => FinancialInfoService.restoreDebt(e.id),
+      purge: () => FinancialInfoService.permanentlyDeleteDebt(e.id),
+    })),
+    ...FinancialInfoService.getDeletedMisc().map(e => ({
+      id: e.id,
+      name: `Other, ${e.key}`,
+      deletedAt: e.deletedAt,
+      restore: () => FinancialInfoService.restoreMisc(e.id),
+      purge: () => FinancialInfoService.permanentlyDeleteMisc(e.id),
+    })),
+  ];
 
   const sections: { key: string; title: string; icon: React.ElementType; rows: DeletedRow[] }[] = [
     {
@@ -72,6 +113,36 @@ const RecentlyDeleted = () => {
         purge: () => TaxDocumentService.permanentlyDeleteDocument(d.id),
       })),
     },
+    {
+      key: 'bankAccounts',
+      title: 'Bank Accounts',
+      icon: Landmark,
+      rows: BankAccountService.getDeleted().map(a => ({
+        id: a.id,
+        name: a.nickname,
+        deletedAt: a.deletedAt,
+        restore: () => BankAccountService.restore(a.id),
+        purge: () => BankAccountService.permanentlyRemove(a.id),
+      })),
+    },
+    {
+      key: 'paymentCards',
+      title: 'Payment Cards',
+      icon: CreditCard,
+      rows: PaymentCardService.getDeleted().map(c => ({
+        id: c.id,
+        name: c.nickname,
+        deletedAt: c.deletedAt,
+        restore: () => PaymentCardService.restore(c.id),
+        purge: () => PaymentCardService.permanentlyRemove(c.id),
+      })),
+    },
+    {
+      key: 'financial',
+      title: 'Financial Snapshot',
+      icon: Wallet,
+      rows: financialRows,
+    },
   ];
 
   const visibleSections = sections.filter(s => s.rows.length > 0);
@@ -110,7 +181,16 @@ const RecentlyDeleted = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 max-w-2xl">
-        <h1 className="hidden lg:block text-2xl font-bold mb-2">Recently Deleted</h1>
+        <div className="hidden lg:flex items-center gap-3 mb-2">
+          <h1 className="text-2xl font-bold">Recently Deleted</h1>
+          <button
+            onClick={() => navigate('/settings')}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Settings
+          </button>
+        </div>
         <p className="text-sm text-muted-foreground mb-6 flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5" />
           Items are permanently removed after 30 days.

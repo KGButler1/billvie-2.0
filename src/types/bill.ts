@@ -89,6 +89,7 @@ export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
   // Only used to pre-select a sensible default tax year. 7 = July (AU financial year).
   taxYearStartMonth?: 1 | 7;
+  mutedDeleteWarnings?: string[]; // object-type keys the user has muted, e.g. 'financialInsurance', 'bankAccount'
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

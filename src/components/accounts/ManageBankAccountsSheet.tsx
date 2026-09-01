@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Landmark, Pencil, Archive, ArchiveRestore } from 'lucide-react';
+import { X, Landmark, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { BankAccount } from '@/types/bankAccount';
 import { BankAccountService } from '@/services/BankAccountService';
+import { UserService } from '@/services/UserService';
 import FieldError from '@/components/ui/field-error';
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 
 interface ManageBankAccountsSheetProps {
   onClose: () => void;
@@ -25,13 +27,12 @@ const emptyDraft: Draft = { nickname: '', institution: '', lastDigits: '', notes
 
 const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [archived, setArchived] = useState<BankAccount[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [nicknameError, setNicknameError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const refresh = () => {
     setAccounts(BankAccountService.getAll());
-    setArchived(BankAccountService.getArchived());
   };
 
   useEffect(() => {
@@ -59,6 +60,23 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
     else await BankAccountService.add(payload);
     setDraft(null);
     refresh();
+  };
+
+  const handleDelete = (account: BankAccount) => {
+    const warnKey = 'bankAccount';
+    if (!UserService.shouldWarnBeforeDelete(warnKey)) {
+      void BankAccountService.remove(account.id).then(refresh);
+      return;
+    }
+    setPendingDelete({ id: account.id, name: account.nickname });
+  };
+
+  const confirmDelete = async () => {
+    if (pendingDelete) {
+      await BankAccountService.remove(pendingDelete.id);
+      refresh();
+    }
+    setPendingDelete(null);
   };
 
   return (
@@ -146,15 +164,7 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
           <>
             <div className="space-y-2">
               {accounts.map((account) => {
-                const bills = BankAccountService.countLinkedBills(account.id);
-                const income = BankAccountService.countLinkedIncome(account.id);
-                const debts = BankAccountService.countLinkedDebts(account.id);
-                const superannuation = BankAccountService.countLinkedSuperannuation(account.id);
-                const parts: string[] = [];
-                if (bills) parts.push(`${bills} ${bills === 1 ? 'bill' : 'bills'}`);
-                if (income) parts.push(`${income} income ${income === 1 ? 'source' : 'sources'}`);
-                if (debts) parts.push(`${debts} ${debts === 1 ? 'debt' : 'debts'}`);
-                if (superannuation) parts.push(`${superannuation} ${superannuation === 1 ? 'account' : 'accounts'}`);
+                const summary = BankAccountService.linkedSummary(account.id);
                 return (
                   <div
                     key={account.id}
@@ -169,7 +179,7 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
                         {[
                           account.institution,
                           account.lastDigits && `···${account.lastDigits}`,
-                          parts.join(', '),
+                          summary,
                         ].filter(Boolean).join(' · ')}
                       </p>
                     </div>
@@ -180,12 +190,9 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
                       variant="ghost"
                       size="sm"
                       className="text-muted-foreground"
-                      onClick={async () => {
-                        await BankAccountService.remove(account.id);
-                        refresh();
-                      }}
+                      onClick={() => handleDelete(account)}
                     >
-                      <Archive className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 );
@@ -198,47 +205,21 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
               )}
             </div>
 
-            {!!archived.length && (
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Archived</h3>
-                <div className="space-y-2">
-                  {archived.map((account) => (
-                    <div
-                      key={account.id}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-border opacity-70"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{account.nickname}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {[
-                            account.institution,
-                            account.lastDigits && `···${account.lastDigits}`,
-                          ].filter(Boolean).join(' · ') || 'No details recorded'}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          await BankAccountService.restore(account.id);
-                          refresh();
-                        }}
-                      >
-                        <ArchiveRestore className="w-4 h-4 mr-1" />
-                        Restore
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <Button className="w-full mt-6" onClick={() => setDraft({ ...emptyDraft })}>
               Add an account
             </Button>
           </>
         )}
       </motion.div>
+
+      <ConfirmDeleteDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
+        warnKey="bankAccount"
+        title={`Delete ${pendingDelete?.name ?? 'this account'}?`}
+        linkedSummary={pendingDelete ? BankAccountService.linkedSummary(pendingDelete.id) : undefined}
+        onConfirm={confirmDelete}
+      />
     </motion.div>
   );
 };
