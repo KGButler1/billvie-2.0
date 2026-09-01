@@ -4,6 +4,15 @@ import { getHouseholdId } from './supabaseData';
 export type InsuranceType = 'auto' | 'home' | 'life' | 'health' | 'travel' | 'other';
 export type DebtType = 'mortgage' | 'car' | 'personal' | 'credit_card' | 'other';
 export type AccountType = 'checking' | 'savings' | 'retirement' | 'investment' | 'other';
+export type IncomeFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export const INCOME_FREQUENCY_LABELS: Record<IncomeFrequency, string> = {
+  weekly: 'Weekly',
+  biweekly: 'Bi-weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+};
 
 export interface InsuranceEntry {
   id: string;
@@ -47,6 +56,7 @@ export interface IncomeSourceEntry {
   id: string;
   sourceName: string;
   approximateAmount: number;
+  frequency?: IncomeFrequency;
   notes?: string;
   linkedDocumentId?: string;
   linkedBankAccountId?: string;
@@ -62,6 +72,7 @@ export interface DebtEntry {
   linkedDocumentId?: string;
   linkedBankAccountId?: string;
   linkedPaymentCardId?: string;
+  linkedBillId?: string;
   accountNumber?: string;
   contactInfo?: string;
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
@@ -159,6 +170,7 @@ export class FinancialInfoService {
     }));
     this.incomeCache = (incRes.data || []).map((r) => ({
       id: r.id, sourceName: r.source_name, approximateAmount: Number(r.approximate_amount),
+      frequency: (r.frequency as IncomeFrequency) || undefined,
       notes: r.notes || undefined,
       linkedDocumentId: r.linked_document_id || undefined,
       linkedBankAccountId: r.linked_bank_account_id || undefined,
@@ -170,6 +182,7 @@ export class FinancialInfoService {
       linkedDocumentId: r.linked_document_id || undefined,
       linkedBankAccountId: r.linked_bank_account_id || undefined,
       linkedPaymentCardId: r.linked_payment_card_id || undefined,
+      linkedBillId: r.linked_bill_id || undefined,
       accountNumber: r.account_number || undefined,
       contactInfo: r.contact_info || undefined,
       deletedAt: r.deleted_at || undefined,
@@ -365,7 +378,8 @@ export class FinancialInfoService {
     const householdId = await getHouseholdId();
     const row = {
       household_id: householdId, source_name: entry.sourceName,
-      approximate_amount: entry.approximateAmount, notes: entry.notes || null,
+      approximate_amount: entry.approximateAmount, frequency: entry.frequency || null,
+      notes: entry.notes || null,
       linked_document_id: entry.linkedDocumentId || null,
       linked_bank_account_id: entry.linkedBankAccountId || null,
     };
@@ -373,6 +387,7 @@ export class FinancialInfoService {
     if (error) throw error;
     const newEntry: IncomeSourceEntry = {
       id: data.id, sourceName: data.source_name, approximateAmount: Number(data.approximate_amount),
+      frequency: (data.frequency as IncomeFrequency) || undefined,
       notes: data.notes || undefined,
       linkedDocumentId: data.linked_document_id || undefined,
       linkedBankAccountId: data.linked_bank_account_id || undefined,
@@ -385,6 +400,7 @@ export class FinancialInfoService {
     const row: Record<string, unknown> = { updated_at: now() };
     if (updates.sourceName !== undefined) row.source_name = updates.sourceName;
     if (updates.approximateAmount !== undefined) row.approximate_amount = updates.approximateAmount;
+    if (updates.frequency !== undefined) row.frequency = updates.frequency || null;
     if (updates.notes !== undefined) row.notes = updates.notes || null;
     if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     if (updates.linkedBankAccountId !== undefined) row.linked_bank_account_id = updates.linkedBankAccountId || null;
@@ -418,6 +434,24 @@ export class FinancialInfoService {
     return this.getIncome().reduce((sum, i) => sum + (i.approximateAmount || 0), 0);
   }
 
+  static getMonthlyEquivalent(amount: number, frequency: IncomeFrequency = 'monthly'): number {
+    switch (frequency) {
+      case 'weekly': return amount * 52 / 12;
+      case 'biweekly': return amount * 26 / 12;
+      case 'quarterly': return amount / 3;
+      case 'yearly': return amount / 12;
+      case 'monthly':
+      default: return amount;
+    }
+  }
+
+  static getTotalMonthlyIncome(): number {
+    return this.getIncome().reduce(
+      (sum, i) => sum + this.getMonthlyEquivalent(i.approximateAmount || 0, i.frequency || 'monthly'),
+      0
+    );
+  }
+
   // Debts
   static getDebts(): DebtEntry[] {
     if (isDemoModeActive()) return DEMO_DEBTS as DebtEntry[];
@@ -436,6 +470,7 @@ export class FinancialInfoService {
       linked_document_id: entry.linkedDocumentId || null,
       linked_bank_account_id: entry.linkedBankAccountId || null,
       linked_payment_card_id: entry.linkedPaymentCardId || null,
+      linked_bill_id: entry.linkedBillId || null,
       account_number: entry.accountNumber || null,
       contact_info: entry.contactInfo || null,
     };
@@ -447,6 +482,7 @@ export class FinancialInfoService {
       linkedDocumentId: data.linked_document_id || undefined,
       linkedBankAccountId: data.linked_bank_account_id || undefined,
       linkedPaymentCardId: data.linked_payment_card_id || undefined,
+      linkedBillId: data.linked_bill_id || undefined,
       accountNumber: data.account_number || undefined,
       contactInfo: data.contact_info || undefined,
     };
@@ -463,6 +499,7 @@ export class FinancialInfoService {
     if (updates.linkedDocumentId !== undefined) row.linked_document_id = updates.linkedDocumentId || null;
     if (updates.linkedBankAccountId !== undefined) row.linked_bank_account_id = updates.linkedBankAccountId || null;
     if (updates.linkedPaymentCardId !== undefined) row.linked_payment_card_id = updates.linkedPaymentCardId || null;
+    if (updates.linkedBillId !== undefined) row.linked_bill_id = updates.linkedBillId || null;
     if (updates.accountNumber !== undefined) row.account_number = updates.accountNumber || null;
     if (updates.contactInfo !== undefined) row.contact_info = updates.contactInfo || null;
     const { error } = await supabase.from('financial_debts').update(row).eq('id', id);

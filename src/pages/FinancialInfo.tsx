@@ -34,8 +34,10 @@ import {
   DebtEntry,
   DebtType,
   InsuranceType,
+  IncomeFrequency,
   INSURANCE_TYPE_LABELS,
   DEBT_TYPE_LABELS,
+  INCOME_FREQUENCY_LABELS,
   AccountType,
   ACCOUNT_TYPE_LABELS,
 } from '@/services/FinancialInfoService';
@@ -49,7 +51,7 @@ import { DocumentService } from '@/services/DocumentService';
 import DismissibleIntro from '@/components/DismissibleIntro';
 import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/utils/currency';
+import { formatCurrency, formatFrequency } from '@/utils/currency';
 import BankAccountPicker from '@/components/bills/BankAccountPicker';
 import CardPicker from '@/components/bills/CardPicker';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
@@ -175,7 +177,7 @@ const OverviewTab = ({
               <SimpleCard
                 key={entry.id}
                 title={entry.sourceName}
-                amountLabel={`${formatCurrency(entry.approximateAmount)} approx.`}
+                amountLabel={`${formatCurrency(entry.approximateAmount)}${formatFrequency(entry.frequency)} approx.`}
                 linkedDocumentId={entry.linkedDocumentId}
                 notes={entry.notes}
                 onEdit={() => onEditIncome(entry.id)}
@@ -203,6 +205,7 @@ const OverviewTab = ({
                 badge={DEBT_TYPE_LABELS[entry.type]}
                 amountLabel={`${formatCurrency(entry.approximateBalance)} approx. balance`}
                 linkedDocumentId={entry.linkedDocumentId}
+                linkedBillId={entry.linkedBillId}
                 notes={entry.notes}
                 onEdit={() => onEditDebt(entry.id)}
                 onDelete={() => onDeleteDebt(entry.id)}
@@ -294,7 +297,7 @@ const FinancialInfo = () => {
   };
 
   const totalDebt = FinancialInfoService.getTotalDebt();
-  const totalIncome = FinancialInfoService.getTotalIncome();
+  const totalMonthlyIncome = FinancialInfoService.getTotalMonthlyIncome();
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pt-16">
@@ -338,9 +341,12 @@ const FinancialInfo = () => {
                   <TrendingUp className="w-4 h-4 text-primary" />
                   <span className="text-sm text-muted-foreground">Income sources</span>
                 </div>
-                <p className="text-xl font-bold">{formatCurrency(totalIncome)}</p>
+                <p className="text-xl font-bold">
+                  {formatCurrency(totalMonthlyIncome)}
+                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  from {income.length} {income.length === 1 ? 'source' : 'sources'}
+                  from {income.length} {income.length === 1 ? 'source' : 'sources'}, combined monthly estimate
                 </p>
               </div>
             </motion.div>
@@ -478,7 +484,7 @@ const FinancialInfo = () => {
                 <SimpleCard
                   key={entry.id}
                   title={entry.sourceName}
-                  amountLabel={`${formatCurrency(entry.approximateAmount)} approx.`}
+                  amountLabel={`${formatCurrency(entry.approximateAmount)}${formatFrequency(entry.frequency)} approx.`}
                   notes={entry.notes}
                   onEdit={() => {
                     setEditingItem(entry.id);
@@ -519,6 +525,7 @@ const FinancialInfo = () => {
                   title={entry.owedTo}
                   badge={DEBT_TYPE_LABELS[entry.type]}
                   amountLabel={`${formatCurrency(entry.approximateBalance)} approx. balance`}
+                  linkedBillId={entry.linkedBillId}
                   notes={entry.notes}
                   onEdit={() => {
                     setEditingItem(entry.id);
@@ -703,6 +710,7 @@ const SimpleCard = ({
   amountLabel,
   notes,
   linkedDocumentId,
+  linkedBillId,
   onEdit,
   onDelete,
 }: {
@@ -711,10 +719,12 @@ const SimpleCard = ({
   amountLabel: string;
   notes?: string;
   linkedDocumentId?: string;
+  linkedBillId?: string;
   onEdit: () => void;
   onDelete: () => void;
 }) => {
   const linkedDoc = linkedDocumentId ? DocumentService.getById(linkedDocumentId) : undefined;
+  const linkedBill = linkedBillId ? BillService.getBillById(linkedBillId) : undefined;
   return (
   <div className="bg-card border border-border rounded-xl p-4">
     <div className="flex justify-between items-start mb-2">
@@ -736,6 +746,15 @@ const SimpleCard = ({
         </button>
       </div>
     </div>
+    {linkedBill && (
+      <Link
+        to="/bills"
+        className="inline-flex items-center gap-1 mt-2 text-xs rounded-full border border-border bg-muted/60 px-2.5 py-1 hover:bg-muted transition-colors"
+      >
+        <ExternalLink className="w-3 h-3" />
+        Repayment {linkedBill.amount !== undefined ? formatCurrency(linkedBill.amount) : ''}{formatFrequency(linkedBill.recurringInterval)} · {linkedBill.name}
+      </Link>
+    )}
     {linkedDoc && (
       <Link
         to="/documents"
@@ -762,24 +781,14 @@ const InsuranceCard = ({
   const linkedBill = entry.linkedBillId ? BillService.getBillById(entry.linkedBillId) : undefined;
   const linkedDoc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
 
-  const frequencyLabel = (freq?: string) => {
-    switch (freq) {
-      case 'monthly': return '/mo';
-      case 'quarterly': return '/qtr';
-      case 'annual':
-      case 'yearly': return '/yr';
-      default: return '';
-    }
-  };
-
   const premiumText = () => {
     if (linkedBill) {
       return linkedBill.amount !== undefined
-        ? `${formatCurrency(linkedBill.amount)}${frequencyLabel(linkedBill.recurringInterval)}`
+        ? `${formatCurrency(linkedBill.amount)}${formatFrequency(linkedBill.recurringInterval)}`
         : null;
     }
     if (entry.premium === undefined) return null;
-    return `${formatCurrency(entry.premium)}${frequencyLabel(entry.premiumFrequency)}`;
+    return `${formatCurrency(entry.premium)}${formatFrequency(entry.premiumFrequency)}`;
   };
 
   const amount = premiumText();
@@ -1433,6 +1442,7 @@ const IncomeModal = ({
 }) => {
   const [sourceName, setSourceName] = useState('');
   const [amount, setAmount] = useState('');
+  const [frequency, setFrequency] = useState<IncomeFrequency>('monthly');
   const [notes, setNotes] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
   const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
@@ -1450,6 +1460,7 @@ const IncomeModal = ({
       if (entry) {
         setSourceName(entry.sourceName);
         setAmount(entry.approximateAmount.toString());
+        setFrequency(entry.frequency || 'monthly');
         setNotes(entry.notes || '');
         const doc = entry.linkedDocumentId ? DocumentService.getById(entry.linkedDocumentId) : undefined;
         setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
@@ -1458,6 +1469,7 @@ const IncomeModal = ({
     } else {
       setSourceName('');
       setAmount('');
+      setFrequency('monthly');
       setNotes('');
       setLinkedDocument(null);
       setLinkedBankAccountId(undefined);
@@ -1472,6 +1484,7 @@ const IncomeModal = ({
     const data = {
       sourceName,
       approximateAmount: parseFloat(amount),
+      frequency,
       notes: notes || undefined,
       linkedDocumentId: linkedDocument?.id,
       linkedBankAccountId,
@@ -1503,6 +1516,19 @@ const IncomeModal = ({
             <Label>Approximate Amount <span className="text-[hsl(var(--destructive))]">*</span></Label>
             <Input type="number" value={amount} onChange={(e) => { setAmount(e.target.value); setAmountError(''); }} className={amountError ? 'border-destructive' : undefined} placeholder="$0" />
             <FieldError message={amountError} />
+          </div>
+          <div>
+            <Label>Frequency</Label>
+            <Select value={frequency} onValueChange={(v) => setFrequency(v as IncomeFrequency)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(INCOME_FREQUENCY_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>Notes (optional)</Label>
@@ -1551,6 +1577,7 @@ const DebtModal = ({
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
   const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
   const [linkedPaymentCardId, setLinkedPaymentCardId] = useState<string | undefined>(undefined);
+  const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(null);
   const [accountNumber, setAccountNumber] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [owedToError, setOwedToError] = useState('');
@@ -1558,6 +1585,11 @@ const DebtModal = ({
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
+    [isOpen]
+  );
+
+  const billOptions = useMemo(
+    () => BillService.getAllBills().map((b) => ({ id: b.id, label: b.name })),
     [isOpen]
   );
 
@@ -1573,6 +1605,8 @@ const DebtModal = ({
         setLinkedDocument(doc ? { id: doc.id, label: doc.title } : null);
         setLinkedBankAccountId(entry.linkedBankAccountId || undefined);
         setLinkedPaymentCardId(entry.linkedPaymentCardId || undefined);
+        const bill = entry.linkedBillId ? BillService.getBillById(entry.linkedBillId) : undefined;
+        setLinkedBill(bill ? { id: bill.id, label: bill.name } : null);
         setAccountNumber(entry.accountNumber || '');
         setContactInfo(entry.contactInfo || '');
       }
@@ -1584,6 +1618,7 @@ const DebtModal = ({
       setLinkedDocument(null);
       setLinkedBankAccountId(undefined);
       setLinkedPaymentCardId(undefined);
+      setLinkedBill(null);
       setAccountNumber('');
       setContactInfo('');
     }
@@ -1602,6 +1637,7 @@ const DebtModal = ({
       linkedDocumentId: linkedDocument?.id,
       linkedBankAccountId,
       linkedPaymentCardId: type === 'credit_card' ? linkedPaymentCardId : undefined,
+      linkedBillId: linkedBill?.id,
       accountNumber: accountNumber || undefined,
       contactInfo: contactInfo || undefined,
     };
@@ -1668,6 +1704,24 @@ const DebtModal = ({
               </p>
             </div>
           )}
+          <div>
+            <Label className="mb-1.5 block">Linked bill (optional)</Label>
+            <LinkPicker
+              triggerLabel="Link to an existing bill"
+              emptyLabel="No bills yet, type a name to create one"
+              createLabel={(q) => `Create bill: ${q}`}
+              options={billOptions}
+              value={linkedBill}
+              onChange={setLinkedBill}
+              onCreate={async (name) => {
+                const created = await BillService.addBill({ name, isRecurring: false });
+                return { id: created.id, label: created.name };
+              }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              If the repayment is already tracked as a bill, link it here instead of retyping it.
+            </p>
+          </div>
           <div>
             <Label>Notes (optional)</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. refinanced 2024, autopay from checking" />

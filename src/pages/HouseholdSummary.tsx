@@ -16,7 +16,7 @@ import {
   DEBT_TYPE_LABELS,
 } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
-import { formatCurrency } from '@/utils/currency';
+import { formatCurrency, formatFrequency } from '@/utils/currency';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
 import UpgradeModal from '@/components/UpgradeModal';
 
@@ -286,7 +286,7 @@ const HouseholdSummary = () => {
                 <ul className="space-y-1">
                   {income.map((i) => (
                     <li key={i.id} className="border-t border-border/60 pt-1">
-                      {i.sourceName} · {formatCurrency(i.approximateAmount)}
+                      {i.sourceName} · {formatCurrency(i.approximateAmount)}{formatFrequency(i.frequency)}
                       {i.notes ? ` · ${i.notes}` : ''}
                     </li>
                   ))}

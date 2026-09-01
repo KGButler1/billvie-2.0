@@ -22,3 +22,15 @@ export function formatCurrency(
     maximumFractionDigits: useCents ? 2 : 0,
   }).format(amount);
 }
+
+export function formatFrequency(freq?: string): string {
+  switch (freq) {
+    case 'weekly': return '/wk';
+    case 'biweekly': return '/fortnight';
+    case 'monthly': return '/mo';
+    case 'quarterly': return '/qtr';
+    case 'annual':
+    case 'yearly': return '/yr';
+    default: return '';
+  }
+}
