@@ -4,7 +4,6 @@ import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Buildi
 import { openSearch } from '@/components/search/GlobalSearch';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
-import { UserService } from '@/services/UserService';
 import UpgradeModal from '@/components/UpgradeModal';
 
 import { cn } from '@/lib/utils';
@@ -106,8 +105,7 @@ const BottomNav = () => {
 
   const isActive = (path: string) => location.pathname === demoPrefix(path);
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const isPaid = profile?.isPaid ?? false;
 
   const handleNavClick = (path: string) => {
     if (path === '/financial' && !isPaid) {
@@ -190,11 +188,6 @@ const BottomNav = () => {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
           reason="financial"
-          onUpgrade={() => {
-            UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-            setShowUpgradeModal(false);
-            navigate(demoPrefix('/financial'));
-          }}
           onPreviewAnyway={() => {
             setShowUpgradeModal(false);
             navigate(demoPrefix('/financial'));

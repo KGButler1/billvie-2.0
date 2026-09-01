@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { isDemoModeActive } from '@/demo/demoFlag';
+import { PersonRole } from '@/types/people';
+import { PAID_PLAN_STATUSES } from '@/constants/pricing';
 
 export interface UserProfile {
   personId: string;
@@ -9,6 +12,8 @@ export interface UserProfile {
   avatarUrl: string | null;
   householdId: string;
   householdName: string;
+  role: PersonRole;
+  isPaid: boolean;
 }
 
 export const useProfile = () => {
@@ -30,8 +35,9 @@ export const useProfile = () => {
         display_name,
         email,
         avatar_url,
+        role,
         household_id,
-        households ( name )
+        households ( name, plan_status )
       `)
       .eq('user_id', session.user.id)
       .eq('status', 'active')
@@ -44,6 +50,14 @@ export const useProfile = () => {
     }
 
     const household = Array.isArray(data.households) ? data.households[0] : data.households;
+    const role = (data.role as PersonRole) || 'household';
+    const planStatus = household?.plan_status || 'free';
+
+    const isPaid = isDemoModeActive()
+      ? true
+      : role === 'advisor' || role === 'accountant'
+        ? true
+        : PAID_PLAN_STATUSES.includes(planStatus as typeof PAID_PLAN_STATUSES[number]);
 
     setProfile({
       personId: data.id,
@@ -52,6 +66,8 @@ export const useProfile = () => {
       avatarUrl: data.avatar_url,
       householdId: data.household_id,
       householdName: household?.name || 'My Household',
+      role,
+      isPaid,
     });
     setLoading(false);
   }, [session?.user?.id]);

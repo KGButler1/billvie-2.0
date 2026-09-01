@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Sparkles, Receipt, Calendar, FileText, Share2, ChartBar as BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES, FREE_BILL_LIMIT, FREE_EVENT_LIMIT } from '@/constants/pricing';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES, FREE_BILL_LIMIT, FREE_EVENT_LIMIT, PRO_PRICE_ID } from '@/constants/pricing';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -54,10 +57,29 @@ const FEATURES = PRO_FEATURES;
 const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPreviewAnyway }: UpgradeModalProps) => {
   const config = UPGRADE_REASONS[reason];
   const Icon = config.icon;
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleUpgrade = () => {
-    onUpgrade?.();
-    onClose();
+  const handleUpgrade = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', {
+        body: {
+          price_id: PRO_PRICE_ID,
+          success_url: `${window.location.origin}/settings?upgrade=success`,
+          cancel_url: `${window.location.origin}/settings?upgrade=canceled`,
+          mode: 'subscription',
+        },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error('No checkout URL returned');
+    } catch (err) {
+      setIsLoading(false);
+      toast.error('Could not start checkout. Please try again.');
+    }
   };
 
   const handlePreviewAnyway = () => {
@@ -129,9 +151,9 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general', onUpgrade, onPrevie
               </div>
 
               {/* CTA */}
-              <Button onClick={handleUpgrade} className="w-full btn-hero py-6">
+              <Button onClick={handleUpgrade} disabled={isLoading} className="w-full btn-hero py-6">
                 <Sparkles className="w-4 h-4 mr-2" />
-                Upgrade Now
+                {isLoading ? 'Starting checkout…' : 'Upgrade Now'}
               </Button>
 
               {onPreviewAnyway && (

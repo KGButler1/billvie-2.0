@@ -10,6 +10,7 @@ import { TaxTagService } from '@/services/TaxTagService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { formatCurrency } from '@/utils/currency';
 import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
@@ -138,14 +139,17 @@ const Bills = () => {
   const insuranceCount = FinancialInfoService.getInsurance().length;
   const superCount = FinancialInfoService.getSuperannuation().length;
 
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
+
   const handleTryAddBill = () => {
-    if (canAddBill()) setIsAddingBill(true);
+    if (canAddBill(isPaid)) setIsAddingBill(true);
     else setShowUpgradeModal(true);
     setShowFabMenu(false);
   };
 
   const handleTryScanBill = () => {
-    if (canAddBill()) setIsScanningBill(true);
+    if (canAddBill(isPaid)) setIsScanningBill(true);
     else setShowUpgradeModal(true);
     setShowFabMenu(false);
   };
@@ -365,10 +369,6 @@ const Bills = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason="scan"
-        onUpgrade={() => {
-          UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-          setShowUpgradeModal(false);
-        }}
         onPreviewAnyway={() => {
           setShowUpgradeModal(false);
           setIsAddingBill(true);

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import FileCapture, { CapturedFile } from '@/components/shared/FileCapture';
 import { BillScanService } from '@/services/BillScanService';
+import { useProfile } from '@/hooks/useProfile';
 
 interface BillScanModalProps {
   onClose: () => void;
@@ -17,12 +18,14 @@ interface StagedFile extends CapturedFile {
 }
 
 const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
   const [files, setFiles] = useState<StagedFile[]>([]);
   const [quota, setQuota] = useState<{ used: number; limit: number | null; remaining: number | null } | null>(null);
   const [isCommitting, setIsCommitting] = useState(false);
   const [error, setError] = useState('');
 
-  const isUnlimited = BillScanService.isUnlimitedTier();
+  const isUnlimited = BillScanService.isUnlimitedTier(isPaid);
 
   useEffect(() => {
     if (!isUnlimited) {

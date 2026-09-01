@@ -3,6 +3,11 @@ import { BILL_LIMITS, EVENT_LIMITS } from '@/types/bill';
 export const PRO_PRICE = '$79';
 export const PRO_PERIOD = '/year';
 
+// Sandbox test price — must be swapped for the live price id before going to production.
+export const PRO_PRICE_ID = 'price_1U5fsfS44PuuFX1PPZ4GliNV';
+
+export const PAID_PLAN_STATUSES = ['active', 'trialing', 'past_due'] as const;
+
 export const FREE_BILL_LIMIT = BILL_LIMITS.free;
 export const FREE_EVENT_LIMIT = EVENT_LIMITS.free;
 

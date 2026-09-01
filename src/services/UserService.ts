@@ -61,21 +61,15 @@ export class UserService {
   }
 
   // Check if user can add more bills
-  static canAddBill(currentBillCount: number): boolean {
-    const settings = this.getSettings();
-    const { userType } = settings;
-    
-    if (userType === 'paid' || userType === 'accountant') return true;
+  static canAddBill(currentBillCount: number, isPaid: boolean): boolean {
+    if (isPaid) return true;
     return currentBillCount < 25;
   }
 
   // Check if user can add more events
-  static canAddEvent(currentEventCount: number): boolean {
-    const settings = this.getSettings();
-    const { userType, hasEventsAccess } = settings;
-    
-    if (!hasEventsAccess) return false;
-    if (userType === 'paid' || userType === 'accountant') return true;
+  static canAddEvent(currentEventCount: number, isPaid: boolean): boolean {
+    if (!isPaid) return false;
+    if (isPaid) return true;
     return currentEventCount < 3;
   }
 

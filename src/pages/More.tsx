@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, FileText, Shield, CircleHelp as HelpCircle, Lock, ChevronRight, Building, Receipt, Users, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
 
@@ -47,9 +47,9 @@ const More = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'financial' | 'general'>('financial');
   
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
-  const isAccountant = settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
+  const isAccountant = profile?.role === 'advisor' || profile?.role === 'accountant';
 
   const handleLockedFeature = (feature: 'financial') => {
     if (isPaid) {
@@ -58,12 +58,6 @@ const More = () => {
       setUpgradeReason(feature);
       setShowUpgradeModal(true);
     }
-  };
-
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
-    navigate('/financial');
   };
 
   const handlePreviewAnyway = () => {
@@ -177,7 +171,6 @@ const More = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
-        onUpgrade={handleUpgrade}
         onPreviewAnyway={handlePreviewAnyway}
       />
     </div>

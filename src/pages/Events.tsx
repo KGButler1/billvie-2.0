@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Calendar, ChartBar as BarChart3, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import { Event, EVENT_LIMITS } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import CreateEventModal from '@/components/CreateEventModal';
@@ -20,8 +20,8 @@ const Events = () => {
   const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
   const [isLoading, setIsLoading] = useState(() => !EventService.isLoaded());
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
 
   useEffect(() => {
     EventService.refresh().then(loadEvents).catch(console.error).finally(() => setIsLoading(false));
@@ -32,9 +32,9 @@ const Events = () => {
   };
 
   const canAddEvent = (): boolean => {
-    if (!settings.hasEventsAccess) return false;
+    if (!isPaid) return false;
     const currentCount = EventService.getEventCount();
-    const limit = EVENT_LIMITS[settings.userType];
+    const limit = isPaid ? EVENT_LIMITS.paid : EVENT_LIMITS.free;
     return currentCount < limit;
   };
 
@@ -58,11 +58,6 @@ const Events = () => {
     loadEvents();
   };
 
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
-  };
-
   const handleCompare = () => {
     if (!isPaid) {
       setUpgradeReason('general');
@@ -75,7 +70,7 @@ const Events = () => {
   const activeEvents = events.filter(e => e.status === 'active' || e.status === 'planning');
   const completedEvents = events.filter(e => e.status === 'completed' || e.status === 'archived');
   const hasSampleEvents = events.some(e => e.isSample);
-  const eventLimit = EVENT_LIMITS[settings.userType];
+  const eventLimit = isPaid ? EVENT_LIMITS.paid : EVENT_LIMITS.free;
   const currentEventCount = EventService.getEventCount();
 
   return (
@@ -229,7 +224,6 @@ const Events = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
-        onUpgrade={handleUpgrade}
         onPreviewAnyway={() => { setShowUpgradeModal(false); setIsCreating(true); }}
       />
 

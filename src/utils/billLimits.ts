@@ -1,10 +1,8 @@
 import { BillService } from '@/services/BillService';
-import { UserService } from '@/services/UserService';
 import { BILL_LIMITS } from '@/types/bill';
 
-export const canAddBill = (): boolean => {
-  const settings = UserService.getSettings();
+export const canAddBill = (isPaid: boolean): boolean => {
   const currentCount = BillService.getBillCount();
-  const limit = BILL_LIMITS[settings.userType];
+  const limit = isPaid ? BILL_LIMITS.paid : BILL_LIMITS.free;
   return currentCount < limit;
 };

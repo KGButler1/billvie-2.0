@@ -8,7 +8,7 @@ import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { EventService } from '@/services/EventService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import { refreshAllData } from '@/services/loadAllData';
 import { AccessService } from '@/services/AccessService';
 import { Bill } from '@/types/bill';
@@ -82,8 +82,11 @@ const Dashboard = () => {
   };
 
 
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
+
   const handleTryAddBill = () => {
-    if (canAddBill()) {
+    if (canAddBill(isPaid)) {
       setIsAddingBill(true);
     } else {
       setShowUpgradeModal(true);
@@ -92,7 +95,7 @@ const Dashboard = () => {
   };
 
   const handleTryScanBill = () => {
-    if (canAddBill()) {
+    if (canAddBill(isPaid)) {
       setIsScanningBill(true);
     } else {
       setShowUpgradeModal(true);
@@ -111,11 +114,6 @@ const Dashboard = () => {
     loadBills();
     setIsAddingBill(false);
     setIsScanningBill(false);
-  };
-
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
   };
 
   const handleUpdateBill = async (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
@@ -428,7 +426,6 @@ const Dashboard = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason="bills"
-        onUpgrade={handleUpgrade}
         onPreviewAnyway={() => { setShowUpgradeModal(false); setIsAddingBill(true); }}
       />
 

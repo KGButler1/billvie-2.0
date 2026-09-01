@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Lock } from 'lucide-react';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import HouseholdRecordRow from '@/components/HouseholdRecordRow';
@@ -16,20 +16,14 @@ const FinancialSnapshotWidget = () => {
   if (isLoading) return <SkeletonCard className="mb-2" />;
   const goFinancial = () => navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
 
   const insurance = FinancialInfoService.getInsurance();
   const superannuation = FinancialInfoService.getSuperannuation();
   const income = FinancialInfoService.getIncome();
   const debts = FinancialInfoService.getDebts();
   const total = insurance.length + superannuation.length + income.length + debts.length;
-
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgrade(false);
-    navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
-  };
 
   if (!isPaid) {
     return (
@@ -44,7 +38,6 @@ const FinancialSnapshotWidget = () => {
           isOpen={showUpgrade}
           onClose={() => setShowUpgrade(false)}
           reason="financial"
-          onUpgrade={handleUpgrade}
           onPreviewAnyway={() => {
             setShowUpgrade(false);
             navigate(isDemoModeActive() ? '/demo/financial' : '/financial');

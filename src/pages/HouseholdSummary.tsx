@@ -15,7 +15,7 @@ import {
   INSURANCE_TYPE_LABELS,
   DEBT_TYPE_LABELS,
 } from '@/services/FinancialInfoService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency, formatFrequency } from '@/utils/currency';
 import { DOCUMENT_TYPE_LABELS } from '@/types/document';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -39,16 +39,10 @@ const Empty = ({ text }: { text: string }) => (
 
 const HouseholdSummary = () => {
   const navigate = useNavigate();
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
   const [bypassGate, setBypassGate] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(!isPaid);
-
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
-    setBypassGate(true);
-  };
 
   const bills = BillService.getAllBills();
   const billsByCategory = bills.reduce<Record<string, typeof bills>>((acc, bill) => {
@@ -95,7 +89,6 @@ const HouseholdSummary = () => {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
           reason="export"
-          onUpgrade={handleUpgrade}
           onPreviewAnyway={() => {
             setShowUpgradeModal(false);
             setBypassGate(true);

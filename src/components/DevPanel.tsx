@@ -1,20 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Database, User, Trash2, Eye } from 'lucide-react';
+import { X, Database, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserService } from '@/services/UserService';
 import { EventService } from '@/services/EventService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { BillService } from '@/services/BillService';
-import { UserSettings } from '@/types/bill';
-import { FREE_BILL_LIMIT } from '@/constants/pricing';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface DevPanelProps {
   onClose: () => void;
@@ -22,20 +13,12 @@ interface DevPanelProps {
 }
 
 const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
-  const [settings, setSettings] = useState(UserService.getSettings());
   const [showStorage, setShowStorage] = useState(false);
 
-  const handleUserTypeChange = (userType: UserSettings['userType']) => {
-    UserService.setUserType(userType);
-    setSettings(UserService.getSettings());
-    onDataChange();
-  };
-
   const handleToggleEvents = () => {
-    const newSettings = UserService.saveSettings({
-      hasEventsAccess: !settings.hasEventsAccess
+    UserService.saveSettings({
+      hasEventsAccess: !UserService.getSettings().hasEventsAccess
     });
-    setSettings(newSettings);
   };
 
   const handleClearData = async () => {
@@ -45,7 +28,6 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
       FinancialInfoService.clearAll(),
       BillService.clearAllBills(),
     ]);
-    setSettings(UserService.getSettings());
     onDataChange();
   };
 
@@ -72,34 +54,15 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
       </div>
 
       <div className="space-y-4">
-        {/* User Type */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <User className="w-4 h-4" />
-            User Type
-          </label>
-          <Select value={settings.userType} onValueChange={handleUserTypeChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="anonymous">Anonymous</SelectItem>
-              <SelectItem value="free">Free User ({FREE_BILL_LIMIT} bills)</SelectItem>
-              <SelectItem value="paid">Paid User (unlimited)</SelectItem>
-              <SelectItem value="accountant">Accountant View</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Events Access Toggle */}
         <div className="flex items-center justify-between">
           <span className="text-sm">Events Access</span>
           <Button
-            variant={settings.hasEventsAccess ? 'default' : 'outline'}
+            variant={UserService.getSettings().hasEventsAccess ? 'default' : 'outline'}
             size="sm"
             onClick={handleToggleEvents}
           >
-            {settings.hasEventsAccess ? 'Enabled' : 'Disabled'}
+            {UserService.getSettings().hasEventsAccess ? 'Enabled' : 'Disabled'}
           </Button>
         </div>
 

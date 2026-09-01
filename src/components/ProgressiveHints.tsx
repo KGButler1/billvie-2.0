@@ -4,7 +4,7 @@ import { X, Calendar, Users, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import { useNavigate } from 'react-router-dom';
 import { FREE_BILL_LIMIT, FREE_EVENT_LIMIT } from '@/constants/pricing';
 
@@ -26,8 +26,8 @@ const ProgressiveHints = () => {
   const [activeHint, setActiveHint] = useState<HintType | null>(null);
   const [dismissedHints, setDismissedHints] = useState<HintType[]>([]);
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
 
   const hints: HintConfig[] = [
     {
@@ -102,7 +102,7 @@ const ProgressiveHints = () => {
     } else {
       setActiveHint(null);
     }
-  }, [dismissedHints, settings.userType]);
+  }, [dismissedHints, isPaid]);
 
   const dismissHint = (hintId: HintType) => {
     const updated = [...dismissedHints, hintId];

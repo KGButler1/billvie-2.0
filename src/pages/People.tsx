@@ -24,7 +24,7 @@ import { showMilestoneToast } from '@/components/MilestoneToast';
 import { AccessService } from '@/services/AccessService';
 import { ExclusionService } from '@/services/ExclusionService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole } from '@/types/people';
 import { scopeAccessSummary } from '@/utils/scopeItems';
 import { KeyPerson } from '@/types/keyPerson';
@@ -134,8 +134,8 @@ const People = () => {
   const [confirmRemove, setConfirmRemove] = useState<DirectoryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(() => !PeopleService.isLoaded());
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
 
   const reload = useCallback(() => setDirectory(PeopleService.getDirectory()), []);
 

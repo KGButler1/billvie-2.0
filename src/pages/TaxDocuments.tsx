@@ -33,7 +33,7 @@ import {
 import { TaxDocument, TaxCategory } from '@/types/sharing';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { TaxTagService } from '@/services/TaxTagService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import { Bill } from '@/types/bill';
 import { HouseholdDocument } from '@/types/document';
 import BottomNav from '@/components/BottomNav';
@@ -88,8 +88,8 @@ const TaxDocuments = () => {
   const [attachTarget, setAttachTarget] = useState<{ id: string; name: string } | null>(null);
   const [isLoading, setIsLoading] = useState(() => !TaxDocumentService.isLoaded());
 
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
 
   const loadDocuments = () => {
     setDocuments(TaxDocumentService.getAllDocuments());
@@ -208,11 +208,6 @@ const TaxDocuments = () => {
   const handleRemoveFromTax = (row: TaxRow) => {
     TaxTagService.untagItem(row.itemId, row.source === 'bill' ? 'bill' : 'document', row.year);
     setTagVersion((v) => v + 1);
-  };
-
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
   };
 
   const handleExportCSV = () => {
@@ -610,7 +605,6 @@ const TaxDocuments = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason="general"
-        onUpgrade={handleUpgrade}
         onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
 

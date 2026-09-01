@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2 } from 'lucide-react';
 import { downloadBackup } from '@/utils/dataBackup';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -27,10 +27,30 @@ import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
 const Settings = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(UserService.getSettings());
+  const { profile, reload } = useProfile();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'general' | 'export'>('general');
   const [showCardsSheet, setShowCardsSheet] = useState(false);
   const [showBankAccountsSheet, setShowBankAccountsSheet] = useState(false);
+
+  useEffect(() => {
+    const upgrade = searchParams.get('upgrade');
+    if (upgrade === 'success') {
+      toast.success('Upgrade complete! Your plan is now active.');
+      reload();
+      let attempts = 0;
+      const retry = setInterval(() => {
+        attempts++;
+        reload();
+        if (attempts >= 2) clearInterval(retry);
+      }, 3000);
+      setSearchParams({}, { replace: true });
+    } else if (upgrade === 'canceled') {
+      toast('Checkout canceled.');
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   useEffect(() => {
     // Apply theme on mount
@@ -62,17 +82,10 @@ const Settings = () => {
     }
   };
 
-  const handleUpgrade = () => {
-    // Mock upgrade
-    const updated = UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setSettings(updated);
-    setShowUpgradeModal(false);
-  };
-
   const sampleBillCount = BillService.getAllBills().filter(b => b.isSample).length;
   const sampleEventCount = EventService.getAllEvents().filter(e => e.isSample).length;
   const hasSampleData = sampleBillCount > 0 || sampleEventCount > 0;
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const isPaid = profile?.isPaid ?? false;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -414,7 +427,6 @@ const Settings = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
-        onUpgrade={handleUpgrade}
       />
     </div>
   );

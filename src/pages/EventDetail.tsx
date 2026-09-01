@@ -5,7 +5,7 @@ import { Plus, Users } from 'lucide-react';
 import { Event } from '@/types/bill';
 import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
-import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
 import BottomNav from '@/components/BottomNav';
 import EventHeader from '@/components/events/EventHeader';
 import BudgetProgress from '@/components/events/BudgetProgress';
@@ -24,8 +24,8 @@ const EventDetail = () => {
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
-  const settings = UserService.getSettings();
-  const isPaid = settings.userType === 'paid' || settings.userType === 'accountant';
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
 
   useEffect(() => {
     loadEvent();
@@ -55,11 +55,6 @@ const EventDetail = () => {
   const handleEditExpense = (expenseId: string) => {
     setEditingExpenseId(expenseId);
     setIsAddingExpense(true);
-  };
-
-  const handleUpgrade = () => {
-    UserService.saveSettings({ userType: 'paid', hasEventsAccess: true });
-    setShowUpgradeModal(false);
   };
 
   const handleShare = () => {
@@ -167,7 +162,6 @@ const EventDetail = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason="general"
-        onUpgrade={handleUpgrade}
         onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
 
