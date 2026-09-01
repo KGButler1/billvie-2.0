@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { CustomTaxCategory } from '@/types/sharing';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { cn } from '@/lib/utils';
+import FieldError from '@/components/ui/field-error';
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
   const [newIcon, setNewIcon] = useState('📁');
   const [editLabel, setEditLabel] = useState('');
   const [editIcon, setEditIcon] = useState('');
+  const [newLabelError, setNewLabelError] = useState('');
+  const [editLabelError, setEditLabelError] = useState('');
 
   if (!isOpen) return null;
 
@@ -33,7 +36,7 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
   };
 
   const handleAddCategory = async () => {
-    if (!newLabel.trim()) return;
+    if (!newLabel.trim()) { setNewLabelError('Give this category a name.'); return; }
     await TaxDocumentService.addCategory(newLabel.trim(), newIcon);
     setNewLabel('');
     setNewIcon('📁');
@@ -48,7 +51,7 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId || !editLabel.trim()) return;
+    if (!editingId || !editLabel.trim()) { setEditLabelError('Give this category a name.'); return; }
     await TaxDocumentService.updateCategory(editingId, { label: editLabel.trim(), icon: editIcon });
     setEditingId(null);
     refreshCategories();
@@ -110,10 +113,11 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
                   </div>
                   <Input
                     value={editLabel}
-                    onChange={(e) => setEditLabel(e.target.value)}
-                    className="flex-1 h-8"
+                    onChange={(e) => { setEditLabel(e.target.value); setEditLabelError(''); }}
+                    className={cn('flex-1 h-8', editLabelError && 'border-destructive')}
                     autoFocus
                   />
+                  {editLabelError && <div className="absolute -bottom-4 left-0"><FieldError message={editLabelError} /></div>}
                   <Button size="sm" variant="ghost" onClick={handleSaveEdit}>
                     <Check className="w-4 h-4" />
                   </Button>
@@ -164,16 +168,17 @@ export const ManageCategoriesModal = ({ isOpen, onClose, onCategoriesChanged }: 
               <Input
                 placeholder="Category name"
                 value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                className="flex-1"
+                onChange={(e) => { setNewLabel(e.target.value); setNewLabelError(''); }}
+                className={cn('flex-1', newLabelError && 'border-destructive')}
                 autoFocus
               />
             </div>
+            <FieldError message={newLabelError} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsAdding(false)} className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={handleAddCategory} disabled={!newLabel.trim()} className="flex-1">
+              <Button onClick={handleAddCategory} className="flex-1">
                 Add Category
               </Button>
             </div>

@@ -9,6 +9,7 @@ import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS } from '@/types/keyPerson';
 import AccessPicker from '@/components/people/AccessPicker';
 import { PeopleService } from '@/services/PeopleService';
 import { AccessService } from '@/services/AccessService';
+import FieldError from '@/components/ui/field-error';
 
 interface KeyPersonModalProps {
   person?: KeyPerson;
@@ -26,6 +27,7 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
   const [address, setAddress] = useState(person?.address ?? '');
   const [notes, setNotes] = useState(person?.notes ?? '');
   const [emailWarning, setEmailWarning] = useState(false);
+  const [nameError, setNameError] = useState('');
   const [householdIds, setHouseholdIds] = useState<string[]>(() => {
     const household = PeopleService.getAll().filter((p) => p.role === 'household');
     if (!person) return household.map((p) => p.id);
@@ -33,7 +35,7 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
   });
 
   const handleSubmit = () => {
-    if (!name.trim()) return;
+    if (!name.trim()) { setNameError('Enter a name.'); return; }
     onSave(
       {
         name: name.trim(),
@@ -76,13 +78,15 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Name</label>
+            <label className="text-sm font-medium mb-1.5 block">Name <span className="text-[hsl(var(--destructive))]">*</span></label>
             <Input
               placeholder="e.g. Sarah Chen"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(''); }}
+              className={nameError ? 'border-destructive' : undefined}
               autoFocus
             />
+            <FieldError message={nameError} />
           </div>
 
           <div>
@@ -175,7 +179,7 @@ const KeyPersonModal = ({ person, defaults, onSave, onClose }: KeyPersonModalPro
             <p className="text-xs text-muted-foreground">Only you and people you invite can see this.</p>
           </div>
 
-          <Button onClick={handleSubmit} className="w-full" disabled={!name.trim()}>
+          <Button onClick={handleSubmit} className="w-full">
             {person ? 'Save changes' : 'Add to key people'}
           </Button>
         </div>

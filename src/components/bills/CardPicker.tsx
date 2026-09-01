@@ -7,6 +7,7 @@ import { PaymentCard, formatCardExpiry } from '@/types/paymentCard';
 import { PaymentCardService } from '@/services/PaymentCardService';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
 import { cn } from '@/lib/utils';
+import FieldError from '@/components/ui/field-error';
 
 interface CardPickerProps {
   value?: string;
@@ -20,6 +21,7 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
   const [nickname, setNickname] = useState('');
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
 
   useEffect(() => {
     PaymentCardService.refresh().then(() => setCards(PaymentCardService.getAll())).catch(console.error);
@@ -33,7 +35,7 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
   };
 
   const handleAdd = async () => {
-    if (!nickname.trim()) return;
+    if (!nickname.trim()) { setNicknameError('Give this card a nickname.'); return; }
     const m = month ? parseInt(month, 10) : undefined;
     const y = year ? parseInt(year, 10) : undefined;
     const card = await PaymentCardService.add({
@@ -96,13 +98,14 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
         <div className="space-y-2 rounded-xl border border-border p-3">
           <div className="space-y-1.5">
             <Label htmlFor="card-nickname" className="text-xs">
-              What do you call it?
+              What do you call it? <span className="text-[hsl(var(--destructive))]">*</span>
             </Label>
             <Input
               id="card-nickname"
               placeholder="e.g., Amex Gold, the joint Visa"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => { setNickname(e.target.value); setNicknameError(''); }}
+              className={cn(nicknameError && 'border-destructive')}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -113,6 +116,7 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
                 }
               }}
             />
+            <FieldError message={nicknameError} />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -151,7 +155,7 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
           </p>
 
           <div className="flex gap-2">
-            <Button type="button" size="sm" onClick={handleAdd} disabled={!nickname.trim()}>
+            <Button type="button" size="sm" onClick={handleAdd}>
               Save card
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={reset}>

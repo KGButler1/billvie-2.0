@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { BankAccount } from '@/types/bankAccount';
 import { BankAccountService } from '@/services/BankAccountService';
 import { cn } from '@/lib/utils';
+import FieldError from '@/components/ui/field-error';
 
 interface BankAccountPickerProps {
   value?: string;
@@ -18,6 +19,7 @@ const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
   const [nickname, setNickname] = useState('');
   const [institution, setInstitution] = useState('');
   const [lastDigits, setLastDigits] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
 
   useEffect(() => {
     BankAccountService.refresh().then(() => setAccounts(BankAccountService.getAll())).catch(console.error);
@@ -31,7 +33,7 @@ const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
   };
 
   const handleAdd = async () => {
-    if (!nickname.trim()) return;
+    if (!nickname.trim()) { setNicknameError('Give this account a nickname.'); return; }
     const account = await BankAccountService.add({
       nickname: nickname.trim(),
       institution: institution.trim() || undefined,
@@ -91,13 +93,14 @@ const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
         <div className="space-y-2 rounded-xl border border-border p-3">
           <div className="space-y-1.5">
             <Label htmlFor="acct-nickname" className="text-xs">
-              What do you call it?
+              What do you call it? <span className="text-[hsl(var(--destructive))]">*</span>
             </Label>
             <Input
               id="acct-nickname"
               placeholder="e.g., Everyday account, Mortgage offset"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => { setNickname(e.target.value); setNicknameError(''); }}
+              className={cn(nicknameError && 'border-destructive')}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -108,6 +111,7 @@ const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
                 }
               }}
             />
+            <FieldError message={nicknameError} />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -143,7 +147,7 @@ const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
           </p>
 
           <div className="flex gap-2">
-            <Button type="button" size="sm" onClick={handleAdd} disabled={!nickname.trim()}>
+            <Button type="button" size="sm" onClick={handleAdd}>
               Save account
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={reset}>

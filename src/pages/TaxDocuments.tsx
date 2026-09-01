@@ -648,6 +648,8 @@ interface AddTaxDocumentModalProps {
 
 const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [categoryError, setCategoryError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TaxCategory[]>(['other']);
   const [year, setYear] = useState(new Date().getFullYear());
   const [amount, setAmount] = useState('');
@@ -669,7 +671,10 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
   };
 
   const handleSave = async () => {
-    if (!name.trim() || selectedCategories.length === 0) return;
+    let hasError = false;
+    if (!name.trim()) { setNameError('Give this a name.'); hasError = true; }
+    if (selectedCategories.length === 0) { setCategoryError('Select at least one category.'); hasError = true; }
+    if (hasError) return;
 
     const created = await TaxDocumentService.createDocument({
       name: name.trim(),
@@ -708,17 +713,19 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Document Name *</Label>
+            <Label htmlFor="name">Document Name <span className="text-[hsl(var(--destructive))]">*</span></Label>
             <Input
               id="name"
               placeholder="e.g., Red Cross Donation Receipt"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(''); }}
+              className={nameError ? 'border-destructive' : undefined}
             />
+            {nameError && <p className="text-sm text-[hsl(var(--destructive))]">{nameError}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label>Categories (select one or more) *</Label>
+            <Label>Categories (select one or more) <span className="text-[hsl(var(--destructive))]">*</span></Label>
             <div className="flex flex-wrap gap-2">
               {allCategories.map((cat) => (
                 <button
@@ -737,6 +744,7 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
                 </button>
               ))}
             </div>
+            {categoryError && <p className="text-sm text-[hsl(var(--destructive))]">{categoryError}</p>}
           </div>
 
           <div className="space-y-2">
@@ -788,7 +796,7 @@ const AddTaxDocumentModal = ({ onClose, onSave }: AddTaxDocumentModalProps) => {
             <Button variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!name.trim() || selectedCategories.length === 0} className="flex-1">
+            <Button onClick={handleSave} className="flex-1">
               Save Document
             </Button>
           </div>

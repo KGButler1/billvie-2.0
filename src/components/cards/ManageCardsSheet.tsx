@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PaymentCard, formatCardExpiry } from '@/types/paymentCard';
 import { PaymentCardService } from '@/services/PaymentCardService';
 import { cardExpiryFlag, CARD_FLAG_LABELS } from '@/utils/cardExpiry';
+import FieldError from '@/components/ui/field-error';
 
 interface ManageCardsSheetProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
   const [cards, setCards] = useState<PaymentCard[]>([]);
   const [archived, setArchived] = useState<PaymentCard[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [nicknameError, setNicknameError] = useState('');
 
   const refresh = () => {
     setCards(PaymentCardService.getAll());
@@ -47,7 +49,7 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
     });
 
   const save = async () => {
-    if (!draft?.nickname.trim()) return;
+    if (!draft?.nickname.trim()) { setNicknameError('Give this card a nickname.'); return; }
     const m = draft.month ? parseInt(draft.month, 10) : undefined;
     const y = draft.year ? parseInt(draft.year, 10) : undefined;
     const payload = {
@@ -91,14 +93,16 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
         {draft ? (
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="mc-nickname">What do you call it?</Label>
+              <Label htmlFor="mc-nickname">What do you call it? <span className="text-[hsl(var(--destructive))]">*</span></Label>
               <Input
                 id="mc-nickname"
                 placeholder="e.g., Amex Gold"
                 value={draft.nickname}
-                onChange={(e) => setDraft({ ...draft, nickname: e.target.value })}
+                onChange={(e) => { setDraft({ ...draft, nickname: e.target.value }); setNicknameError(''); }}
+                className={nicknameError ? 'border-destructive' : undefined}
                 autoFocus
               />
+              <FieldError message={nicknameError} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -137,7 +141,7 @@ const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={save} disabled={!draft.nickname.trim()}>
+              <Button onClick={save}>
                 {draft.id ? 'Save changes' : 'Add card'}
               </Button>
               <Button variant="ghost" onClick={() => setDraft(null)}>

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { BankAccount } from '@/types/bankAccount';
 import { BankAccountService } from '@/services/BankAccountService';
+import FieldError from '@/components/ui/field-error';
 
 interface ManageBankAccountsSheetProps {
   onClose: () => void;
@@ -26,6 +27,7 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [archived, setArchived] = useState<BankAccount[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [nicknameError, setNicknameError] = useState('');
 
   const refresh = () => {
     setAccounts(BankAccountService.getAll());
@@ -46,7 +48,7 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
     });
 
   const save = async () => {
-    if (!draft?.nickname.trim()) return;
+    if (!draft?.nickname.trim()) { setNicknameError('Give this account a nickname.'); return; }
     const payload = {
       nickname: draft.nickname.trim(),
       institution: draft.institution.trim() || undefined,
@@ -87,14 +89,16 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
         {draft ? (
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="mba-nickname">What do you call it?</Label>
+              <Label htmlFor="mba-nickname">What do you call it? <span className="text-[hsl(var(--destructive))]">*</span></Label>
               <Input
                 id="mba-nickname"
                 placeholder="e.g., Everyday account"
                 value={draft.nickname}
-                onChange={(e) => setDraft({ ...draft, nickname: e.target.value })}
+                onChange={(e) => { setDraft({ ...draft, nickname: e.target.value }); setNicknameError(''); }}
+                className={nicknameError ? 'border-destructive' : undefined}
                 autoFocus
               />
+              <FieldError message={nicknameError} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -130,7 +134,7 @@ const ManageBankAccountsSheet = ({ onClose }: ManageBankAccountsSheetProps) => {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={save} disabled={!draft.nickname.trim()}>
+              <Button onClick={save}>
                 {draft.id ? 'Save changes' : 'Add account'}
               </Button>
               <Button variant="ghost" onClick={() => setDraft(null)}>

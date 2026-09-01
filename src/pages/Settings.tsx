@@ -421,6 +421,7 @@ const ProfileSection = () => {
   const { session } = useAuth();
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [nameError, setNameError] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -440,7 +441,7 @@ const ProfileSection = () => {
   }
 
   const handleSaveName = async () => {
-    if (!nameValue.trim()) return;
+    if (!nameValue.trim()) { setNameError('Enter a name.'); return; }
     setSavingName(true);
     const { error } = await updateDisplayName(nameValue.trim());
     setSavingName(false);
@@ -505,14 +506,17 @@ const ProfileSection = () => {
           <div className="flex-1 min-w-0">
             {editingName ? (
               <div className="flex items-center gap-2">
-                <Input
-                  value={nameValue}
-                  onChange={(e) => setNameValue(e.target.value)}
-                  className="h-9 max-w-[200px]"
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-                />
-                <Button size="sm" onClick={handleSaveName} disabled={savingName || !nameValue.trim()}>
+                <div className="space-y-1">
+                  <Input
+                    value={nameValue}
+                    onChange={(e) => { setNameValue(e.target.value); setNameError(''); }}
+                    className={cn('h-9 max-w-[200px]', nameError && 'border-destructive')}
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                  />
+                  {nameError && <p className="text-sm text-[hsl(var(--destructive))]">{nameError}</p>}
+                </div>
+                <Button size="sm" onClick={handleSaveName} disabled={savingName}>
                   {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setEditingName(false)}>

@@ -20,6 +20,7 @@ import TaxRelevanceFields, {
 } from '@/components/tax/TaxRelevanceFields';
 import { TaxTagService } from '@/services/TaxTagService';
 import AttachmentManager from '@/components/documents/AttachmentManager';
+import FieldError from '@/components/ui/field-error';
 
 interface AddDocumentModalProps {
   document?: HouseholdDocument;
@@ -68,6 +69,7 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
   const [externalLink, setExternalLink] = useState(document?.externalLink ?? '');
   const [physicalLocation, setPhysicalLocation] = useState(document?.physicalLocation ?? '');
   const whereToFindItRef = useRef<HTMLDivElement>(null);
+  const [titleError, setTitleError] = useState('');
 
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(() => {
     if (!document) return null;
@@ -179,7 +181,7 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
   }, [scrollToWhereToFindIt]);
 
   const handleSubmit = () => {
-    if (!title.trim()) return;
+    if (!title.trim()) { setTitleError('Give this document a title.'); return; }
 
     const shared = {
       title: title.trim(),
@@ -234,13 +236,15 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-1.5 block">What is it?</label>
+            <label className="text-sm font-medium mb-1.5 block">What is it? <span className="text-[hsl(var(--destructive))]">*</span></label>
             <Input
               placeholder="e.g. Home Insurance, Super Fund"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setTitleError(''); }}
+              className={titleError ? 'border-destructive' : undefined}
               autoFocus
             />
+            <FieldError message={titleError} />
           </div>
 
           <div>
@@ -447,7 +451,7 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
             </div>
           )}
 
-          <Button onClick={handleSubmit} className="w-full" disabled={!title.trim()}>
+          <Button onClick={handleSubmit} className="w-full">
             {document ? 'Save changes' : 'Add to household records'}
           </Button>
         </div>

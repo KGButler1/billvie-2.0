@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PersonRole, TrustedPerson } from '@/types/people';
 import { PeopleService } from '@/services/PeopleService';
 import { EntitlementService } from '@/services/EntitlementService';
+import FieldError from '@/components/ui/field-error';
 
 interface InvitePersonModalProps {
   defaultName?: string;
@@ -37,6 +38,8 @@ const InvitePersonModal = ({
   const [email, setEmail] = useState(defaultEmail);
   const [role, setRole] = useState<PersonRole>(defaultRole);
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   // Checked on role change, not on submit — the wall should be visible before effort is spent.
   useEffect(() => {
@@ -47,7 +50,10 @@ const InvitePersonModal = ({
   const canSubmit = name.trim().length > 0 && /^\S+@\S+\.\S+$/.test(email.trim());
 
   const handleSubmit = async () => {
-    if (!canSubmit || blockedReason) return;
+    let hasError = false;
+    if (!name.trim()) { setNameError('Enter a name.'); hasError = true; }
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setEmailError('Enter a valid email address.'); hasError = true; }
+    if (hasError || blockedReason) return;
     const person = await PeopleService.invite({ name: name.trim(), email: email.trim(), role, keyPersonId });
     onInvited(person);
   };
@@ -80,16 +86,18 @@ const InvitePersonModal = ({
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium mb-1.5 block" htmlFor="invite-name">
-              Their name
+              Their name <span className="text-[hsl(var(--destructive))]">*</span>
             </label>
-            <Input id="invite-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <Input id="invite-name" value={name} onChange={(e) => { setName(e.target.value); setNameError(''); }} className={nameError ? 'border-destructive' : undefined} autoFocus />
+            <FieldError message={nameError} />
           </div>
 
           <div>
             <label className="text-sm font-medium mb-1.5 block" htmlFor="invite-email">
-              Their email
+              Their email <span className="text-[hsl(var(--destructive))]">*</span>
             </label>
-            <Input id="invite-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="invite-email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(''); }} className={emailError ? 'border-destructive' : undefined} />
+            <FieldError message={emailError} />
           </div>
 
           <div>
@@ -120,7 +128,7 @@ const InvitePersonModal = ({
               </Button>
             </div>
           ) : (
-            <Button className="w-full" onClick={handleSubmit} disabled={!canSubmit}>
+            <Button className="w-full" onClick={handleSubmit}>
               Send the invite
             </Button>
           )}

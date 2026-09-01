@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OnboardingService } from '@/services/OnboardingService';
 import { BillService } from '@/services/BillService';
+import FieldError from '@/components/ui/field-error';
+import { cn } from '@/lib/utils';
 
 type Step = 'hook' | 'quickstart' | 'add-item' | 'confirmation' | 'sharing' | 'family-preview';
 
@@ -60,6 +62,7 @@ const Onboarding = () => {
   const [billAmount, setBillAmount] = useState(() => loadDraft().billAmount);
   const [billDueDate, setBillDueDate] = useState(() => loadDraft().billDueDate);
   const [addedItemName, setAddedItemName] = useState('');
+  const [billNameError, setBillNameError] = useState('');
 
   // Persist draft as the user types
   useEffect(() => {
@@ -69,7 +72,7 @@ const Onboarding = () => {
   const goTo = (next: Step) => setStep(next);
 
   const handleAddBill = async () => {
-    if (!billName.trim()) return;
+    if (!billName.trim()) { setBillNameError('Give this bill a name.'); return; }
     await BillService.refresh();
     await BillService.addBill({
       name: billName.trim(),
@@ -242,15 +245,16 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="ob-name">What is it? *</Label>
+                  <Label htmlFor="ob-name">What is it? <span className="text-[hsl(var(--destructive))]">*</span></Label>
                   <Input
                     id="ob-name"
                     placeholder="e.g., Electricity, Internet, Council rates"
                     value={billName}
-                    onChange={(e) => setBillName(e.target.value)}
-                    className="h-12"
+                    onChange={(e) => { setBillName(e.target.value); setBillNameError(''); }}
+                    className={cn('h-12', billNameError && 'border-destructive')}
                     autoFocus
                   />
+                  <FieldError message={billNameError} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -293,7 +297,6 @@ const Onboarding = () => {
               <div className="space-y-3">
                 <Button
                   onClick={handleAddBill}
-                  disabled={!billName.trim()}
                   className="btn-hero w-full text-base h-12"
                 >
                   Save this bill

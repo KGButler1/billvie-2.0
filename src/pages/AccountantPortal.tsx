@@ -14,6 +14,7 @@ import { HouseholdDocument } from '@/types/document';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/utils/currency';
+import FieldError from '@/components/ui/field-error';
 
 const AccountantPortal = () => {
   const navigate = useNavigate();
@@ -218,9 +219,14 @@ interface AccountantSetupProps {
 const AccountantSetup = ({ onComplete, onBack }: AccountantSetupProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   const handleCreate = () => {
-    if (!name.trim() || !email.trim()) return;
+    let hasError = false;
+    if (!name.trim()) { setNameError('Enter your name.'); hasError = true; }
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setEmailError('Enter a valid email.'); hasError = true; }
+    if (hasError) return;
     AccountantService.createProfile(name.trim(), email.trim());
     onComplete();
   };
@@ -253,29 +259,32 @@ const AccountantSetup = ({ onComplete, onBack }: AccountantSetupProps) => {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Display Name</Label>
+            <Label htmlFor="name">Display Name <span className="text-[hsl(var(--destructive))]">*</span></Label>
             <Input
               id="name"
               placeholder="e.g., John Smith CPA"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(''); }}
+              className={nameError ? 'border-destructive' : undefined}
             />
+            <FieldError message={nameError} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Professional Email</Label>
+            <Label htmlFor="email">Professional Email <span className="text-[hsl(var(--destructive))]">*</span></Label>
             <Input
               id="email"
               type="email"
               placeholder="john@accounting.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+              className={emailError ? 'border-destructive' : undefined}
             />
+            <FieldError message={emailError} />
           </div>
 
           <Button 
             onClick={handleCreate} 
-            disabled={!name.trim() || !email.trim()}
             className="w-full mt-6"
           >
             Create Accountant Profile

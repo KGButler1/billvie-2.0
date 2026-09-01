@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Event, EventType, EVENT_TYPE_LABELS } from '@/types/bill';
+import FieldError from '@/components/ui/field-error';
 
 interface CreateEventModalProps {
   onAdd: (event: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>) => void;
@@ -24,11 +25,12 @@ const CreateEventModal = ({ onAdd, onClose }: CreateEventModalProps) => {
   const [budget, setBudget] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim()) return;
+    if (!name.trim()) { setNameError('Give this event a name.'); return; }
 
     onAdd({
       name: name.trim(),
@@ -74,10 +76,11 @@ const CreateEventModal = ({ onAdd, onClose }: CreateEventModalProps) => {
               id="name"
               placeholder="e.g., Dallas Birthday Trip 2025"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(''); }}
+              className={cn('h-12', nameError && 'border-destructive')}
               autoFocus
-              className="h-12"
             />
+            <FieldError message={nameError} />
           </div>
 
           <div className="space-y-2">
@@ -135,7 +138,6 @@ const CreateEventModal = ({ onAdd, onClose }: CreateEventModalProps) => {
 
           <Button
             type="submit"
-            disabled={!name.trim()}
             className="btn-hero w-full"
           >
             Create Event

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Plus, Link2, CircleAlert as AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import FieldError from '@/components/ui/field-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -152,6 +153,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
   const [taggedPersonIds, setTaggedPersonIds] = useState<string[]>(
     initialBill?.taggedPersonIds ?? []
   );
+  const [nameError, setNameError] = useState('');
 
   const [tax, setTax] = useState<TaxRelevanceValue>(() => {
     const base = emptyTaxRelevance(initialBill?.dueDate);
@@ -259,7 +261,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim()) return;
+    if (!name.trim()) { setNameError('Give this bill a name.'); return; }
 
     // Compute the actual dueDate from the recurring inputs when applicable
     let computedDueDate = dueDate || undefined;
@@ -334,16 +336,17 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
           {/* Name - Required */}
           <div className="space-y-2">
             <Label htmlFor="name" className={isLowConfidence('name') ? 'text-amber-600' : ''}>
-              What is it? {isLowConfidence('name') && <AlertCircle className="inline w-3.5 h-3.5 ml-1" />}
+              What is it? <span className="text-[hsl(var(--destructive))]">*</span> {isLowConfidence('name') && <AlertCircle className="inline w-3.5 h-3.5 ml-1" />}
             </Label>
             <Input
               id="name"
               placeholder="e.g., Electricity, Internet, Council rates"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(''); }}
               autoFocus
-              className={cn('h-12', isLowConfidence('name') && 'border-amber-400')}
+              className={cn('h-12', isLowConfidence('name') && 'border-amber-400', nameError && 'border-destructive')}
             />
+            <FieldError message={nameError} />
           </div>
 
           {/* Amount */}
@@ -689,7 +692,6 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
           {/* Submit */}
           <Button
             type="submit"
-            disabled={!name.trim()}
             className="btn-hero w-full"
           >
             {isEdit ? 'Save Changes' : 'Save Bill'}

@@ -22,7 +22,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
+import FieldError from '@/components/ui/field-error';
 import {
   FinancialInfoService, 
   InsuranceEntry, 
@@ -954,6 +956,7 @@ const InsuranceModal = ({
   const [contactInfo, setContactInfo] = useState('');
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(null);
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+  const [providerError, setProviderError] = useState('');
 
   const billOptions = useMemo(
     () => BillService.getAllBills().map((b) => ({ id: b.id, label: b.name })),
@@ -997,7 +1000,7 @@ const InsuranceModal = ({
   }, [editingId, isOpen]);
 
   const handleSave = async () => {
-    if (!provider) return;
+    if (!provider.trim()) { setProviderError('Enter a provider name.'); return; }
 
     const data = {
       provider,
@@ -1027,11 +1030,13 @@ const InsuranceModal = ({
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingId ? 'Edit' : 'Add'} Insurance</DialogTitle>
+          <DialogDescription>Add or update this insurance policy.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Provider</Label>
-            <Input value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="Insurance company" />
+            <Label>Provider <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input value={provider} onChange={(e) => { setProvider(e.target.value); setProviderError(''); }} className={providerError ? 'border-destructive' : undefined} placeholder="Insurance company" />
+            <FieldError message={providerError} />
           </div>
           <div>
             <Label>Policy Number (optional)</Label>
@@ -1165,6 +1170,8 @@ const SuperModal = ({
   const [contactInfo, setContactInfo] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
   const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
+  const [fundNameError, setFundNameError] = useState('');
+  const [balanceError, setBalanceError] = useState('');
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1198,7 +1205,10 @@ const SuperModal = ({
   }, [editingId, isOpen]);
 
   const handleSave = async () => {
-    if (!fundName || !balance) return;
+    let hasError = false;
+    if (!fundName.trim()) { setFundNameError('Give this account a name.'); hasError = true; }
+    if (!balance.trim()) { setBalanceError('Enter an estimated balance, even a rough one is fine.'); hasError = true; }
+    if (hasError) return;
 
     const data = {
       fundName,
@@ -1226,11 +1236,13 @@ const SuperModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingId ? 'Edit' : 'Add'} Account</DialogTitle>
+          <DialogDescription>Add or update this account.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Fund Name</Label>
-            <Input value={fundName} onChange={(e) => setFundName(e.target.value)} placeholder="Australian Super" />
+            <Label>Fund Name <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input value={fundName} onChange={(e) => { setFundName(e.target.value); setFundNameError(''); }} className={fundNameError ? 'border-destructive' : undefined} placeholder="Australian Super" />
+            <FieldError message={fundNameError} />
           </div>
           <div>
             <Label>Type (optional)</Label>
@@ -1255,8 +1267,9 @@ const SuperModal = ({
             </p>
           </div>
           <div>
-            <Label>Estimated Balance</Label>
-            <Input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="$0" />
+            <Label>Estimated Balance <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input type="number" value={balance} onChange={(e) => { setBalance(e.target.value); setBalanceError(''); }} className={balanceError ? 'border-destructive' : undefined} placeholder="$0" />
+            <FieldError message={balanceError} />
           </div>
           <div>
             <Label>Who to contact (optional)</Label>
@@ -1303,6 +1316,8 @@ const MiscModal = ({
   const [value, setValue] = useState('');
   const [notes, setNotes] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
+  const [keyError, setKeyError] = useState('');
+  const [valueError, setValueError] = useState('');
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1328,7 +1343,10 @@ const MiscModal = ({
   }, [editingId, isOpen]);
 
   const handleSave = async () => {
-    if (!key || !value) return;
+    let hasError = false;
+    if (!key.trim()) { setKeyError('Give this a name.'); hasError = true; }
+    if (!value.trim()) { setValueError('Enter a value.'); hasError = true; }
+    if (hasError) return;
     
     const data = {
       key,
@@ -1352,15 +1370,18 @@ const MiscModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingId ? 'Edit' : 'Add'} Information</DialogTitle>
+          <DialogDescription>Add or update this information.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Label</Label>
-            <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g., Storage unit access code" />
+            <Label>Label <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input value={key} onChange={(e) => { setKey(e.target.value); setKeyError(''); }} className={keyError ? 'border-destructive' : undefined} placeholder="e.g., Storage unit access code" />
+            <FieldError message={keyError} />
           </div>
           <div>
-            <Label>Value</Label>
-            <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Enter value" />
+            <Label>Value <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input value={value} onChange={(e) => { setValue(e.target.value); setValueError(''); }} className={valueError ? 'border-destructive' : undefined} placeholder="Enter value" />
+            <FieldError message={valueError} />
           </div>
           <div>
             <Label>Notes (optional)</Label>
@@ -1400,6 +1421,8 @@ const IncomeModal = ({
   const [notes, setNotes] = useState('');
   const [linkedDocument, setLinkedDocument] = useState<LinkPickerOption | null>(null);
   const [linkedBankAccountId, setLinkedBankAccountId] = useState<string | undefined>(undefined);
+  const [sourceNameError, setSourceNameError] = useState('');
+  const [amountError, setAmountError] = useState('');
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1427,7 +1450,10 @@ const IncomeModal = ({
   }, [editingId, isOpen]);
 
   const handleSave = async () => {
-    if (!sourceName || !amount) return;
+    let hasError = false;
+    if (!sourceName.trim()) { setSourceNameError('Give this income source a name.'); hasError = true; }
+    if (!amount.trim()) { setAmountError('Enter an approximate amount.'); hasError = true; }
+    if (hasError) return;
     const data = {
       sourceName,
       approximateAmount: parseFloat(amount),
@@ -1450,15 +1476,18 @@ const IncomeModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingId ? 'Edit' : 'Add'} Income Source</DialogTitle>
+          <DialogDescription>Add or update this income source.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Source Name</Label>
-            <Input value={sourceName} onChange={(e) => setSourceName(e.target.value)} placeholder="Primary salary" />
+            <Label>Source Name <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input value={sourceName} onChange={(e) => { setSourceName(e.target.value); setSourceNameError(''); }} className={sourceNameError ? 'border-destructive' : undefined} placeholder="Primary salary" />
+            <FieldError message={sourceNameError} />
           </div>
           <div>
-            <Label>Approximate Amount</Label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="$0" />
+            <Label>Approximate Amount <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input type="number" value={amount} onChange={(e) => { setAmount(e.target.value); setAmountError(''); }} className={amountError ? 'border-destructive' : undefined} placeholder="$0" />
+            <FieldError message={amountError} />
           </div>
           <div>
             <Label>Notes (optional)</Label>
@@ -1509,6 +1538,8 @@ const DebtModal = ({
   const [linkedPaymentCardId, setLinkedPaymentCardId] = useState<string | undefined>(undefined);
   const [accountNumber, setAccountNumber] = useState('');
   const [contactInfo, setContactInfo] = useState('');
+  const [owedToError, setOwedToError] = useState('');
+  const [balanceError, setBalanceError] = useState('');
 
   const documentOptions = useMemo(
     () => DocumentService.getAll().map((d) => ({ id: d.id, label: d.title })),
@@ -1544,7 +1575,10 @@ const DebtModal = ({
   }, [editingId, isOpen]);
 
   const handleSave = async () => {
-    if (!owedTo || !balance) return;
+    let hasError = false;
+    if (!owedTo.trim()) { setOwedToError('Who or what is this owed to?'); hasError = true; }
+    if (!balance.trim()) { setBalanceError('Enter an approximate balance, even a rough one is fine.'); hasError = true; }
+    if (hasError) return;
     const data = {
       owedTo,
       type,
@@ -1571,11 +1605,13 @@ const DebtModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingId ? 'Edit' : 'Add'} Debt or Loan</DialogTitle>
+          <DialogDescription>Add or update this debt.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Owed to</Label>
-            <Input value={owedTo} onChange={(e) => setOwedTo(e.target.value)} placeholder="e.g. Commonwealth Bank, or a family member" />
+            <Label>Owed to <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input value={owedTo} onChange={(e) => { setOwedTo(e.target.value); setOwedToError(''); }} className={owedToError ? 'border-destructive' : undefined} placeholder="e.g. Commonwealth Bank, or a family member" />
+            <FieldError message={owedToError} />
           </div>
           <div>
             <Label>Type</Label>
@@ -1591,8 +1627,9 @@ const DebtModal = ({
             </Select>
           </div>
           <div>
-            <Label>Approximate Balance</Label>
-            <Input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="$0" />
+            <Label>Approximate Balance <span className="text-[hsl(var(--destructive))]">*</span></Label>
+            <Input type="number" value={balance} onChange={(e) => { setBalance(e.target.value); setBalanceError(''); }} className={balanceError ? 'border-destructive' : undefined} placeholder="$0" />
+            <FieldError message={balanceError} />
           </div>
           <div>
             <Label>Account number (optional)</Label>
