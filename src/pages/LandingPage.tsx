@@ -3,6 +3,7 @@ import { ArrowRight, Zap, Bell, Users, Calendar, Receipt, Check, Shield, Lock, E
 import BillvieLogo from "@/components/BillvieLogo";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { FREE_FEATURES, PRO_FEATURES, PRO_PRICE, PRO_PERIOD } from "@/constants/pricing";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -41,31 +42,16 @@ const LandingPage = () => {
       price: "$0",
       period: "forever",
       description: "Everything you need to get your household in order",
-      features: [
-        "Up to 25 bills",
-        "Up to 3 events",
-        "Basic reminders",
-        "Mobile access",
-        "One trusted person — free",
-        "Advisor & accountant sharing — always free",
-      ],
+      features: FREE_FEATURES,
       cta: "Get Started Free",
       featured: false,
     },
     {
       name: "Pro",
-      price: "$79",
-      period: "/year",
+      price: PRO_PRICE,
+      period: PRO_PERIOD,
       description: "Renews annually — full continuity for the whole family",
-      features: [
-        "Unlimited bills",
-        "Unlimited events",
-        "Smart reminders",
-        "Unlimited trusted people",
-        "Tax export",
-        "Advisor & accountant sharing — always free",
-        "Priority support",
-      ],
+      features: PRO_FEATURES,
       cta: "Get the Annual Plan",
       featured: true,
     },

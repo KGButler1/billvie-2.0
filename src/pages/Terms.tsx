@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import BillvieLogo from '@/components/BillvieLogo';
+import { FREE_BILL_LIMIT, FREE_EVENT_LIMIT } from '@/constants/pricing';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-8">
@@ -52,7 +53,9 @@ const Terms = () => {
 
         <Section title="3. Subscriptions and Payments">
           <p>
-            Free plan: up to 25 bills and 3 events, without sharing or export.
+            Free plan: up to {FREE_BILL_LIMIT} bills and {FREE_EVENT_LIMIT} events. Sharing with an
+            advisor or accountant is included on both plans. Tax export, the household summary, and
+            data backup are part of the paid plan.
           </p>
           <p>
             Billvie Annual: $79 USD per year, billed annually. Unlocks unlimited bills and events, smart

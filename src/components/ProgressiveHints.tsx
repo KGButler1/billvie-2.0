@@ -6,6 +6,7 @@ import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { UserService } from '@/services/UserService';
 import { useNavigate } from 'react-router-dom';
+import { FREE_BILL_LIMIT, FREE_EVENT_LIMIT } from '@/constants/pricing';
 
 type HintType = 'events' | 'upgrade_events' | 'upgrade_bills' | 'sharing';
 
@@ -45,22 +46,22 @@ const ProgressiveHints = () => {
       id: 'upgrade_events',
       icon: Sparkles,
       title: 'Need more Events?',
-      message: 'You\'ve created 3 Events! Upgrade for unlimited Events, sharing, and analytics.',
+      message: `You've created ${FREE_EVENT_LIMIT} Events! Upgrade for unlimited Events, sharing, and analytics.`,
       action: 'Learn More',
       condition: () => {
         const eventCount = EventService.getEventCount();
-        return eventCount >= 3 && !isPaid;
+        return eventCount >= FREE_EVENT_LIMIT && !isPaid;
       },
     },
     {
       id: 'upgrade_bills',
       icon: TrendingUp,
       title: 'Approaching bill limit',
-      message: 'You\'re close to 25 bills! Upgrade for unlimited tracking and premium features.',
+      message: `You're close to ${FREE_BILL_LIMIT} bills! Upgrade for unlimited tracking and premium features.`,
       action: 'Upgrade Now',
       condition: () => {
         const billCount = BillService.getBillCount();
-        return billCount >= 20 && billCount < 25 && !isPaid;
+        return billCount >= FREE_BILL_LIMIT - 5 && billCount < FREE_BILL_LIMIT && !isPaid;
       },
     },
     {

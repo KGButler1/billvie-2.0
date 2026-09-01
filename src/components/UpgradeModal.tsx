@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Sparkles, Receipt, Calendar, FileText, Share2, ChartBar as BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES } from '@/constants/pricing';
+import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES, FREE_BILL_LIMIT, FREE_EVENT_LIMIT } from '@/constants/pricing';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -14,12 +14,12 @@ interface UpgradeModalProps {
 const UPGRADE_REASONS = {
   bills: {
     title: "You've reached the bill limit",
-    description: "Free accounts are limited to 25 bills. Upgrade to add unlimited bills.",
+    description: `Free accounts are limited to ${FREE_BILL_LIMIT} bills. Upgrade to add unlimited bills.`,
     icon: Receipt,
   },
   events: {
     title: "You've reached the event limit",
-    description: "Free accounts are limited to 3 events. Upgrade to create unlimited events.",
+    description: `Free accounts are limited to ${FREE_EVENT_LIMIT} events. Upgrade to create unlimited events.`,
     icon: Calendar,
   },
   financial: {

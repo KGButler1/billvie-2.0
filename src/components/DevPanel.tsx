@@ -7,6 +7,7 @@ import { EventService } from '@/services/EventService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { BillService } from '@/services/BillService';
 import { UserSettings } from '@/types/bill';
+import { FREE_BILL_LIMIT } from '@/constants/pricing';
 import {
   Select,
   SelectContent,
@@ -83,7 +84,7 @@ const DevPanel = ({ onClose, onDataChange }: DevPanelProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="anonymous">Anonymous</SelectItem>
-              <SelectItem value="free">Free User (25 bills)</SelectItem>
+              <SelectItem value="free">Free User ({FREE_BILL_LIMIT} bills)</SelectItem>
               <SelectItem value="paid">Paid User (unlimited)</SelectItem>
               <SelectItem value="accountant">Accountant View</SelectItem>
             </SelectContent>

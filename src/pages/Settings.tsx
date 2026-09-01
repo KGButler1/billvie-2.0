@@ -22,12 +22,13 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import UserAvatar, { getInitials } from '@/components/UserAvatar';
 import { toast } from 'sonner';
-import { PRO_PRICE, PRO_PERIOD } from '@/constants/pricing';
+import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
 
 const Settings = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(UserService.getSettings());
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'general' | 'export'>('general');
   const [showCardsSheet, setShowCardsSheet] = useState(false);
   const [showBankAccountsSheet, setShowBankAccountsSheet] = useState(false);
 
@@ -110,7 +111,7 @@ const Settings = () => {
                   Active
                 </span>
               ) : (
-                <Button size="sm" onClick={() => setShowUpgradeModal(true)}>
+                <Button size="sm" onClick={() => { setUpgradeReason('general'); setShowUpgradeModal(true); }}>
                   Upgrade
                 </Button>
               )}
@@ -122,9 +123,9 @@ const Settings = () => {
                   Free plan limits:
                 </p>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• 25 bills maximum</li>
-                  <li>• 3 events maximum</li>
-                  <li>• No sharing or export</li>
+                  {FREE_FEATURES.map((f) => (
+                    <li key={f}>• {f}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -194,10 +195,10 @@ const Settings = () => {
                 </div>
                 <div>
                   <Label htmlFor="notifications" className="font-medium">Bill Reminders</Label>
-                  <p className="text-sm text-muted-foreground">Notify 3 days before due</p>
+                  <p className="text-sm text-muted-foreground">Notify 3 days before due, coming soon</p>
                 </div>
               </div>
-              <Switch id="notifications" />
+              <Switch id="notifications" disabled checked={false} />
             </div>
           </div>
         </section>
@@ -239,7 +240,7 @@ const Settings = () => {
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             {/* Household Summary */}
             <button
-              onClick={() => (isPaid ? navigate('/export/summary') : setShowUpgradeModal(true))}
+              onClick={() => navigate('/export/summary')}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -258,7 +259,7 @@ const Settings = () => {
 
             {/* Tax Export */}
             <button
-              onClick={() => (isPaid ? navigate('/tax-documents') : setShowUpgradeModal(true))}
+              onClick={() => navigate('/tax-documents')}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -277,7 +278,11 @@ const Settings = () => {
 
             {/* Backup */}
             <button
-              onClick={() => (isPaid ? downloadBackup() : setShowUpgradeModal(true))}
+              onClick={() => {
+                if (isPaid) { downloadBackup(); return; }
+                setUpgradeReason('export');
+                setShowUpgradeModal(true);
+              }}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border"
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -405,12 +410,11 @@ const Settings = () => {
 
       <BottomNav />
 
-      <UpgradeModal 
+      <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        reason="general"
+        reason={upgradeReason}
         onUpgrade={handleUpgrade}
-        onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
     </div>
   );
