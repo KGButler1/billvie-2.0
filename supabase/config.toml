@@ -1,0 +1,17 @@
+[functions.stripe-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.bill-scan-callback]
+verify_jwt = false
+
+[functions.trigger-bill-scan]
+verify_jwt = true
+
+[functions.get-scan-quota]
+verify_jwt = true
+
+[functions.invite-household-member]
+verify_jwt = true
