@@ -63,6 +63,7 @@ const Bills = () => {
   const [detailBill, setDetailBill] = useState<Bill | null>(null);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'bills' | 'scan'>('bills');
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [demoNudge, setDemoNudge] = useState(false);
   const [isLoading, setIsLoading] = useState(() => !BillService.isLoaded());
@@ -143,14 +144,22 @@ const Bills = () => {
   const isPaid = profile?.isPaid ?? false;
 
   const handleTryAddBill = () => {
-    if (canAddBill(isPaid)) setIsAddingBill(true);
-    else setShowUpgradeModal(true);
+    if (canAddBill(isPaid)) {
+      setIsAddingBill(true);
+    } else {
+      setUpgradeReason('bills');
+      setShowUpgradeModal(true);
+    }
     setShowFabMenu(false);
   };
 
   const handleTryScanBill = () => {
-    if (canAddBill(isPaid)) setIsScanningBill(true);
-    else setShowUpgradeModal(true);
+    if (canAddBill(isPaid)) {
+      setIsScanningBill(true);
+    } else {
+      setUpgradeReason('bills');
+      setShowUpgradeModal(true);
+    }
     setShowFabMenu(false);
   };
 
@@ -361,18 +370,17 @@ const Bills = () => {
 
       <AnimatePresence>
         {isScanningBill && (
-          <BillScanModal onClose={() => setIsScanningBill(false)} onUpgradeClick={() => setShowUpgradeModal(true)} />
+          <BillScanModal
+            onClose={() => setIsScanningBill(false)}
+            onUpgradeClick={() => { setUpgradeReason('scan'); setShowUpgradeModal(true); }}
+          />
         )}
       </AnimatePresence>
 
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        reason="scan"
-        onPreviewAnyway={() => {
-          setShowUpgradeModal(false);
-          setIsAddingBill(true);
-        }}
+        reason={upgradeReason}
       />
 
       {/* FAB with menu */}

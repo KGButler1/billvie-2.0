@@ -30,6 +30,9 @@ import BottomNav from '@/components/BottomNav';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { isDemoModeActive } from '@/demo/demoFlag';
+import { useProfile } from '@/hooks/useProfile';
+import UpgradeModal from '@/components/UpgradeModal';
+import { canAddDocument } from '@/utils/documentLimits';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -52,6 +55,9 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 const Documents = () => {
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
   const [scannedDocs, setScannedDocs] = useState<HouseholdDocument[]>(() => DocumentService.getScanned());
   const [searchParams] = useSearchParams();
@@ -121,6 +127,11 @@ const Documents = () => {
   const linkingDoc = linkingId ? [...documents, ...scannedDocs].find((d) => d.id === linkingId) : undefined;
   const editingDoc = editingId ? [...documents, ...scannedDocs].find((d) => d.id === editingId) : undefined;
 
+  const handleTryAddDocument = () => {
+    if (canAddDocument(isPaid)) setIsAdding(true);
+    else setShowUpgradeModal(true);
+  };
+
   // Important documents: filtered + sorted, grouped by type
   const filteredDocs = useMemo(() => {
     let list = documents;
@@ -159,7 +170,7 @@ const Documents = () => {
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold">Important Documents</h1>
-          <Button size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">
+          <Button size="sm" onClick={handleTryAddDocument} className="gap-1.5">
             <Plus className="w-4 h-4" /> Add
           </Button>
         </div>
@@ -181,7 +192,7 @@ const Documents = () => {
         {documents.length > 0 && (
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold hidden lg:block">Important Documents</h1>
-            <Button onClick={() => setIsAdding(true)} className="gap-1.5">
+            <Button onClick={handleTryAddDocument} className="gap-1.5">
               <Plus className="w-4 h-4" /> Add
             </Button>
           </div>
@@ -200,7 +211,7 @@ const Documents = () => {
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
               Add important documents so they're easy to find when needed — insurance, super, accounts and investments, or anything your household depends on.
             </p>
-            <Button onClick={() => setIsAdding(true)} className="gap-2">
+            <Button onClick={handleTryAddDocument} className="gap-2">
               <Plus className="w-4 h-4" /> Add something important
             </Button>
           </motion.div>
@@ -386,6 +397,12 @@ const Documents = () => {
           }
           setPendingDeleteDocument(null);
         }}
+      />
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="documents"
       />
 
       <BottomNav />

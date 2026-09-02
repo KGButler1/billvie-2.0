@@ -32,7 +32,6 @@ const Events = () => {
   };
 
   const canAddEvent = (): boolean => {
-    if (!isPaid) return false;
     const currentCount = EventService.getEventCount();
     const limit = isPaid ? EVENT_LIMITS.paid : EVENT_LIMITS.free;
     return currentCount < limit;
@@ -224,7 +223,6 @@ const Events = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
-        onPreviewAnyway={() => { setShowUpgradeModal(false); setIsCreating(true); }}
       />
 
       <BottomNav />

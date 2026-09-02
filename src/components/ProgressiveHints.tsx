@@ -46,7 +46,7 @@ const ProgressiveHints = () => {
       id: 'upgrade_events',
       icon: Sparkles,
       title: 'Need more Events?',
-      message: `You've created ${FREE_EVENT_LIMIT} Events! Upgrade for unlimited Events, sharing, and analytics.`,
+      message: `You've used your free event! Upgrade for unlimited events, sharing, and analytics.`,
       action: 'Learn More',
       condition: () => {
         const eventCount = EventService.getEventCount();

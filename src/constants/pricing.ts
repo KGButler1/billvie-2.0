@@ -1,4 +1,4 @@
-import { BILL_LIMITS, EVENT_LIMITS } from '@/types/bill';
+import { BILL_LIMITS, EVENT_LIMITS, DOCUMENT_LIMITS, SCAN_LIMITS } from '@/types/bill';
 
 export const PRO_PRICE = '$79';
 export const PRO_PERIOD = '/year';
@@ -10,10 +10,14 @@ export const PAID_PLAN_STATUSES = ['active', 'trialing', 'past_due'] as const;
 
 export const FREE_BILL_LIMIT = BILL_LIMITS.free;
 export const FREE_EVENT_LIMIT = EVENT_LIMITS.free;
+export const FREE_DOCUMENT_LIMIT = DOCUMENT_LIMITS.free;
+export const FREE_SCAN_LIMIT = SCAN_LIMITS.free;
 
 export const FREE_FEATURES = [
   `Up to ${FREE_BILL_LIMIT} bills`,
-  `Up to ${FREE_EVENT_LIMIT} events`,
+  `${FREE_EVENT_LIMIT} event${FREE_EVENT_LIMIT === 1 ? '' : 's'}`,
+  `Up to ${FREE_DOCUMENT_LIMIT} important documents`,
+  `${FREE_SCAN_LIMIT} free AI bill scans a month`,
   'Basic reminders',
   'Mobile access',
   'One trusted person, free',
@@ -21,8 +25,10 @@ export const FREE_FEATURES = [
 ];
 
 export const PRO_FEATURES = [
-  'Unlimited bills',
-  'Unlimited events',
+  'Unlimited bills, events & documents',
+  'Unlimited AI bill scanning',
+  'Financial Snapshot — insurance, accounts, income & debts in one place',
+  'Household Summary — a printable report for family or an executor',
   'Smart reminders',
   'Unlimited trusted people',
   'Tax export',

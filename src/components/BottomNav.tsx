@@ -188,10 +188,6 @@ const BottomNav = () => {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
           reason="financial"
-          onPreviewAnyway={() => {
-            setShowUpgradeModal(false);
-            navigate(demoPrefix('/financial'));
-          }}
         />
       )}
 

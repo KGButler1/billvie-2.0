@@ -605,7 +605,6 @@ const TaxDocuments = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason="general"
-        onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
 
       {/* Manage Categories Modal */}

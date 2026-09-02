@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +9,7 @@ import { PeopleService } from '@/services/PeopleService';
 import { EntitlementService } from '@/services/EntitlementService';
 import { useProfile } from '@/hooks/useProfile';
 import FieldError from '@/components/ui/field-error';
+import UpgradeModal from '@/components/UpgradeModal';
 
 interface InvitePersonModalProps {
   defaultName?: string;
@@ -34,7 +34,6 @@ const InvitePersonModal = ({
   onClose,
   onInvited,
 }: InvitePersonModalProps) => {
-  const navigate = useNavigate();
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
   const [name, setName] = useState(defaultName);
@@ -43,6 +42,7 @@ const InvitePersonModal = ({
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Checked on role change, not on submit — the wall should be visible before effort is spent.
   useEffect(() => {
@@ -126,7 +126,7 @@ const InvitePersonModal = ({
           {blockedReason ? (
             <div className="space-y-3 pt-1">
               <p className="text-sm">{blockedReason}</p>
-              <Button className="w-full" onClick={() => navigate('/settings')}>
+              <Button className="w-full" onClick={() => setShowUpgrade(true)}>
                 Upgrade to Pro
               </Button>
             </div>
@@ -137,6 +137,11 @@ const InvitePersonModal = ({
           )}
         </div>
       </motion.div>
+      <UpgradeModal
+        isOpen={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        reason="people"
+      />
     </motion.div>
   );
 };

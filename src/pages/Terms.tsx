@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import BillvieLogo from '@/components/BillvieLogo';
-import { FREE_BILL_LIMIT, FREE_EVENT_LIMIT } from '@/constants/pricing';
+import { FREE_BILL_LIMIT, FREE_EVENT_LIMIT, FREE_DOCUMENT_LIMIT, FREE_SCAN_LIMIT } from '@/constants/pricing';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-8">
@@ -53,14 +53,15 @@ const Terms = () => {
 
         <Section title="3. Subscriptions and Payments">
           <p>
-            Free plan: up to {FREE_BILL_LIMIT} bills and {FREE_EVENT_LIMIT} events. Sharing with an
-            advisor or accountant is included on both plans. Tax export, the household summary, and
-            data backup are part of the paid plan.
+            Free plan: up to {FREE_BILL_LIMIT} bills, {FREE_EVENT_LIMIT} event, and {FREE_DOCUMENT_LIMIT} important
+            documents, with {FREE_SCAN_LIMIT} free AI bill scans a month. Sharing with an advisor or accountant is
+            included on both plans. Financial Snapshot, tax export, the household summary, and data backup are
+            part of the paid plan.
           </p>
           <p>
-            Billvie Annual: $79 USD per year, billed annually. Unlocks unlimited bills and events, smart
-            reminders, unlimited trusted people, and tax export. Sharing with an advisor or accountant is
-            always free, on any plan.
+            Billvie Annual: $79 USD per year, billed annually. Unlocks unlimited bills, events, documents, and AI
+            bill scanning, plus Financial Snapshot, smart reminders, unlimited trusted people, tax export, and the
+            household summary. Sharing with an advisor or accountant is always free, on any plan.
           </p>
           <p>
             Subscriptions renew automatically. You can cancel any time from Settings, you'll keep access

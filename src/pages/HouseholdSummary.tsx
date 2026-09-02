@@ -41,7 +41,6 @@ const HouseholdSummary = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
-  const [bypassGate, setBypassGate] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(!isPaid);
 
   const bills = BillService.getAllBills();
@@ -72,7 +71,7 @@ const HouseholdSummary = () => {
     scopes: AccessService.getGrantsForPerson(p.id).map((g) => ACCESS_SCOPE_LABELS[g.scope].toLowerCase()),
   }));
 
-  if (!isPaid && !bypassGate) {
+  if (!isPaid) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
         <h1 className="text-xl font-semibold mb-2">Household Summary</h1>
@@ -88,11 +87,7 @@ const HouseholdSummary = () => {
         <UpgradeModal
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
-          reason="export"
-          onPreviewAnyway={() => {
-            setShowUpgradeModal(false);
-            setBypassGate(true);
-          }}
+          reason="household_summary"
         />
       </div>
     );

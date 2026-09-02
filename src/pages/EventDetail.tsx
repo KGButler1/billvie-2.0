@@ -162,7 +162,6 @@ const EventDetail = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason="general"
-        onPreviewAnyway={() => setShowUpgradeModal(false)}
       />
 
       <BottomNav />

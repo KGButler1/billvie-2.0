@@ -142,10 +142,9 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
 };
 
 export const BILL_LIMITS = {
-
-  free: 25,
+  free: 15,
   paid: Infinity,
-  anonymous: 25,
+  anonymous: 15,
   accountant: Infinity,
 } as const;
 
@@ -157,8 +156,15 @@ export const SCAN_LIMITS = {
 } as const;
 
 export const EVENT_LIMITS = {
-  free: 3,
+  free: 1,
   paid: Infinity,
-  anonymous: 3,
+  anonymous: 1,
+  accountant: Infinity,
+} as const;
+
+export const DOCUMENT_LIMITS = {
+  free: 5,
+  paid: Infinity,
+  anonymous: 5,
   accountant: Infinity,
 } as const;

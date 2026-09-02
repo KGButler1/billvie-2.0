@@ -60,10 +60,6 @@ const More = () => {
     }
   };
 
-  const handlePreviewAnyway = () => {
-    navigate('/financial');
-  };
-
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -171,7 +167,6 @@ const More = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         reason={upgradeReason}
-        onPreviewAnyway={handlePreviewAnyway}
       />
     </div>
   );

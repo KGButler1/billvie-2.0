@@ -37,10 +37,6 @@ const FinancialSnapshotWidget = () => {
           isOpen={showUpgrade}
           onClose={() => setShowUpgrade(false)}
           reason="financial"
-          onPreviewAnyway={() => {
-            setShowUpgrade(false);
-            navigate(isDemoModeActive() ? '/demo/financial' : '/financial');
-          }}
         />
       </>
     );
