@@ -13,7 +13,7 @@ import { UserService } from '@/services/UserService';
 import { useProfile } from '@/hooks/useProfile';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { formatCurrency } from '@/utils/currency';
-import { Bill, BillCategory, CATEGORY_LABELS } from '@/types/bill';
+import { Bill, BillCategory, CATEGORY_LABELS, BILL_LIMITS } from '@/types/bill';
 import { canAddBill } from '@/utils/billLimits';
 import BillList from '@/components/bills/BillList';
 import QuickAddBill from '@/components/QuickAddBill';
@@ -253,6 +253,12 @@ const Bills = () => {
           <Link to="/financial" className="hover:text-foreground underline-offset-2 hover:underline">
             {superCount} savings &amp; retirement {superCount === 1 ? 'account' : 'accounts'}
           </Link>
+          {!isPaid && BILL_LIMITS.paid === Infinity && (
+            <>
+              {' · '}
+              <span>{BillService.getBillCount()} / {BILL_LIMITS.free} bills used</span>
+            </>
+          )}
         </p>
 
         {/* Toolbar */}

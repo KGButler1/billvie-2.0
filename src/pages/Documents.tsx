@@ -33,6 +33,7 @@ import { isDemoModeActive } from '@/demo/demoFlag';
 import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
 import { canAddDocument } from '@/utils/documentLimits';
+import { FREE_DOCUMENT_LIMIT } from '@/constants/pricing';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -174,6 +175,12 @@ const Documents = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
+        {!isPaid && (
+          <p className="text-sm text-muted-foreground mb-4">
+            {DocumentService.getCount()} / {FREE_DOCUMENT_LIMIT} documents used
+          </p>
+        )}
+
         {demoNudge && (
           <p className="text-sm text-muted-foreground italic mb-4">
             This is what a note looks like for your own family. Nothing fancy, just clear.

@@ -117,7 +117,7 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
     const et = financialEntryType(document.type);
     const entries = et === 'insurance' ? FinancialInfoService.getInsurance() : FinancialInfoService.getSuperannuation();
     const match = entries.find((e) => e.linkedDocumentId === document.id);
-    return match ? { id: e.id, label: et === 'insurance' ? (e as InsuranceEntry).provider : (e as SuperannuationEntry).fundName } : null;
+    return match ? { id: match.id, label: et === 'insurance' ? (match as InsuranceEntry).provider : (match as SuperannuationEntry).fundName } : null;
   });
 
   const financialOptions = useMemo(() => {

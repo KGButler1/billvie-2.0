@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Event, EventType, EVENT_TYPE_LABELS } from '@/types/bill';
+import { cn } from '@/lib/utils';
 import FieldError from '@/components/ui/field-error';
 
 interface CreateEventModalProps {
