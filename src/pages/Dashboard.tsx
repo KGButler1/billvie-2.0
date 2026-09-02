@@ -26,8 +26,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import SpendingChart from '@/components/SpendingChart';
 import ActiveEventsWidget from '@/components/ActiveEventsWidget';
 import UpgradeModal from '@/components/UpgradeModal';
-import ProgressiveHints from '@/components/ProgressiveHints';
-import FirstWeekNudges from '@/components/FirstWeekNudges';
+import DashboardSuggestions from '@/components/DashboardSuggestions';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
 import BillsWidget from '@/components/BillsWidget';
@@ -47,6 +46,7 @@ const Dashboard = () => {
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
   
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFamilyView, setIsFamilyView] = useState(false);
@@ -338,6 +338,7 @@ const Dashboard = () => {
           { label: 'Scan', icon: <Scan className="w-5 h-5" />, onClick: handleTryScanBill },
           { label: 'Add manually', icon: <Plus className="w-5 h-5" />, onClick: handleTryAddBill },
         ]}
+        onOpenChange={setFabMenuOpen}
       />
 
       {/* Bill detail + edit */}
@@ -402,9 +403,7 @@ const Dashboard = () => {
         reason="bills"
       />
 
-      {/* Progressive Hints */}
-      <ProgressiveHints />
-      <FirstWeekNudges />
+      <DashboardSuggestions fabMenuOpen={fabMenuOpen} />
     </div>
   );
 };

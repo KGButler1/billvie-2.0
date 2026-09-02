@@ -10,14 +10,20 @@ export interface FabMenuChoice {
 
 interface FabMenuProps {
   choices: FabMenuChoice[];
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
-const FabMenu = ({ choices }: FabMenuProps) => {
+const FabMenu = ({ choices, onOpenChange }: FabMenuProps) => {
   const [open, setOpen] = useState(false);
+
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
 
   const handleChoice = (choice: FabMenuChoice) => {
     choice.onClick();
-    setOpen(false);
+    toggle(false);
   };
 
   return (
@@ -43,7 +49,7 @@ const FabMenu = ({ choices }: FabMenuProps) => {
       </AnimatePresence>
 
       <motion.button
-        onClick={() => setOpen(!open)}
+        onClick={() => toggle(!open)}
         className="fab relative"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
