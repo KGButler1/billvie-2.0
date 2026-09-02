@@ -56,6 +56,8 @@ import BankAccountPicker from '@/components/bills/BankAccountPicker';
 import CardPicker from '@/components/bills/CardPicker';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
+import { useProfile } from '@/hooks/useProfile';
+import UpgradeModal from '@/components/UpgradeModal';
 
 const OverviewTab = ({
   insurance,
@@ -246,6 +248,9 @@ const OverviewTab = ({
 const FinancialInfo = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { profile } = useProfile();
+  const isPaid = profile?.isPaid ?? false;
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   
   // Data states
@@ -298,6 +303,29 @@ const FinancialInfo = () => {
 
   const totalDebt = FinancialInfoService.getTotalDebt();
   const totalMonthlyIncome = FinancialInfoService.getTotalMonthlyIncome();
+
+  if (!isPaid) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
+        <h1 className="text-xl font-semibold mb-2">Financial Snapshot</h1>
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+          Keep insurance, accounts & retirement, income and debts in one place — what a
+          spouse or advisor would need to know.
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            Go Back
+          </Button>
+          <Button onClick={() => setShowUpgradeModal(true)}>See Plan</Button>
+        </div>
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          reason="financial"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pt-16">
