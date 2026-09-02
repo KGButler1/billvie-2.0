@@ -83,7 +83,7 @@ export const DocumentService = {
   },
 
   getAll(): HouseholdDocument[] {
-    return this.ensureLoaded().filter((d) => !d.deletedAt && !d.scanSourced);
+    return this.ensureLoaded().filter((d) => !d.deletedAt && !d.scanSourced && d.source !== 'bill_link');
   },
 
   getScanned(): HouseholdDocument[] {

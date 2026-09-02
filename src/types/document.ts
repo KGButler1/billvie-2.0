@@ -14,7 +14,10 @@ export interface HouseholdDocument {
   taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
 
   scanSourced?: boolean; // true when auto-created by bill-scan; hidden from document lists
-  source?: 'manual' | 'bill_scan'; // origin of the record
+  source?: 'manual' | 'bill_scan' | 'bill_link'; // origin of the record. 'bill_link' is a
+  // name-only placeholder created from a bill's "link a document" field, with no file,
+  // external link, or physical location attached — it's bill metadata, not a real document,
+  // and is excluded from every Documents-page list and from the free-tier document count.
   deletedAt?: string; // Soft delete — recoverable from Recently Deleted for 30 days
   createdAt: string;
   updatedAt: string;

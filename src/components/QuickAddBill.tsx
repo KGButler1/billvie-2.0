@@ -198,7 +198,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
 
   const handleCreateDocument = async (docName: string): Promise<LinkPickerOption> => {
     const type = category === 'insurance' ? 'insurance' : 'other';
-    const created = await DocumentService.add({ title: docName, provider: '', type });
+    const created = await DocumentService.add({ title: docName, provider: '', type, source: 'bill_link' });
     return { id: created.id, label: created.title };
   };
 
