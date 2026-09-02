@@ -22,6 +22,7 @@ import BillDetailDialog from '@/components/bills/BillDetailDialog';
 import BillScanModal from '@/components/BillScanModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import BottomNav from '@/components/BottomNav';
+import FabMenu from '@/components/FabMenu';
 import UsageCounter from '@/components/shared/UsageCounter';
 import { Button } from '@/components/ui/button';
 import {
@@ -65,7 +66,6 @@ const Bills = () => {
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'bills' | 'scan'>('bills');
-  const [showFabMenu, setShowFabMenu] = useState(false);
   const [demoNudge, setDemoNudge] = useState(false);
   const [isLoading, setIsLoading] = useState(() => !BillService.isLoaded());
 
@@ -151,7 +151,6 @@ const Bills = () => {
       setUpgradeReason('bills');
       setShowUpgradeModal(true);
     }
-    setShowFabMenu(false);
   };
 
   const handleTryScanBill = () => {
@@ -161,7 +160,6 @@ const Bills = () => {
       setUpgradeReason('bills');
       setShowUpgradeModal(true);
     }
-    setShowFabMenu(false);
   };
 
   const handleAddBill = async (
@@ -391,42 +389,12 @@ const Bills = () => {
       />
 
       {/* FAB with menu */}
-      <div className="fixed bottom-24 right-6 z-50">
-        <AnimatePresence>
-          {showFabMenu && (
-            <>
-              <motion.button
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                onClick={handleTryScanBill}
-                className="absolute bottom-16 right-0 w-12 h-12 rounded-full bg-secondary flex items-center justify-center shadow-lg"
-              >
-                <Scan className="w-5 h-5" />
-              </motion.button>
-              <motion.button
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.05 } }}
-                exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                onClick={handleTryAddBill}
-                className="absolute bottom-32 right-0 w-12 h-12 rounded-full bg-secondary flex items-center justify-center shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-              </motion.button>
-            </>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          onClick={() => setShowFabMenu(!showFabMenu)}
-          className="fab relative"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          animate={{ rotate: showFabMenu ? 45 : 0 }}
-        >
-          <Plus className="w-6 h-6" />
-        </motion.button>
-      </div>
+      <FabMenu
+        choices={[
+          { label: 'Scan', icon: <Scan className="w-5 h-5" />, onClick: handleTryScanBill },
+          { label: 'Add manually', icon: <Plus className="w-5 h-5" />, onClick: handleTryAddBill },
+        ]}
+      />
 
       <ConfirmDeleteDialog
         open={!!pendingDeleteBill}

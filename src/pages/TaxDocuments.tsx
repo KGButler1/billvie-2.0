@@ -37,6 +37,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Bill } from '@/types/bill';
 import { HouseholdDocument } from '@/types/document';
 import BottomNav from '@/components/BottomNav';
+import Fab from '@/components/Fab';
 import DismissibleIntro from '@/components/DismissibleIntro';
 import UpgradeModal from '@/components/UpgradeModal';
 import { ManageCategoriesModal } from '@/components/tax/ManageCategoriesModal';
@@ -554,14 +555,7 @@ const TaxDocuments = () => {
 
       {/* FAB */}
       {rows.length > 0 && (
-        <motion.button
-          onClick={() => setIsAddingDocument(true)}
-          className="fab"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Plus className="w-6 h-6" />
-        </motion.button>
+        <Fab onClick={() => setIsAddingDocument(true)} />
       )}
 
       {/* Add Document Modal */}

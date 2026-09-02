@@ -11,6 +11,7 @@ import { AccessService } from '@/services/AccessService';
 import { KeyPerson, KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
 import KeyPersonModal from '@/components/keypeople/KeyPersonModal';
 import BottomNav from '@/components/BottomNav';
+import Fab from '@/components/Fab';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { SkeletonRows } from '@/components/ui/skeleton';
@@ -196,6 +197,8 @@ const KeyPeople = () => {
           setPendingDelete(null);
         }}
       />
+
+      <Fab onClick={() => setIsAdding(true)} />
 
       <BottomNav />
     </div>

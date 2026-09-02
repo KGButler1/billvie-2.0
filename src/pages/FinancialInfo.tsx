@@ -44,6 +44,7 @@ import {
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
 import BottomNav from '@/components/BottomNav';
+import Fab from '@/components/Fab';
 import LinkPicker, { LinkPickerOption } from '@/components/shared/LinkPicker';
 import { BillService } from '@/services/BillService';
 import { BankAccountService } from '@/services/BankAccountService';
@@ -706,6 +707,19 @@ const FinancialInfo = () => {
         title={`Delete ${pendingDelete?.name ?? 'this entry'}?`}
         onConfirm={() => { if (pendingDelete) doDelete(pendingDelete.type, pendingDelete.id); }}
       />
+
+      {activeTab !== 'overview' && (
+        <Fab
+          onClick={() => {
+            setEditingItem(null);
+            if (activeTab === 'insurance') setShowInsuranceModal(true);
+            else if (activeTab === 'super') setShowSuperModal(true);
+            else if (activeTab === 'income') setShowIncomeModal(true);
+            else if (activeTab === 'debts') setShowDebtModal(true);
+            else if (activeTab === 'misc') setShowMiscModal(true);
+          }}
+        />
+      )}
 
       <BottomNav />
     </div>

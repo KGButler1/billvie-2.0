@@ -21,6 +21,9 @@ interface HintConfig {
 
 const HINTS_DISMISSED_KEY = 'billvie_hints_dismissed';
 
+let hintActive = false;
+export const isProgressiveHintActive = () => hintActive;
+
 const ProgressiveHints = () => {
   const navigate = useNavigate();
   const [activeHint, setActiveHint] = useState<HintType | null>(null);
@@ -97,10 +100,12 @@ const ProgressiveHints = () => {
       // Delay showing hint
       const timer = setTimeout(() => {
         setActiveHint(availableHint.id);
+        hintActive = true;
       }, 3000);
       return () => clearTimeout(timer);
     } else {
       setActiveHint(null);
+      hintActive = false;
     }
   }, [dismissedHints, isPaid]);
 
@@ -109,6 +114,7 @@ const ProgressiveHints = () => {
     setDismissedHints(updated);
     localStorage.setItem(HINTS_DISMISSED_KEY, JSON.stringify(updated));
     setActiveHint(null);
+    hintActive = false;
   };
 
   const handleAction = (hintId: HintType) => {

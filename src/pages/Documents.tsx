@@ -27,6 +27,7 @@ import AccessSheet from '@/components/documents/AccessSheet';
 import LinkItemsSheet from '@/components/documents/LinkItemsSheet';
 import DismissibleIntro from '@/components/DismissibleIntro';
 import BottomNav from '@/components/BottomNav';
+import Fab from '@/components/Fab';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { isDemoModeActive } from '@/demo/demoFlag';
@@ -406,6 +407,8 @@ const Documents = () => {
         onClose={() => setShowUpgradeModal(false)}
         reason="documents"
       />
+
+      <Fab onClick={handleTryAddDocument} />
 
       <BottomNav />
     </div>

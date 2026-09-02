@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ChevronDown, ChevronRight, UserPlus, Loader as Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, UserPlus, Loader as Loader2, Plus, Briefcase, Users } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
+import FabMenu from '@/components/FabMenu';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
@@ -577,7 +578,7 @@ const People = () => {
                       <Row key={entry.key} entry={entry} />
                     ))}
                     <div className="p-3">
-                      <Button variant="ghost" size="sm" onClick={() => setInviteState({ role: 'household' })}>
+                      <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'household' })}>
                         <UserPlus className="w-4 h-4 mr-2" />
                         Invite someone you trust
                       </Button>
@@ -605,7 +606,7 @@ const People = () => {
                 <Row key={entry.key} entry={entry} />
               ))}
               <div className="p-3">
-                <Button variant="ghost" size="sm" onClick={() => setInviteState({ role: 'advisor' })}>
+                <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'advisor' })}>
                   Add an advisor
                 </Button>
               </div>
@@ -632,7 +633,7 @@ const People = () => {
                 <Row key={entry.key} entry={entry} />
               ))}
               <div className="p-3">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/key-people')}>
+                <Button variant="outline" size="sm" onClick={() => navigate('/key-people')}>
                   Manage key contacts
                 </Button>
               </div>
@@ -640,6 +641,14 @@ const People = () => {
           )}
         </Section>
       </main>
+
+      <FabMenu
+        choices={[
+          { label: 'Invite household member', icon: <UserPlus className="w-5 h-5" />, onClick: () => setInviteState({ role: 'household' }) },
+          { label: 'Add advisor', icon: <Briefcase className="w-5 h-5" />, onClick: () => setInviteState({ role: 'advisor' }) },
+          { label: 'Add key contact', icon: <Users className="w-5 h-5" />, onClick: () => navigate('/key-people?add=1') },
+        ]}
+      />
 
       <BottomNav />
 

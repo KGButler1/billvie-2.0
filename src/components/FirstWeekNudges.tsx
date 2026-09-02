@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingService } from '@/services/OnboardingService';
 import { getReadinessChecks } from '@/utils/readiness';
+import { isProgressiveHintActive } from '@/components/ProgressiveHints';
 
 interface Nudge {
   id: string;
@@ -66,11 +67,20 @@ const FirstWeekNudges = () => {
     const active = OnboardingService.getActiveNudges();
     if (active.length === 0) return;
 
-    // Show one nudge at a time, with a delay
-    const timer = setTimeout(() => {
-      const nudge = NUDGES.find(n => n.id === active[0]);
-      if (nudge) setActiveNudge(nudge);
-    }, 5000);
+    let timer: ReturnType<typeof setTimeout>;
+
+    const tryShow = () => {
+      if (isProgressiveHintActive()) {
+        timer = setTimeout(tryShow, 3000);
+        return;
+      }
+      timer = setTimeout(() => {
+        const nudge = NUDGES.find(n => n.id === active[0]);
+        if (nudge) setActiveNudge(nudge);
+      }, 5000);
+    };
+
+    tryShow();
 
     return () => clearTimeout(timer);
   }, []);

@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Event, EVENT_LIMITS } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
 import UsageCounter from '@/components/shared/UsageCounter';
+import Fab from '@/components/Fab';
 import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
@@ -195,14 +196,7 @@ const Events = () => {
 
       {/* FAB */}
       {events.length > 0 && (
-        <motion.button
-          onClick={handleTryCreateEvent}
-          className="fab"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Plus className="w-6 h-6" />
-        </motion.button>
+        <Fab onClick={handleTryCreateEvent} />
       )}
 
       {/* Create Event Modal */}

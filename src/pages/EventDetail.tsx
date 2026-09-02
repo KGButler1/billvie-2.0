@@ -7,6 +7,7 @@ import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { useProfile } from '@/hooks/useProfile';
 import BottomNav from '@/components/BottomNav';
+import Fab from '@/components/Fab';
 import EventHeader from '@/components/events/EventHeader';
 import BudgetProgress from '@/components/events/BudgetProgress';
 import EventStatsCards from '@/components/events/EventStatsCards';
@@ -130,17 +131,10 @@ const EventDetail = () => {
       </main>
 
       {/* FAB */}
-      <motion.button
-        onClick={() => {
-          setEditingExpenseId(null);
-          setIsAddingExpense(true);
-        }}
-        className="fab"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
+      <Fab onClick={() => {
+        setEditingExpenseId(null);
+        setIsAddingExpense(true);
+      }} />
 
       {/* Add/Edit Expense Modal */}
       <AnimatePresence>
