@@ -34,6 +34,7 @@ import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
 import { canAddDocument } from '@/utils/documentLimits';
 import { FREE_DOCUMENT_LIMIT } from '@/constants/pricing';
+import UsageCounter from '@/components/shared/UsageCounter';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -175,12 +176,6 @@ const Documents = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
-        {!isPaid && (
-          <p className="text-sm text-muted-foreground mb-4">
-            {DocumentService.getCount()} / {FREE_DOCUMENT_LIMIT} documents used
-          </p>
-        )}
-
         {demoNudge && (
           <p className="text-sm text-muted-foreground italic mb-4">
             This is what a note looks like for your own family. Nothing fancy, just clear.
@@ -194,12 +189,19 @@ const Documents = () => {
         </p>
 
         {documents.length > 0 && (
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold hidden lg:block">Important Documents</h1>
-            <Button onClick={handleTryAddDocument} className="gap-1.5">
-              <Plus className="w-4 h-4" /> Add
-            </Button>
-          </div>
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-2xl font-semibold hidden lg:block">Important Documents</h1>
+              <Button onClick={handleTryAddDocument} className="gap-1.5">
+                <Plus className="w-4 h-4" /> Add
+              </Button>
+            </div>
+            <UsageCounter
+              count={DocumentService.getCount()}
+              limit={isPaid ? Infinity : FREE_DOCUMENT_LIMIT}
+              label="documents"
+            />
+          </>
         )}
 
         {documents.length === 0 && scannedDocs.length === 0 ? (

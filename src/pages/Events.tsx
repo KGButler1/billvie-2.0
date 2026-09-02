@@ -6,6 +6,7 @@ import { EventService } from '@/services/EventService';
 import { useProfile } from '@/hooks/useProfile';
 import { Event, EVENT_LIMITS } from '@/types/bill';
 import BottomNav from '@/components/BottomNav';
+import UsageCounter from '@/components/shared/UsageCounter';
 import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
@@ -79,11 +80,6 @@ const Events = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Events</h1>
-            {eventLimit !== Infinity && (
-              <p className="text-xs text-muted-foreground">
-                {currentEventCount} / {eventLimit} events used
-              </p>
-            )}
           </div>
           <div className="flex items-center gap-2">
             {hasSampleEvents && (
@@ -103,7 +99,9 @@ const Events = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-20">
+      <main className="container mx-auto px-4 pt-20 lg:pt-8">
+        <h1 className="text-2xl font-semibold hidden lg:block mb-2">Events</h1>
+        <UsageCounter count={currentEventCount} limit={eventLimit} label="events" />
         <p className="text-sm text-muted-foreground mb-6">
           Track big one-off commitments — trips, weddings, renovations — so your household knows
           what's planned, what's paid, and what can still change.

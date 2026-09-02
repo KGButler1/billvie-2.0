@@ -22,6 +22,7 @@ import BillDetailDialog from '@/components/bills/BillDetailDialog';
 import BillScanModal from '@/components/BillScanModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import BottomNav from '@/components/BottomNav';
+import UsageCounter from '@/components/shared/UsageCounter';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -253,12 +254,12 @@ const Bills = () => {
           <Link to="/financial" className="hover:text-foreground underline-offset-2 hover:underline">
             {superCount} savings &amp; retirement {superCount === 1 ? 'account' : 'accounts'}
           </Link>
-          {!isPaid && BILL_LIMITS.paid === Infinity && (
-            <>
-              {' · '}
-              <span>{BillService.getBillCount()} / {BILL_LIMITS.free} bills used</span>
-            </>
-          )}
+          <UsageCounter
+            count={BillService.getBillCount()}
+            limit={isPaid ? BILL_LIMITS.paid : BILL_LIMITS.free}
+            label="bills"
+            variant="inline"
+          />
         </p>
 
         {/* Toolbar */}
