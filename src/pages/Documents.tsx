@@ -65,7 +65,6 @@ const Documents = () => {
   const [accessId, setAccessId] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editScrollToWhereToFindIt, setEditScrollToWhereToFindIt] = useState(false);
   const [demoNudge, setDemoNudge] = useState(false);
   const [typeFilter, setTypeFilter] = useState<DocType | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('updated');
@@ -105,7 +104,6 @@ const Documents = () => {
     setIsAdding(false);
     // Open the edit dialog scrolled to the where-to-find-it section, preserving the post-save prompt behavior.
     setEditingId(created.id);
-    setEditScrollToWhereToFindIt(true);
     if (isDemoModeActive()) {
       setDemoNudge(true);
       setTimeout(() => setDemoNudge(false), 4000);
@@ -117,7 +115,6 @@ const Documents = () => {
     if (tax) await TaxTagService.setTag(id, 'document', tax);
     reload();
     setEditingId(null);
-    setEditScrollToWhereToFindIt(false);
     if (isDemoModeActive()) {
       setDemoNudge(true);
       setTimeout(() => setDemoNudge(false), 4000);
@@ -299,7 +296,6 @@ const Documents = () => {
                                   onLinks={(id) => setLinkingId(id)}
                                   onEdit={(id) => {
                                     setEditingId(id);
-                                    setEditScrollToWhereToFindIt(false);
                                   }}
                                   onDelete={async (id) => {
                                     if (!UserService.shouldWarnBeforeDelete('document')) {
@@ -337,7 +333,6 @@ const Documents = () => {
                       onLinks={(id) => setLinkingId(id)}
                       onEdit={(id) => {
                         setEditingId(id);
-                        setEditScrollToWhereToFindIt(false);
                       }}
                       onDelete={async (id) => {
                         if (!UserService.shouldWarnBeforeDelete('document')) {
@@ -360,13 +355,11 @@ const Documents = () => {
         {(isAdding || editingDoc) && (
           <AddDocumentModal
             document={editingDoc}
-            scrollToWhereToFindIt={editScrollToWhereToFindIt}
             onAdd={handleAdd}
             onEdit={handleEditSave}
             onClose={() => {
               setIsAdding(false);
               setEditingId(null);
-              setEditScrollToWhereToFindIt(false);
             }}
           />
         )}

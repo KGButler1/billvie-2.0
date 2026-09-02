@@ -36,6 +36,7 @@ import TaxRelevanceFields, {
   emptyTaxRelevance,
 } from '@/components/tax/TaxRelevanceFields';
 import { TaxTagService } from '@/services/TaxTagService';
+import DetailsAccordion from '@/components/shared/DetailsAccordion';
 
 
 interface QuickAddBillProps {
@@ -531,6 +532,8 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
             )}
           </div>
 
+          {/* Details: everything else */}
+          <DetailsAccordion defaultOpen={isEdit}>
           {/* Payment Method */}
           <div className="space-y-2">
             <Label>Payment Method</Label>
@@ -683,6 +686,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
               This shows up in Tax Documents for that year — the bill itself doesn't change.
             </p>
           </div>
+          </DetailsAccordion>
 
           {/* Trust signal */}
           <p className="text-xs text-muted-foreground text-center">

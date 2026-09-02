@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Shield, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DocumentType, DOCUMENT_TYPE_LABELS, HouseholdDocument } from '@/types/document';
 import AccessPicker from '@/components/people/AccessPicker';
 import { PersonTagPicker } from '@/components/people/PersonTags';
+import DetailsAccordion from '@/components/shared/DetailsAccordion';
+import FileCapture, { CapturedFile } from '@/components/shared/FileCapture';
 
 import { PeopleService } from '@/services/PeopleService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
@@ -24,7 +26,6 @@ import FieldError from '@/components/ui/field-error';
 
 interface AddDocumentModalProps {
   document?: HouseholdDocument;
-  scrollToWhereToFindIt?: boolean;
   onAdd: (
     doc: Omit<HouseholdDocument, 'id' | 'createdAt' | 'updatedAt'>,
     personIds: string[],
@@ -36,7 +37,7 @@ interface AddDocumentModalProps {
   onClose: () => void;
 }
 
-const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onClose }: AddDocumentModalProps) => {
+const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModalProps) => {
   const [title, setTitle] = useState(document?.title ?? '');
   const [provider, setProvider] = useState(document?.provider ?? '');
   const [type, setType] = useState<DocumentType>(document?.type ?? 'insurance');
@@ -44,6 +45,7 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
   const [notes, setNotes] = useState(document?.notes ?? '');
   const [importantDate, setImportantDate] = useState(document?.importantDate ?? '');
   const [importantDateLabel, setImportantDateLabel] = useState(document?.importantDateLabel ?? '');
+  const [stagedFiles, setStagedFiles] = useState<CapturedFile[]>([]);
   // Sharing with family is the product's purpose; sending something to your
   // accountant is a decision.
   const [householdIds, setHouseholdIds] = useState<string[]>(() =>
@@ -68,7 +70,6 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
 
   const [externalLink, setExternalLink] = useState(document?.externalLink ?? '');
   const [physicalLocation, setPhysicalLocation] = useState(document?.physicalLocation ?? '');
-  const whereToFindItRef = useRef<HTMLDivElement>(null);
   const [titleError, setTitleError] = useState('');
 
   const [linkedBill, setLinkedBill] = useState<LinkPickerOption | null>(() => {
@@ -173,13 +174,6 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
     }
   };
 
-  // Scroll to the where-to-find-it section if requested (e.g. after creating a doc).
-  useEffect(() => {
-    if (scrollToWhereToFindIt && whereToFindItRef.current) {
-      whereToFindItRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [scrollToWhereToFindIt]);
-
   const handleSubmit = () => {
     if (!title.trim()) { setTitleError('Give this document a title.'); return; }
 
@@ -235,6 +229,7 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
         </div>
 
         <div className="space-y-4">
+          {/* Essentials: What is it? */}
           <div>
             <label className="text-sm font-medium mb-1.5 block">What is it? <span className="text-[hsl(var(--destructive))]">*</span></label>
             <Input
@@ -247,15 +242,22 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
             <FieldError message={titleError} />
           </div>
 
+          {/* Essentials: Attach a copy */}
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Provider or institution</label>
-            <Input
-              placeholder="e.g. Allianz, AustralianSuper"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-            />
+            <label className="text-sm font-medium mb-1.5 block">
+              Attach a copy <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            {document ? (
+              <AttachmentManager ownerType="document" ownerId={document.id} />
+            ) : (
+              <FileCapture files={stagedFiles} onFilesChange={setStagedFiles} multiple accept="image/*,.pdf" />
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              A photo or PDF is often the fastest way to add this — you can always fill in the rest below.
+            </p>
           </div>
 
+          {/* Essentials: Type */}
           <div>
             <label className="text-sm font-medium mb-1.5 block">Type</label>
             <Select value={type} onValueChange={(v) => setType(v as DocumentType)}>
@@ -276,84 +278,7 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
             )}
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Key detail <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <Input
-              placeholder="e.g. Policy #, Account reference"
-              value={keyDetail}
-              onChange={(e) => setKeyDetail(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground mt-1">Just enough to be useful — no sensitive credentials needed</p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Important date <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={importantDate}
-                onChange={(e) => setImportantDate(e.target.value)}
-                className="flex-1"
-              />
-              <Input
-                placeholder="Expires, Renews, Term ends..."
-                value={importantDateLabel}
-                onChange={(e) => setImportantDateLabel(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              For anything with an expiry or renewal — a passport, a fixed-term policy, a lease
-            </p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Linked bill <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <LinkPicker
-              triggerLabel="Link a bill"
-              emptyLabel="No bills yet — type a name to create one"
-              createLabel={(q) => `Create bill: ${q}`}
-              options={billOptions}
-              value={linkedBill}
-              onChange={handleLinkedBillChange}
-              onCreate={handleCreateBill}
-              initialQuery={title}
-              chipIcon={Link2}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              For things like an insurance premium or contribution this document represents
-            </p>
-          </div>
-
-
-          {FINANCIAL_DOC_TYPES.includes(type) && (
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Financial Snapshot entry <span className="text-muted-foreground font-normal">(optional)</span>
-              </label>
-              <LinkPicker
-                triggerLabel="Link to a Financial Snapshot entry"
-                emptyLabel="No entries yet — type a name to create one"
-                createLabel={(q) => `Create entry: ${q}`}
-                options={financialOptions}
-                value={linkedFinancial}
-                onChange={handleLinkedFinancialChange}
-                onCreate={handleCreateFinancial}
-                initialQuery={title}
-                chipIcon={Link2}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Connect this document to the matching entry in Financial Snapshot
-              </p>
-            </div>
-          )}
-
+          {/* Essentials: Notes & instructions */}
           <div>
             <label className="text-sm font-medium mb-1.5 block">
               Notes & instructions <span className="text-muted-foreground font-normal">(important)</span>
@@ -367,82 +292,173 @@ const AddDocumentModal = ({ document, scrollToWhereToFindIt, onAdd, onEdit, onCl
             <p className="text-xs text-muted-foreground mt-1">This helps someone step in if needed</p>
           </div>
 
-          <div ref={whereToFindItRef}>
-            <label className="text-sm font-medium block mb-2">
-              Where to find it <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
+          {/* Details: everything else */}
+          <DetailsAccordion defaultOpen={!!document}>
+            {/* Provider or institution */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Provider or institution</label>
+              <Input
+                placeholder="e.g. Allianz, AustralianSuper"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+              />
+            </div>
 
-            {document && (
-              <div className="mb-3">
-                <AttachmentManager ownerType="document" ownerId={document.id} />
+            {/* Key detail */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Key detail <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <Input
+                placeholder="e.g. Policy #, Account reference"
+                value={keyDetail}
+                onChange={(e) => setKeyDetail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Just enough to be useful — no sensitive credentials needed</p>
+            </div>
+
+            {/* Important date */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Important date <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={importantDate}
+                  onChange={(e) => setImportantDate(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Expires, Renews, Term ends..."
+                  value={importantDateLabel}
+                  onChange={(e) => setImportantDateLabel(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                For anything with an expiry or renewal — a passport, a fixed-term policy, a lease
+              </p>
+            </div>
+
+            {/* Linked bill */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Linked bill <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <LinkPicker
+                triggerLabel="Link a bill"
+                emptyLabel="No bills yet — type a name to create one"
+                createLabel={(q) => `Create bill: ${q}`}
+                options={billOptions}
+                value={linkedBill}
+                onChange={handleLinkedBillChange}
+                onCreate={handleCreateBill}
+                initialQuery={title}
+                chipIcon={Link2}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                For things like an insurance premium or contribution this document represents
+              </p>
+            </div>
+
+            {/* Financial Snapshot entry */}
+            {FINANCIAL_DOC_TYPES.includes(type) && (
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">
+                  Financial Snapshot entry <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <LinkPicker
+                  triggerLabel="Link to a Financial Snapshot entry"
+                  emptyLabel="No entries yet — type a name to create one"
+                  createLabel={(q) => `Create entry: ${q}`}
+                  options={financialOptions}
+                  value={linkedFinancial}
+                  onChange={handleLinkedFinancialChange}
+                  onCreate={handleCreateFinancial}
+                  initialQuery={title}
+                  chipIcon={Link2}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Connect this document to the matching entry in Financial Snapshot
+                </p>
               </div>
             )}
 
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Link2 className="w-3.5 h-3.5" /> Link to it
-                </div>
-                <Input
-                  placeholder="https://..."
-                  value={externalLink}
-                  onChange={(e) => setExternalLink(e.target.value)}
-                />
-              </div>
+            {/* Where to find it — link/location only */}
+            <div>
+              <label className="text-sm font-medium block mb-2">
+                Where to find it <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <span className="text-xs">or just say where it is</span>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Link2 className="w-3.5 h-3.5" /> Link to it
+                  </div>
+                  <Input
+                    placeholder="https://..."
+                    value={externalLink}
+                    onChange={(e) => setExternalLink(e.target.value)}
+                  />
                 </div>
-                <Input
-                  placeholder="e.g. Fireproof box in the study, top shelf"
-                  value={physicalLocation}
-                  onChange={(e) => setPhysicalLocation(e.target.value)}
-                />
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <span className="text-xs">or just say where it is</span>
+                  </div>
+                  <Input
+                    placeholder="e.g. Fireproof box in the study, top shelf"
+                    value={physicalLocation}
+                    onChange={(e) => setPhysicalLocation(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <TaxRelevanceFields value={tax} onChange={setTax} />
-            <p className="text-xs text-muted-foreground mt-1.5">
-              This shows up in Tax Documents for that year — the document itself doesn't change.
-            </p>
-          </div>
+            {/* Tax relevance */}
+            <div>
+              <TaxRelevanceFields value={tax} onChange={setTax} />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                This shows up in Tax Documents for that year — the document itself doesn't change.
+              </p>
+            </div>
 
-          {!document && (
-            <>
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
-                <AccessPicker
-                  scope="documents"
-                  roleFilter="household"
-                  selectedPersonIds={householdIds}
-                  onChange={setHouseholdIds}
-                />
-              </div>
+            {/* Who can see this? / Your advisor or accountant — create mode only */}
+            {!document && (
+              <>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Who can see this?</label>
+                  <AccessPicker
+                    scope="documents"
+                    roleFilter="household"
+                    selectedPersonIds={householdIds}
+                    onChange={setHouseholdIds}
+                  />
+                </div>
 
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
-                <AccessPicker
-                  scope="documents"
-                  roleFilter="professional"
-                  selectedPersonIds={professionalIds}
-                  onChange={setProfessionalIds}
-                />
-              </div>
-            </>
-          )}
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Your advisor or accountant</label>
+                  <AccessPicker
+                    scope="documents"
+                    roleFilter="professional"
+                    selectedPersonIds={professionalIds}
+                    onChange={setProfessionalIds}
+                  />
+                </div>
+              </>
+            )}
 
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">For someone in particular?</label>
-            <PersonTagPicker
-              value={taggedPersonIds}
-              onChange={setTaggedPersonIds}
-              scope="documents"
-            />
-          </div>
-
+            {/* For someone in particular? */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">For someone in particular?</label>
+              <PersonTagPicker
+                value={taggedPersonIds}
+                onChange={setTaggedPersonIds}
+                scope="documents"
+              />
+            </div>
+          </DetailsAccordion>
 
           {!document && (
             <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-muted/50">
