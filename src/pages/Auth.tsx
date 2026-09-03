@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { checkPendingInvite } from '@/services/InviteService';
 
 type Mode = 'signin' | 'signup';
 
@@ -28,19 +29,6 @@ const Auth = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSending, setResetSending] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-
-  const checkPendingInvite = async (emailAddress: string): Promise<{ token: string; householdName: string } | null> => {
-    const { data, error } = await supabase
-      .from('trusted_person')
-      .select('invite_token, household_id, households(name)')
-      .eq('email', emailAddress)
-      .eq('status', 'invited')
-      .maybeSingle();
-
-    if (error || !data?.invite_token) return null;
-    const householdName = (data as Record<string, unknown>).households as { name: string } | null;
-    return { token: data.invite_token, householdName: householdName?.name || 'a household' };
-  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -137,9 +125,20 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    // TODO: wire up supabase.auth.signInWithOAuth({ provider: 'google' })
-    toast({ description: 'Google sign-in is coming soon' });
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      if (error.message.toLowerCase().includes('already')) {
+        toast({ description: 'An account with this email already exists. Sign in with your password, or reset it below.', variant: 'destructive' });
+      } else {
+        toast({ description: error.message, variant: 'destructive' });
+      }
+    }
   };
 
   const handleResetPassword = async () => {

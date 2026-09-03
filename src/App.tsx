@@ -21,6 +21,7 @@ import People from "./pages/People";
 import HouseholdSummary from "./pages/HouseholdSummary";
 import AcceptInvite from "./pages/AcceptInvite";
 import ResetPassword from "./pages/ResetPassword";
+import AuthCallback from "./pages/AuthCallback";
 import DemoRoute from "./demo/DemoRoute";
 import RecentlyDeleted from "./pages/RecentlyDeleted";
 import KeyPeople from "./pages/KeyPeople";
@@ -102,6 +103,7 @@ const App = () => {
               <Route path="/export/summary" element={<ProtectedRoute><HouseholdSummary /></ProtectedRoute>} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/demo" element={<DemoRoute><Navigate to="/demo/dashboard" replace /></DemoRoute>} />
               <Route path="/demo/dashboard" element={<DemoRoute><Dashboard /></DemoRoute>} />
               <Route path="/demo/bills" element={<DemoRoute><Bills /></DemoRoute>} />
