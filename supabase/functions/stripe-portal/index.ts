@@ -53,56 +53,49 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const body = await req.json();
-    const { price_id, success_url, cancel_url, mode } = body;
-
-    if (!price_id || !success_url || !cancel_url) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { data: household } = await supabase
       .from("households")
       .select("stripe_customer_id")
       .eq("id", person.household_id)
       .maybeSingle();
 
-    const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY")!;
-    const params: Record<string, string> = {
-      mode: mode || "subscription",
-      "line_items[0][price]": price_id,
-      "line_items[0][quantity]": "1",
-      success_url,
-      cancel_url,
-      "metadata[household_id]": person.household_id,
-      "subscription_data[metadata][household_id]": person.household_id,
-      "client_reference_id": person.household_id,
-    };
-
-    if (household?.stripe_customer_id) {
-      params.customer = household.stripe_customer_id;
+    if (!household?.stripe_customer_id) {
+      return new Response(
+        JSON.stringify({ error: "No subscription found for this household yet" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    const { return_url } = await req.json();
+    if (!return_url) {
+      return new Response(JSON.stringify({ error: "Missing return_url" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY")!;
+    const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${stripeSecret}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams(params),
+      body: new URLSearchParams({
+        customer: household.stripe_customer_id,
+        return_url,
+      }),
     });
 
-    if (!sessionRes.ok) {
-      const errText = await sessionRes.text();
+    if (!portalRes.ok) {
+      const errText = await portalRes.text();
       return new Response(JSON.stringify({ error: "Stripe error", details: errText }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const session = await sessionRes.json();
+    const session = await portalRes.json();
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

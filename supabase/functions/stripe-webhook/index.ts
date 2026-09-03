@@ -60,17 +60,21 @@ Deno.serve(async (req: Request) => {
 
     let householdId: string | null = null;
     let status: string | null = null;
+    let customerId: string | null = null;
+    let subscriptionId: string | null = null;
 
     if (event.type === "checkout.session.completed") {
-      householdId = event.data.object?.metadata?.household_id ||
-        event.data.object?.client_reference_id;
+      const session = event.data.object;
+      householdId = session?.metadata?.household_id || session?.client_reference_id;
       status = "active";
-    } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
-      householdId = event.data.object?.metadata?.household_id;
-      status = event.data.object?.status;
-    } else if (event.type === "customer.subscription.deleted") {
-      householdId = event.data.object?.metadata?.household_id;
-      status = "canceled";
+      customerId = session?.customer || null;
+      subscriptionId = session?.subscription || null;
+    } else if (event.type.startsWith("customer.subscription.")) {
+      const sub = event.data.object;
+      householdId = sub?.metadata?.household_id;
+      status = sub?.status;
+      customerId = sub?.customer || null;
+      subscriptionId = sub?.id || null;
     }
 
     if (!householdId || !status) {
@@ -86,9 +90,13 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    const updates: Record<string, string> = { plan_status: status };
+    if (customerId) updates.stripe_customer_id = customerId;
+    if (subscriptionId) updates.stripe_subscription_id = subscriptionId;
+
     const { error } = await supabase
       .from("households")
-      .update({ plan_status: status })
+      .update(updates)
       .eq("id", householdId);
 
     if (error) {

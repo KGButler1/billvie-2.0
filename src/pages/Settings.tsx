@@ -22,6 +22,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import UserAvatar, { getInitials } from '@/components/UserAvatar';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
 
 const Settings = () => {
@@ -33,6 +34,7 @@ const Settings = () => {
   const [upgradeReason, setUpgradeReason] = useState<'general' | 'export'>('general');
   const [showCardsSheet, setShowCardsSheet] = useState(false);
   const [showBankAccountsSheet, setShowBankAccountsSheet] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     const upgrade = searchParams.get('upgrade');
@@ -87,6 +89,24 @@ const Settings = () => {
   const hasSampleData = sampleBillCount > 0 || sampleEventCount > 0;
   const isPaid = profile?.isPaid ?? false;
 
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-portal', {
+        body: { return_url: `${window.location.origin}/settings` },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error('No portal URL returned');
+    } catch {
+      setPortalLoading(false);
+      toast.error('Could not open subscription management. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -120,9 +140,9 @@ const Settings = () => {
                 </div>
               </div>
               {isPaid ? (
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                  Active
-                </span>
+                <Button size="sm" variant="outline" onClick={handleManageSubscription} disabled={portalLoading}>
+                  {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Manage Subscription'}
+                </Button>
               ) : (
                 <Button size="sm" onClick={() => { setUpgradeReason('general'); setShowUpgradeModal(true); }}>
                   Upgrade
