@@ -8,21 +8,18 @@ const OrganizationStrip = () => {
   const documentsStored = DocumentService.getCount();
   const peopleWithAccess = AccessService.getActivePeople().length;
 
-  const chips = [
+  const stats = [
     { icon: Receipt, label: `${billsTracked} bill${billsTracked !== 1 ? 's' : ''} tracked` },
     { icon: FolderOpen, label: `${documentsStored} document${documentsStored !== 1 ? 's' : ''} stored` },
     { icon: Users, label: `${peopleWithAccess} with access` },
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-6">
-      {chips.map((chip, i) => (
-        <div
-          key={i}
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full"
-        >
-          <chip.icon className="w-3 h-3" />
-          {chip.label}
+    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center gap-3 h-full">
+      {stats.map((stat, i) => (
+        <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+          <stat.icon className="w-4 h-4 flex-shrink-0" />
+          {stat.label}
         </div>
       ))}
     </div>

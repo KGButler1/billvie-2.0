@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Scan, Shield, Eye, EyeOff } from 'lucide-react';
+import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
@@ -189,35 +189,6 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 pt-20">
-        {/* Desktop-only toolbar for dashboard-specific controls */}
-        <div className="hidden lg:flex items-center justify-end gap-2 mb-4">
-          {hasSampleBills && (
-            <button
-              onClick={async () => {
-                await Promise.all([
-                  BillService.clearSampleBills(),
-                  EventService.clearSampleEvents(),
-                ]);
-                loadBills();
-              }}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Clear samples
-            </button>
-          )}
-          <button
-            onClick={() => setIsFamilyView(!isFamilyView)}
-            className={`text-sm px-3 py-1.5 rounded-md border transition-colors flex items-center gap-1.5 ${
-              isFamilyView
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'border-border hover:bg-muted'
-            }`}
-          >
-            {isFamilyView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {isFamilyView ? 'Exit Family View' : 'Family View'}
-          </button>
-        </div>
-
         {/* Family View Banner */}
         {isFamilyView && (
           <motion.div
@@ -237,27 +208,45 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* Trust signal */}
-        <p className="text-xs text-muted-foreground text-center mb-4 flex items-center justify-center gap-1.5">
-          <Shield className="w-3 h-3" />
-          Only you and people you invite can see this
-        </p>
-
-        <DashboardActionStrip
-          overdueCount={overdueBills.length}
-          dueSoonCount={dueSoonBills.length}
-          upcomingTotal={upcomingTotal}
-          isFamilyView={isFamilyView}
-          onAttentionClick={() => needsAttentionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-        />
-
-        <div className="flex justify-end mb-4">
-          <AddButton label="Add bill" onClick={handleTryAddBill} />
+        {/* Utility line: trust signal + clear samples + add bill */}
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Shield className="w-3 h-3" />
+            Only you and people you invite can see this
+          </p>
+          <div className="flex items-center gap-3">
+            {hasSampleBills && (
+              <button
+                onClick={async () => {
+                  await Promise.all([
+                    BillService.clearSampleBills(),
+                    EventService.clearSampleEvents(),
+                  ]);
+                  loadBills();
+                }}
+                className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear samples
+              </button>
+            )}
+            <AddButton label="Add bill" onClick={handleTryAddBill} />
+          </div>
         </div>
 
-        <OrganizationStrip />
-
-        <PeopleBubbleRow />
+        {/* Bento tile row */}
+        <div className="grid grid-cols-2 lg:grid-cols-[1.6fr_1.3fr_1fr] gap-3 mb-6">
+          <div className="col-span-2 lg:col-span-1">
+            <DashboardActionStrip
+              overdueCount={overdueBills.length}
+              dueSoonCount={dueSoonBills.length}
+              upcomingTotal={upcomingTotal}
+              isFamilyView={isFamilyView}
+              onAttentionClick={() => needsAttentionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            />
+          </div>
+          <OrganizationStrip />
+          <PeopleBubbleRow />
+        </div>
 
         {/* Needs Attention bill list */}
         <div ref={needsAttentionRef}>
@@ -384,7 +373,10 @@ const Dashboard = () => {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <BottomNav />
+      <BottomNav
+        isFamilyView={isFamilyView}
+        onToggleFamilyView={() => setIsFamilyView(!isFamilyView)}
+      />
 
       {/* Dev Panel */}
       <AnimatePresence>

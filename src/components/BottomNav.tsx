@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal, Lock } from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal, Lock, Eye, EyeOff } from 'lucide-react';
 import { openSearch } from '@/components/search/GlobalSearch';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
@@ -96,7 +96,12 @@ const AccountDropdownContent = () => {
   );
 };
 
-const BottomNav = () => {
+interface BottomNavProps {
+  isFamilyView?: boolean;
+  onToggleFamilyView?: () => void;
+}
+
+const BottomNav = ({ isFamilyView, onToggleFamilyView }: BottomNavProps = {}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useProfile();
@@ -154,6 +159,17 @@ const BottomNav = () => {
           </nav>
 
           <div className="flex items-center gap-2">
+            {onToggleFamilyView && (
+              <Button
+                variant={isFamilyView ? 'default' : 'ghost'}
+                size="sm"
+                onClick={onToggleFamilyView}
+                className="gap-1.5"
+              >
+                {isFamilyView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {isFamilyView ? 'Exit Family View' : 'Family View'}
+              </Button>
+            )}
             {!demo && (
               <Button variant="ghost" size="sm" className="gap-1.5" onClick={openSearch}>
                 <Search className="w-4 h-4" />

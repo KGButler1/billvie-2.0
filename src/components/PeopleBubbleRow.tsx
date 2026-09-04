@@ -20,7 +20,7 @@ const PeopleBubbleRow = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(() => !(PeopleService.isLoaded() && AccessService.isLoaded()));
   useEffect(() => { if (PeopleService.isLoaded() && AccessService.isLoaded()) setIsLoading(false); });
-  if (isLoading) return <SkeletonCard className="mb-6" />;
+  if (isLoading) return <SkeletonCard className="h-full" />;
   const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
   const state = getAccessState();
   const activePeople = AccessService.getActivePeople();
@@ -30,7 +30,7 @@ const PeopleBubbleRow = () => {
 
   if (state === 'none') {
     return (
-      <div className="mb-6">
+      <div className="bg-card border border-border rounded-xl p-4 h-full flex flex-col justify-center">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
           Household Access
         </h2>
@@ -47,7 +47,7 @@ const PeopleBubbleRow = () => {
   const allPeople = [...activePeople, ...invitedPeople];
 
   return (
-    <div className="mb-6">
+    <div className="bg-card border border-border rounded-xl p-4 h-full">
       <button
         onClick={() => navigate(demoPrefix('/people'))}
         className="flex items-center justify-between w-full mb-3"
