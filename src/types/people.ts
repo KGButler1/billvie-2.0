@@ -7,7 +7,7 @@ export interface TrustedPerson {
   email: string; // required
   role: PersonRole;
   status: TrustedPersonStatus;
-  accessLevel?: 'owner';
+  accessLevel?: 'owner' | 'co_owner' | 'trusted_person';
   userId?: string;
   inviteToken?: string;
   keyPersonId?: string; // one-way link to the KeyPerson record, if any

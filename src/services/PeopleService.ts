@@ -25,7 +25,7 @@ function rowToPerson(row: Record<string, unknown>): TrustedPerson {
     email: row.email as string,
     role: (row.role as PersonRole) || 'household',
     status: (row.status as TrustedPersonStatus) || 'invited',
-    accessLevel: (row.access_level as 'owner') || undefined,
+    accessLevel: (row.access_level as 'owner' | 'co_owner' | 'trusted_person') || undefined,
     userId: (row.user_id as string) || undefined,
     inviteToken: (row.invite_token as string) || undefined,
     keyPersonId: (row.key_person_id as string) || undefined,
@@ -48,6 +48,7 @@ export interface DirectoryEntry {
   role: PersonRole | 'contact';
   hasAccess: boolean;
   isOwner?: boolean;
+  isCoOwner?: boolean;
   trustedPersonId?: string;
   keyPersonId?: string;
   scopes: AccessScope[];
@@ -100,11 +101,15 @@ export const PeopleService = {
     email,
     role,
     keyPersonId,
+    accessLevel,
+    scopes,
   }: {
     name: string;
     email: string;
     role: PersonRole;
     keyPersonId?: string;
+    accessLevel?: 'trusted_person' | 'co_owner';
+    scopes?: AccessScope[];
   }): Promise<{ person: TrustedPerson; warning?: string }> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const { data: { session } } = await supabase.auth.getSession();
@@ -117,7 +122,7 @@ export const PeopleService = {
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
       },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId, accessLevel, scopes }),
     });
 
     if (!response.ok) {
@@ -199,6 +204,7 @@ export const PeopleService = {
         role: p.role,
         hasAccess: scopes.length > 0,
         isOwner: p.accessLevel === 'owner',
+        isCoOwner: p.accessLevel === 'co_owner',
         trustedPersonId: p.id,
         keyPersonId: p.keyPersonId,
         scopes: Array.from(new Set(scopes)),

@@ -138,6 +138,10 @@ const People = () => {
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
 
+  const isCurrentUserAdmin = PeopleService.getAll().some(
+    (p) => p.userId === user?.id && (p.accessLevel === 'owner' || p.accessLevel === 'co_owner')
+  );
+
   const reload = useCallback(async () => {
     await PeopleService.refresh();
     setDirectory(PeopleService.getDirectory());
@@ -259,6 +263,10 @@ const People = () => {
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
                   Owner
                 </span>
+              ) : entry.isCoOwner ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 shrink-0">
+                  Co-owner
+                </span>
               ) : entry.status === 'invited' ? (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">
                   Invited
@@ -306,13 +314,15 @@ const People = () => {
                     <div>
                       <p className="text-sm font-medium mb-1">What {firstName(entry.name)} can see</p>
                       <p className="text-xs text-muted-foreground mb-2">
-                        They can see everything in these categories. Turn off anything you'd rather keep private.
+                        {isCurrentUserAdmin
+                          ? "They can see everything in these categories. Turn off anything you'd rather keep private."
+                          : "These are the categories this person can currently see."}
                       </p>
                       <div className="space-y-1">
                         {ACCESS_SCOPES.map((scope) => (
                           <label
                             key={scope}
-                            className="flex items-center justify-between min-h-[44px] gap-4 cursor-pointer"
+                            className={`flex items-center justify-between min-h-[44px] gap-4 ${isCurrentUserAdmin ? 'cursor-pointer' : 'cursor-default'}`}
                           >
                             <span className="text-sm min-w-0">
                               {ACCESS_SCOPE_LABELS[scope]}
@@ -329,11 +339,17 @@ const People = () => {
                             </span>
                             <Switch
                               checked={entry.scopes.includes(scope)}
-                              onCheckedChange={(v) => toggleScope(entry, scope, v)}
+                              onCheckedChange={isCurrentUserAdmin ? (v) => toggleScope(entry, scope, v) : undefined}
+                              disabled={!isCurrentUserAdmin}
                             />
                           </label>
                         ))}
                       </div>
+                      {!isCurrentUserAdmin && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Read-only — only an owner or co-owner can change this.
+                        </p>
+                      )}
                     </div>
 
                     {entry.scopes.length > 0 && (
@@ -367,7 +383,7 @@ const People = () => {
                       </div>
                     )}
 
-                    {!entry.keyPersonId && (
+                    {isCurrentUserAdmin && !entry.keyPersonId && (
                       <div>
                         <button
                           type="button"
@@ -387,7 +403,7 @@ const People = () => {
                       </div>
                     )}
 
-                    {person?.status === 'invited' && (
+                    {isCurrentUserAdmin && person?.status === 'invited' && (
                       <div className="flex items-center gap-4">
                         <SendAgainButton entry={entry} person={person} onDone={reload} />
                         {person.inviteToken && (
@@ -411,18 +427,20 @@ const People = () => {
                       </div>
                     )}
 
-                    {renderExclusionPicker(entry)}
+                    {isCurrentUserAdmin && renderExclusionPicker(entry)}
 
-                    <button
-                      type="button"
-                      className="block text-sm text-destructive hover:underline"
-                      onClick={() => setConfirmRemove(entry)}
-                    >
-                      Stop sharing with {firstName(entry.name)}
-                    </button>
+                    {isCurrentUserAdmin && (
+                      <button
+                        type="button"
+                        className="block text-sm text-destructive hover:underline"
+                        onClick={() => setConfirmRemove(entry)}
+                      >
+                        Stop sharing with {firstName(entry.name)}
+                      </button>
+                    )}
                   </>
                   )
-                ) : entry.email ? (
+                ) : isCurrentUserAdmin && entry.email ? (
                   <button
                     type="button"
                     className="text-sm text-primary hover:underline"
@@ -432,7 +450,7 @@ const People = () => {
                   >
                     Give {firstName(entry.name)} access
                   </button>
-                ) : (
+                ) : isCurrentUserAdmin ? (
                   <button
                     type="button"
                     className="text-sm text-primary hover:underline"
@@ -443,7 +461,7 @@ const People = () => {
                   >
                     Add an email to share with {firstName(entry.name)}
                   </button>
-                )}
+                ) : null}
               </div>
             </motion.div>
           )}
@@ -469,10 +487,7 @@ const People = () => {
   };
 
   const renderExclusionPicker = (entry: DirectoryEntry) => {
-    const isCurrentUserOwner = PeopleService.getAll().some(
-      (p) => p.userId === user?.id && p.accessLevel === 'owner'
-    );
-    if (!entry.trustedPersonId || entry.isOwner || !isCurrentUserOwner) return null;
+    if (!entry.trustedPersonId || entry.isOwner || !isCurrentUserAdmin) return null;
     const personId = entry.trustedPersonId;
     const scopesWithAccess = entry.scopes;
     if (scopesWithAccess.length === 0) return null;
@@ -580,10 +595,12 @@ const People = () => {
                   <EmptyState
                     text="No one in your household can see this yet."
                     action={
-                      <Button onClick={() => setInviteState({ role: 'household' })}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Invite someone you trust
-                      </Button>
+                      isCurrentUserAdmin ? (
+                        <Button onClick={() => setInviteState({ role: 'household' })}>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Invite someone you trust
+                        </Button>
+                      ) : undefined
                     }
                   />
                 ) : (
@@ -591,12 +608,14 @@ const People = () => {
                     {householdRows.map((entry) => (
                       <Row key={entry.key} entry={entry} />
                     ))}
-                    <div className="p-3">
-                      <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'household' })}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Invite someone you trust
-                      </Button>
-                    </div>
+                    {isCurrentUserAdmin && (
+                      <div className="p-3">
+                        <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'household' })}>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Invite someone you trust
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </motion.div>
@@ -609,9 +628,11 @@ const People = () => {
             <EmptyState
               text="No advisor or accountant added."
               action={
-                <Button variant="outline" onClick={() => setInviteState({ role: 'advisor' })}>
-                  Add an advisor
-                </Button>
+                isCurrentUserAdmin ? (
+                  <Button variant="outline" onClick={() => setInviteState({ role: 'advisor' })}>
+                    Add an advisor
+                  </Button>
+                ) : undefined
               }
             />
           ) : (
@@ -619,11 +640,13 @@ const People = () => {
               {professionalRows.map((entry) => (
                 <Row key={entry.key} entry={entry} />
               ))}
-              <div className="p-3">
-                <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'advisor' })}>
-                  Add an advisor
-                </Button>
-              </div>
+              {isCurrentUserAdmin && (
+                <div className="p-3">
+                  <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'advisor' })}>
+                    Add an advisor
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </Section>
@@ -656,13 +679,15 @@ const People = () => {
         </Section>
       </main>
 
-      <FabMenu
-        choices={[
-          { label: 'Invite household member', icon: <UserPlus className="w-5 h-5" />, onClick: () => setInviteState({ role: 'household' }) },
-          { label: 'Add advisor', icon: <Briefcase className="w-5 h-5" />, onClick: () => setInviteState({ role: 'advisor' }) },
-          { label: 'Add key contact', icon: <Users className="w-5 h-5" />, onClick: () => navigate('/key-people?add=1') },
-        ]}
-      />
+      {isCurrentUserAdmin && (
+        <FabMenu
+          choices={[
+            { label: 'Invite household member', icon: <UserPlus className="w-5 h-5" />, onClick: () => setInviteState({ role: 'household' }) },
+            { label: 'Add advisor', icon: <Briefcase className="w-5 h-5" />, onClick: () => setInviteState({ role: 'advisor' }) },
+            { label: 'Add key contact', icon: <Users className="w-5 h-5" />, onClick: () => navigate('/key-people?add=1') },
+          ]}
+        />
+      )}
 
       <BottomNav />
 
