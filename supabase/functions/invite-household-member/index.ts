@@ -73,6 +73,13 @@ Deno.serve(async (req: Request) => {
     const pRole = role || "household";
     const displayName = (name || "").trim() || email.trim().split("@")[0];
 
+    // Shared helper: build redirect URL (strips trailing slashes) and send the invite email.
+    const sendInviteEmail = async (inviteEmail: string, token: string) => {
+      const appUrl = (Deno.env.get("APP_URL") || `${supabaseUrl.replace(".supabase.co", "")}`).replace(/\/+$/, "");
+      const redirectUrl = `${appUrl}/accept-invite?token=${token}`;
+      return adminClient.auth.admin.inviteUserByEmail(inviteEmail, { redirectTo: redirectUrl });
+    };
+
     // Duplicate-invite guard: check for an existing trusted_person row
     // matching this household + email (case-insensitive) that is still
     // invited or active, so "Send again" doesn't create duplicate rows.
@@ -124,13 +131,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // Re-send the invite email using the existing token
-      const appUrl = Deno.env.get("APP_URL") || `${supabaseUrl.replace(".supabase.co", "")}`;
-      const redirectUrl = `${appUrl}/accept-invite?token=${existingRow.invite_token}`;
-
-      const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-        email.trim(),
-        { redirectTo: redirectUrl }
-      );
+      const { error: inviteError } = await sendInviteEmail(email.trim(), existingRow.invite_token);
 
       if (inviteError) {
         return new Response(
@@ -220,13 +221,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Send the invite email via Supabase's built-in invite system
-    const appUrl = Deno.env.get("APP_URL") || `${supabaseUrl.replace(".supabase.co", "")}`;
-    const redirectUrl = `${appUrl}/accept-invite?token=${inviteToken}`;
-
-    const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      email.trim(),
-      { redirectTo: redirectUrl }
-    );
+    const { error: inviteError } = await sendInviteEmail(email.trim(), inviteToken);
 
     if (inviteError) {
       // The trusted_person row was created, but the email failed.

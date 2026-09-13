@@ -105,7 +105,7 @@ export const PeopleService = {
     email: string;
     role: PersonRole;
     keyPersonId?: string;
-  }): Promise<TrustedPerson> {
+  }): Promise<{ person: TrustedPerson; warning?: string }> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
@@ -128,7 +128,7 @@ export const PeopleService = {
     const body = await response.json();
     const person = rowToPerson(body.person);
     cache.push(person);
-    return person;
+    return { person, warning: body.warning };
   },
 
   async activate(id: string): Promise<TrustedPerson | undefined> {

@@ -54,13 +54,13 @@ const SendAgainButton = ({
   const send = async () => {
     setSending(true);
     try {
-      await PeopleService.invite({
+      const result = await PeopleService.invite({
         name: person.name,
         email: person.email,
         role: person.role,
         keyPersonId: person.keyPersonId,
       });
-      toast({ description: `The invite for ${firstName(entry.name)} has been sent again.` });
+      toast({ description: result.warning ?? `The invite for ${firstName(entry.name)} has been sent again.` });
       onDone();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not resend the invite.';
@@ -256,13 +256,24 @@ const People = () => {
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
                   Owner
                 </span>
-              ) : entry.hasAccess ? (
+              ) : entry.status === 'invited' ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">
+                  Invited
+                </span>
+              ) : entry.status === 'active' && entry.scopes.length === 0 ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 shrink-0">
+                  Accepted
+                </span>
+              ) : entry.status === 'active' && entry.scopes.length > 0 ? (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
                   Has access
                 </span>
               ) : null}
             </div>
             <p className="text-sm text-muted-foreground truncate">{renderSecondLine(entry)}</p>
+            {entry.trustedPersonId && entry.email && (
+              <p className="text-xs text-muted-foreground truncate">{entry.email}</p>
+            )}
           </div>
           {isOpen ? (
             <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />

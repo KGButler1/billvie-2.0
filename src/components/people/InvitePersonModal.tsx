@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PersonRole, TrustedPerson } from '@/types/people';
 import { PeopleService } from '@/services/PeopleService';
 import { EntitlementService } from '@/services/EntitlementService';
+import { toast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import FieldError from '@/components/ui/field-error';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -57,8 +58,11 @@ const InvitePersonModal = ({
     if (!name.trim()) { setNameError('Enter a name.'); hasError = true; }
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setEmailError('Enter a valid email address.'); hasError = true; }
     if (hasError || blockedReason) return;
-    const person = await PeopleService.invite({ name: name.trim(), email: email.trim(), role, keyPersonId });
-    onInvited(person);
+    const result = await PeopleService.invite({ name: name.trim(), email: email.trim(), role, keyPersonId });
+    if (result.warning) {
+      toast({ description: result.warning });
+    }
+    onInvited(result.person);
   };
 
   return (

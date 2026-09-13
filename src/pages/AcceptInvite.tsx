@@ -53,7 +53,12 @@ const AcceptInvite = () => {
       });
 
       if (rpcError) {
-        setError(rpcError.message);
+        const msg = rpcError.message || '';
+        if (msg.startsWith('WRONG_ACCOUNT:')) {
+          setError('This invite was sent to a different email than the one you\'re currently signed in with in this browser. Sign out (or open the link in a private/incognito window) and try the invite link again.');
+        } else {
+          setError('Something went wrong accepting this invite — try again, or ask them to send it again.');
+        }
         return;
       }
 
