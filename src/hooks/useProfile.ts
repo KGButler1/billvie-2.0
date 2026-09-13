@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { PersonRole } from '@/types/people';
 import { PAID_PLAN_STATUSES } from '@/constants/pricing';
+import { getHouseholdId } from '@/services/supabaseData';
 
 export interface UserProfile {
   personId: string;
@@ -28,6 +29,15 @@ export const useProfile = () => {
       return;
     }
 
+    let householdId: string;
+    try {
+      householdId = await getHouseholdId();
+    } catch {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('trusted_person')
       .select(`
@@ -40,6 +50,7 @@ export const useProfile = () => {
         households ( name, plan_status )
       `)
       .eq('user_id', session.user.id)
+      .eq('household_id', householdId)
       .eq('status', 'active')
       .maybeSingle();
 

@@ -1,8 +1,35 @@
 import { supabase } from '@/lib/supabase';
 
-// Resolves the current user's household_id from their trusted_person row.
-// Cached per-session so repeated calls don't re-query.
+const STORAGE_KEY = 'billvie:current_household_id';
+
+export class NeedsHouseholdSelectionError extends Error {
+  constructor() {
+    super('NEEDS_HOUSEHOLD_SELECTION');
+    this.name = 'NeedsHouseholdSelectionError';
+  }
+}
+
+export interface HouseholdMembership {
+  householdId: string;
+  householdName: string;
+  role: string;
+  accessLevel: string | null;
+  planStatus: string | null;
+}
+
 let cachedHouseholdId: string | null = null;
+
+export async function fetchMyHouseholds(): Promise<HouseholdMembership[]> {
+  const { data, error } = await supabase.rpc('my_households');
+  if (error) throw error;
+  return (data || []).map((row: Record<string, unknown>) => ({
+    householdId: row.household_id as string,
+    householdName: row.household_name as string,
+    role: row.role as string,
+    accessLevel: (row.access_level as string) || null,
+    planStatus: (row.plan_status as string) || null,
+  }));
+}
 
 export async function getHouseholdId(): Promise<string> {
   if (cachedHouseholdId) return cachedHouseholdId;
@@ -10,26 +37,36 @@ export async function getHouseholdId(): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user?.id) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .from('trusted_person')
-    .select('household_id')
-    .eq('user_id', session.user.id)
-    .eq('status', 'active')
-    .maybeSingle();
+  const households = await fetchMyHouseholds();
 
-  if (error || !data?.household_id) throw new Error('No household found for user');
+  if (households.length === 0) throw new Error('No household found for user');
 
-  cachedHouseholdId = data.household_id;
-  return cachedHouseholdId;
+  const stored = localStorage.getItem(STORAGE_KEY);
+  const match = stored ? households.find((h) => h.householdId === stored) : null;
+  if (match) {
+    cachedHouseholdId = match.householdId;
+    return cachedHouseholdId;
+  }
+
+  if (households.length === 1) {
+    cachedHouseholdId = households[0].householdId;
+    localStorage.setItem(STORAGE_KEY, cachedHouseholdId);
+    return cachedHouseholdId;
+  }
+
+  throw new NeedsHouseholdSelectionError();
 }
 
-// Call after sign-out or household switch to force re-resolution.
+export function setCurrentHousehold(householdId: string): void {
+  localStorage.setItem(STORAGE_KEY, householdId);
+  clearHouseholdCache();
+  window.location.reload();
+}
+
 export function clearHouseholdCache(): void {
   cachedHouseholdId = null;
 }
 
-// Maps camelCase keys used by the frontend to snake_case columns in Postgres.
-// Used when inserting/updating — the inverse mapping is applied on read.
 export function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {

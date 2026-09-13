@@ -27,6 +27,7 @@ import RecentlyDeleted from "./pages/RecentlyDeleted";
 import KeyPeople from "./pages/KeyPeople";
 import Readiness from "./pages/Readiness";
 import Onboarding from "./pages/Onboarding";
+import SelectHousehold from "./pages/SelectHousehold";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -87,6 +88,7 @@ const App = () => {
               <Route path="/" element={<RootRoute />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/select-household" element={<ProtectedRoute><SelectHousehold /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />

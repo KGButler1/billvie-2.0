@@ -134,6 +134,32 @@ Deno.serve(async (req: Request) => {
       const { error: inviteError } = await sendInviteEmail(email.trim(), existingRow.invite_token);
 
       if (inviteError) {
+        // If the account already exists (they clicked the original link once but
+        // never finished setting a password), inviteUserByEmail fails. Fall back
+        // to a magic link so they get a working sign-in path back to /accept-invite.
+        const isAccountExists =
+          (inviteError as { code?: string }).code === "email_exists" ||
+          /already been registered/i.test(inviteError.message || "");
+
+        if (isAccountExists) {
+          const plainClient = createClient(supabaseUrl, anonKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const appUrl = (Deno.env.get("APP_URL") || `${supabaseUrl.replace(".supabase.co", "")}`).replace(/\/+$/, "");
+          const redirectUrl = `${appUrl}/accept-invite?token=${existingRow.invite_token}`;
+          const { error: otpError } = await plainClient.auth.signInWithOtp({
+            email: email.trim(),
+            options: { emailRedirectTo: redirectUrl },
+          });
+
+          if (!otpError) {
+            return new Response(
+              JSON.stringify({ person: reusedRow }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+
         return new Response(
           JSON.stringify({
             person: reusedRow,

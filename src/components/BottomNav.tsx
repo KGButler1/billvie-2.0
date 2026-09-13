@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import BillvieLogo from '@/components/BillvieLogo';
 import UserAvatar from '@/components/UserAvatar';
+import HouseholdSwitcher from '@/components/HouseholdSwitcher';
 import { isDemoModeActive } from '@/demo/demoFlag';
 
 const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
@@ -159,6 +160,7 @@ const BottomNav = ({ isFamilyView, onToggleFamilyView }: BottomNavProps = {}) =>
           </nav>
 
           <div className="flex items-center gap-2">
+            {!demo && <HouseholdSwitcher />}
             {onToggleFamilyView && (
               <Button
                 variant={isFamilyView ? 'default' : 'ghost'}
