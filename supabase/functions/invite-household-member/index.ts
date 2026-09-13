@@ -45,10 +45,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { email, name, role, keyPersonId } = await req.json();
+    const { email, name, role, keyPersonId, accessLevel, scopes } = await req.json();
     if (!email || !email.trim()) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate accessLevel — 'owner' is never allowed via invite
+    const pAccessLevel = accessLevel || "trusted_person";
+    if (pAccessLevel === "owner") {
+      return new Response(
+        JSON.stringify({ error: "There is exactly one owner per household, set at creation. Use co_owner instead." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (pAccessLevel !== "trusted_person" && pAccessLevel !== "co_owner") {
+      return new Response(
+        JSON.stringify({ error: `Invalid access level: ${pAccessLevel}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -68,10 +83,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Authorization: only owners and co-owners can invite
+    if (callerPerson.access_level !== "owner" && callerPerson.access_level !== "co_owner") {
+      return new Response(
+        JSON.stringify({ error: "Only an owner or co-owner can invite someone" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const householdId = callerPerson.household_id;
 
     const pRole = role || "household";
     const displayName = (name || "").trim() || email.trim().split("@")[0];
+    // accessLevel only applies to household members; advisors/accountants are always trusted_person
+    const effectiveAccessLevel = pRole === "household" ? pAccessLevel : "trusted_person";
 
     // Shared helper: build redirect URL (strips trailing slashes) and send the invite email.
     const sendInviteEmail = async (inviteEmail: string, token: string) => {
@@ -85,6 +110,7 @@ Deno.serve(async (req: Request) => {
     // invited or active, so "Send again" doesn't create duplicate rows.
     // This runs BEFORE the entitlement check — resending to an existing
     // person should never hit the free-tier limit.
+    // Authorization was already checked above — this path is reachable by admins only.
     const { data: existingRow } = await userClient
       .from("trusted_person")
       .select("id, invite_token, status, name")
@@ -231,6 +257,7 @@ Deno.serve(async (req: Request) => {
         display_name: displayName,
         email: email.trim(),
         role: pRole,
+        access_level: effectiveAccessLevel,
         status: "invited",
         invite_token: inviteToken,
         key_person_id: keyPersonId || null,
@@ -246,23 +273,40 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Insert initial access_grants for trusted_person (not co_owner — they get full default access)
+    let grantsWarning: string | undefined;
+    if (effectiveAccessLevel !== "co_owner" && Array.isArray(scopes) && scopes.length > 0) {
+      const grantRows = scopes.map((scope: string) => ({
+        household_id: householdId,
+        person_id: personRow.id,
+        scope,
+        item_id: null,
+      }));
+      const { error: grantsError } = await adminClient
+        .from("access_grants")
+        .insert(grantRows);
+      if (grantsError) {
+        grantsWarning = "Person added but initial access scopes could not be set. You can add them from the People page.";
+      }
+    }
+
     // Send the invite email via Supabase's built-in invite system
     const { error: inviteError } = await sendInviteEmail(email.trim(), inviteToken);
 
     if (inviteError) {
       // The trusted_person row was created, but the email failed.
       // We still return success since the row exists — the owner can "Send again".
+      const warning = grantsWarning || "Person added but invite email could not be sent. Try 'Send again' later.";
       return new Response(
-        JSON.stringify({
-          person: personRow,
-          warning: "Person added but invite email could not be sent. Try 'Send again' later.",
-        }),
+        JSON.stringify({ person: personRow, warning }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const body: Record<string, unknown> = { person: personRow };
+    if (grantsWarning) body.warning = grantsWarning;
     return new Response(
-      JSON.stringify({ person: personRow }),
+      JSON.stringify(body),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
