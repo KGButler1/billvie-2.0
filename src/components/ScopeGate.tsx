@@ -16,8 +16,8 @@ const ScopeGate = ({ scope, children, compact = false }: ScopeGateProps) => {
 
   if (compact) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-        <EyeOff className="w-5 h-5 text-muted-foreground mb-2" />
+      <div className="bg-card border border-border rounded-lg p-3 flex items-center gap-3">
+        <EyeOff className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">You don't have access to this</p>
       </div>
     );

@@ -110,16 +110,6 @@ const Settings = () => {
     }
   };
 
-  if (!isAdmin) return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-5">
-        <EyeOff className="w-7 h-7 text-muted-foreground" />
-      </div>
-      <h2 className="text-lg font-semibold mb-1">You don't have access to this</h2>
-      <p className="text-sm text-muted-foreground max-w-xs">Ask an owner or co-owner if you need to see this</p>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -133,6 +123,17 @@ const Settings = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        {!isAdmin && (
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-5">
+              <EyeOff className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold mb-1">You don't have access to this</h2>
+            <p className="text-sm text-muted-foreground max-w-xs">Ask an owner or co-owner if you need to see this</p>
+          </div>
+        )}
+
+      <AdminOnly>
         {/* Profile Section */}
         <ProfileSection />
 
@@ -444,6 +445,7 @@ const Settings = () => {
             </div>
           </div>
         </section>
+      </AdminOnly>
       </main>
 
       <AnimatePresence>

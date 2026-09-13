@@ -73,7 +73,7 @@ const AccountDropdownContent = () => {
       <DropdownMenuItem onClick={() => navigate('/settings')}>
         <Settings className="w-4 h-4 mr-2" /> Settings
       </DropdownMenuItem>
-      <DropdownMenuItem>
+      <DropdownMenuItem onClick={() => window.open('https://form.typeform.com/to/bYWbF6lG', '_blank', 'noopener,noreferrer')}>
         <HelpCircle className="w-4 h-4 mr-2" /> Help &amp; Support
       </DropdownMenuItem>
       <DropdownMenuSeparator />
