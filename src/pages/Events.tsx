@@ -13,6 +13,7 @@ import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/skeleton';
+import ScopeGate from '@/components/ScopeGate';
 
 const Events = () => {
   const navigate = useNavigate();
@@ -101,6 +102,7 @@ const Events = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8">
+        <ScopeGate scope="events">
         <h1 className="text-2xl font-semibold hidden lg:block mb-2">Events</h1>
         <UsageCounter count={currentEventCount} limit={eventLimit} label="events" />
         <p className="text-sm text-muted-foreground mb-6">
@@ -192,6 +194,7 @@ const Events = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        </ScopeGate>
       </main>
 
       {/* FAB */}

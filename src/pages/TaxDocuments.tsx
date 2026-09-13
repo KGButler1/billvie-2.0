@@ -51,6 +51,7 @@ import AttachmentManager from '@/components/documents/AttachmentManager';
 
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/utils/currency';
+import ScopeGate from '@/components/ScopeGate';
 type RowSource = 'tax' | 'bill' | 'document';
 
 interface TaxRow {
@@ -262,6 +263,7 @@ const TaxDocuments = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8">
+        <ScopeGate scope="tax_documents">
         <h1 className="text-2xl font-semibold hidden lg:block mb-2">Tax Documents</h1>
         <DismissibleIntro storageKey="billvie_tax_intro">
           Anything tagged relevant for tax on a bill or a document shows up here automatically. Add something here directly too, if it doesn't live anywhere else.
@@ -551,6 +553,7 @@ const TaxDocuments = () => {
 
         {/* Sharing Panel */}
         <TaxSharingPanel />
+        </ScopeGate>
       </main>
 
       {/* FAB */}

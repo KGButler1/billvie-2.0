@@ -16,6 +16,7 @@ import AddExpenseModal from '@/components/events/AddExpenseModal';
 import EventAnalytics from '@/components/events/EventAnalytics';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
+import ScopeGate from '@/components/ScopeGate';
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +68,7 @@ const EventDetail = () => {
       <EventHeader event={event} onUpdate={loadEvent} />
 
       <main className="container mx-auto px-4 pt-20">
+        <ScopeGate scope="events">
         <p className="text-sm text-muted-foreground mb-4">
           What's committed for this, and what your household would need to know.
         </p>
@@ -128,6 +130,7 @@ const EventDetail = () => {
             </motion.div>
           )}
         </section>
+        </ScopeGate>
       </main>
 
       {/* FAB */}

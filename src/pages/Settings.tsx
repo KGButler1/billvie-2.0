@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2 } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff } from 'lucide-react';
 import { downloadBackup } from '@/utils/dataBackup';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,9 +24,12 @@ import UserAvatar, { getInitials } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
+import { useViewerAccess } from '@/hooks/useViewerAccess';
+import AdminOnly from '@/components/AdminOnly';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useViewerAccess();
   const [settings, setSettings] = useState<UserSettings>(UserService.getSettings());
   const { profile, reload } = useProfile();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,6 +109,16 @@ const Settings = () => {
       toast.error('Could not open subscription management. Please try again.');
     }
   };
+
+  if (!isAdmin) return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-5">
+        <EyeOff className="w-7 h-7 text-muted-foreground" />
+      </div>
+      <h2 className="text-lg font-semibold mb-1">You don't have access to this</h2>
+      <p className="text-sm text-muted-foreground max-w-xs">Ask an owner or co-owner if you need to see this</p>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background pb-24">

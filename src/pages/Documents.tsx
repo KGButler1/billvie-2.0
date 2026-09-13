@@ -36,6 +36,7 @@ import UpgradeModal from '@/components/UpgradeModal';
 import { canAddDocument } from '@/utils/documentLimits';
 import { FREE_DOCUMENT_LIMIT } from '@/constants/pricing';
 import UsageCounter from '@/components/shared/UsageCounter';
+import ScopeGate from '@/components/ScopeGate';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -177,6 +178,7 @@ const Documents = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
+        <ScopeGate scope="documents">
         {demoNudge && (
           <p className="text-sm text-muted-foreground italic mb-4">
             This is what a note looks like for your own family. Nothing fancy, just clear.
@@ -359,6 +361,7 @@ const Documents = () => {
             )}
           </>
         )}
+        </ScopeGate>
       </main>
 
       <AnimatePresence>

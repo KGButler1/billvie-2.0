@@ -35,6 +35,8 @@ import {
 import { cn } from '@/lib/utils';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { SkeletonRows } from '@/components/ui/skeleton';
+import AdminOnly from '@/components/AdminOnly';
+import { useViewerAccess } from '@/hooks/useViewerAccess';
 
 type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
@@ -55,6 +57,7 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 const Bills = () => {
+  const { isAdmin } = useViewerAccess();
   const [searchParams] = useSearchParams();
   const [bills, setBills] = useState<Bill[]>([]);
   const [status, setStatus] = useState<StatusFilter>('all');
@@ -307,10 +310,12 @@ const Bills = () => {
               </SelectContent>
             </Select>
 
+            <AdminOnly>
             <Button onClick={handleTryAddBill} className="gap-1.5">
               <Plus className="w-4 h-4" />
               Add bill
             </Button>
+            </AdminOnly>
           </div>
         </div>
 
@@ -324,10 +329,10 @@ const Bills = () => {
               <BillList
                 bills={visibleBills}
                 mode={mode}
-                onMarkPaid={handleMarkPaid}
-                onMarkUnpaid={handleMarkUnpaid}
-                onDelete={handleDelete}
-                onEdit={setEditingBill}
+                onMarkPaid={isAdmin ? handleMarkPaid : undefined}
+                onMarkUnpaid={isAdmin ? handleMarkUnpaid : undefined}
+                onDelete={isAdmin ? handleDelete : undefined}
+                onEdit={isAdmin ? setEditingBill : undefined}
                 onOpen={setDetailBill}
                 emptyState={
                   <div className="text-center py-20">
@@ -335,9 +340,11 @@ const Bills = () => {
                     <p className="text-muted-foreground mb-6">
                       Add your first one so someone else knows what's running.
                     </p>
+                    <AdminOnly>
                     <Button onClick={handleTryAddBill} className="gap-1.5">
                       <Plus className="w-4 h-4" /> Add bill
                     </Button>
+                    </AdminOnly>
                   </div>
                 }
               />
@@ -389,12 +396,14 @@ const Bills = () => {
       />
 
       {/* FAB with menu */}
+      <AdminOnly>
       <FabMenu
         choices={[
           { label: 'Scan', icon: <Scan className="w-5 h-5" />, onClick: handleTryScanBill },
           { label: 'Add manually', icon: <Plus className="w-5 h-5" />, onClick: handleTryAddBill },
         ]}
       />
+      </AdminOnly>
 
       <ConfirmDeleteDialog
         open={!!pendingDeleteBill}

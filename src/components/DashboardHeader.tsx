@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isDemoModeActive } from '@/demo/demoFlag';
+import AdminOnly from '@/components/AdminOnly';
 
 interface DashboardHeaderProps {
   onClearSamples: () => void;
@@ -44,6 +45,7 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
             )}
 
 
+            <AdminOnly>
             {onToggleFamilyView && (
               <Button
                 variant={isFamilyView ? "default" : "ghost"}
@@ -55,6 +57,7 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
                 <span className="hidden sm:inline">Family View</span>
               </Button>
             )}
+            </AdminOnly>
 
             {hasSampleBills && (
               <Button
@@ -77,10 +80,12 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
             {/* Desktop nav */}
             {!demo && (
               <nav className="hidden md:flex items-center gap-2">
+                <AdminOnly>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </Button>
+                </AdminOnly>
               </nav>
             )}
           </div>
@@ -111,6 +116,7 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
                 </Button>
               )}
               {!demo && (
+                <AdminOnly>
                 <Button variant="ghost" className="w-full justify-start" onClick={() => {
                   navigate('/settings');
                   setIsMenuOpen(false);
@@ -118,6 +124,7 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </Button>
+                </AdminOnly>
               )}
             </nav>
           </motion.div>

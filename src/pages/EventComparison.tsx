@@ -10,6 +10,7 @@ import { EventExpenseService } from '@/services/EventExpenseService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/utils/currency';
+import ScopeGate from '@/components/ScopeGate';
 
 const EventComparison = () => {
   const navigate = useNavigate();
@@ -66,6 +67,7 @@ const EventComparison = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        <ScopeGate scope="events">
         <p className="text-sm text-muted-foreground mb-4">
           Select 2 or more events to compare side-by-side.
         </p>
@@ -124,6 +126,7 @@ const EventComparison = () => {
             </p>
           </div>
         )}
+        </ScopeGate>
       </main>
     </div>
   );
@@ -170,6 +173,7 @@ const ComparisonView = ({ events, onBack }: ComparisonViewProps) => {
       </header>
 
       <main className="container mx-auto px-4 pt-20">
+        <ScopeGate scope="events">
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           {stats.map(({ event, stats: s }, index) => (
@@ -261,6 +265,7 @@ const ComparisonView = ({ events, onBack }: ComparisonViewProps) => {
             )}
           </div>
         </div>
+        </ScopeGate>
       </main>
     </div>
   );

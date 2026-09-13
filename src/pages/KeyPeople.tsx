@@ -15,6 +15,7 @@ import Fab from '@/components/Fab';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { SkeletonRows } from '@/components/ui/skeleton';
+import ScopeGate from '@/components/ScopeGate';
 
 const relationshipLabel = (value: string) =>
   KEY_PERSON_RELATIONSHIP_LABELS[value as KeyPersonRelationship] ?? value;
@@ -79,6 +80,7 @@ const KeyPeople = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 max-w-2xl">
+        <ScopeGate scope="key_people">
         <div className="hidden lg:flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Key People</h1>
           <Button size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">
@@ -171,6 +173,7 @@ const KeyPeople = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        </ScopeGate>
       </main>
 
       <AnimatePresence>

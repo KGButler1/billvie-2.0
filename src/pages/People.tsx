@@ -26,6 +26,7 @@ import { AccessService } from '@/services/AccessService';
 import { ExclusionService } from '@/services/ExclusionService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { useProfile } from '@/hooks/useProfile';
+import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole } from '@/types/people';
 import { scopeAccessSummary } from '@/utils/scopeItems';
 import { KeyPerson } from '@/types/keyPerson';
@@ -138,9 +139,7 @@ const People = () => {
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
 
-  const isCurrentUserAdmin = PeopleService.getAll().some(
-    (p) => p.userId === user?.id && (p.accessLevel === 'owner' || p.accessLevel === 'co_owner')
-  );
+  const { isAdmin: isCurrentUserAdmin } = useViewerAccess();
 
   const reload = useCallback(async () => {
     await PeopleService.refresh();
@@ -148,7 +147,7 @@ const People = () => {
   }, []);
 
   useEffect(() => {
-    Promise.all([PeopleService.refresh(), KeyPeopleService.refresh()])
+    Promise.all([PeopleService.refresh(), KeyPeopleService.refresh(), AccessService.refresh(), ExclusionService.refresh()])
       .then(reload)
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -316,7 +315,7 @@ const People = () => {
                       <p className="text-xs text-muted-foreground mb-2">
                         {isCurrentUserAdmin
                           ? "They can see everything in these categories. Turn off anything you'd rather keep private."
-                          : "These are the categories this person can currently see."}
+                          : `These are the categories ${firstName(entry.name)} can currently see.`}
                       </p>
                       <div className="space-y-1">
                         {ACCESS_SCOPES.map((scope) => (
@@ -352,7 +351,7 @@ const People = () => {
                       )}
                     </div>
 
-                    {entry.scopes.length > 0 && (
+                    {isCurrentUserAdmin && entry.scopes.length > 0 && (
                       <div>
                         <Button
                           variant="ghost"

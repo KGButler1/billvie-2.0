@@ -33,6 +33,8 @@ import BillsWidget from '@/components/BillsWidget';
 import FinancialSnapshotWidget from '@/components/FinancialSnapshotWidget';
 import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
+import ScopeGate from '@/components/ScopeGate';
+import AdminOnly from '@/components/AdminOnly';
 import DashboardActionStrip from '@/components/DashboardActionStrip';
 import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
@@ -274,20 +276,20 @@ const Dashboard = () => {
 
         {/* Household Records cluster */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
-          <DocumentsWidget />
-          <FinancialSnapshotWidget />
-          <TaxWidget />
+          <ScopeGate scope="documents" compact><DocumentsWidget /></ScopeGate>
+          <ScopeGate scope="financial_info" compact><FinancialSnapshotWidget /></ScopeGate>
+          <ScopeGate scope="tax_documents" compact><TaxWidget /></ScopeGate>
           <AdvisorWidget />
         </div>
 
         {/* Household setup (hidden when all complete) */}
-        <HouseholdSetupWidget />
+        <AdminOnly><HouseholdSetupWidget /></AdminOnly>
 
         {/* Spending Chart */}
         <SpendingChart spending={spending} />
 
         {/* Active Events Widget */}
-        <ActiveEventsWidget events={activeEvents} />
+        <ScopeGate scope="events" compact><ActiveEventsWidget events={activeEvents} /></ScopeGate>
 
         <BillsWidget onOpen={setDetailBill} />
 

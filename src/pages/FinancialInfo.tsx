@@ -59,6 +59,9 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
+import ScopeGate from '@/components/ScopeGate';
+import AdminOnly from '@/components/AdminOnly';
+import { useViewerAccess } from '@/hooks/useViewerAccess';
 
 const OverviewTab = ({
   insurance,
@@ -341,11 +344,12 @@ const FinancialInfo = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
+        <ScopeGate scope="financial_info">
         <h1 className="text-2xl font-semibold hidden lg:block mb-4">Financial Snapshot</h1>
         <DismissibleIntro storageKey="billvie_financial_intro">
           The numbers a spouse or advisor would need to know — what's protected, what's owed, what's coming in. Not a budget, just the facts someone would need if you weren't the one explaining them.
         </DismissibleIntro>
-        <FinancialAccessCard />
+        <AdminOnly><FinancialAccessCard /></AdminOnly>
         {/* Summary Cards */}
         <AnimatePresence mode="wait">
           {isLoading ? (
@@ -623,6 +627,7 @@ const FinancialInfo = () => {
             </div>
           </TabsContent>
         </Tabs>
+        </ScopeGate>
       </main>
 
       {/* Insurance Modal */}
