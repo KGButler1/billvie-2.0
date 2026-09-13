@@ -138,7 +138,10 @@ const People = () => {
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
 
-  const reload = useCallback(() => setDirectory(PeopleService.getDirectory()), []);
+  const reload = useCallback(async () => {
+    await PeopleService.refresh();
+    setDirectory(PeopleService.getDirectory());
+  }, []);
 
   useEffect(() => {
     Promise.all([PeopleService.refresh(), KeyPeopleService.refresh()])

@@ -127,7 +127,6 @@ export const PeopleService = {
 
     const body = await response.json();
     const person = rowToPerson(body.person);
-    cache.push(person);
     return { person, warning: body.warning };
   },
 
@@ -144,10 +143,7 @@ export const PeopleService = {
       .single();
 
     if (error) throw error;
-    const updated = rowToPerson(data);
-    const idx = cache.findIndex((p) => p.id === id);
-    if (idx !== -1) cache[idx] = updated;
-    return updated;
+    return rowToPerson(data);
   },
 
   async remove(id: string): Promise<void> {
@@ -161,8 +157,6 @@ export const PeopleService = {
       .eq('id', id);
 
     if (error) throw error;
-    const idx = cache.findIndex((p) => p.id === id);
-    if (idx !== -1) cache[idx] = { ...cache[idx], status: 'removed', removedAt: now() };
 
     // Revoke all access grants for this person. A failure here must not
     // hide the fact that the core removal (the status update) already
@@ -184,8 +178,6 @@ export const PeopleService = {
       .update({ key_person_id: keyPersonId, updated_at: now() })
       .eq('id', personId);
     if (error) throw error;
-    const idx = cache.findIndex((p) => p.id === personId);
-    if (idx !== -1) cache[idx] = { ...cache[idx], keyPersonId };
   },
 
   getDirectory(): DirectoryEntry[] {
