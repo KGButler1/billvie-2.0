@@ -106,7 +106,7 @@ export const DEMO_BILLS: Bill[] = [
     category: 'insurance',
     notes:
       'Premium jumps every March without fail. Call Jerry at the agency before it renews. A five minute call has saved real money before.',
-    status: 'due_soon',
+    status: 'pending',
     taggedPersonIds: ['demo-eleanor'],
     createdAt: now,
     updatedAt: now,

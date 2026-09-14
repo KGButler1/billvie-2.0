@@ -65,14 +65,12 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
   
   const statusStyles = {
     paid: 'status-paid',
-    due_soon: 'status-due-soon',
     overdue: 'status-overdue',
     pending: 'status-pending',
   };
 
   const statusLabels = {
     paid: 'Paid',
-    due_soon: 'Due Soon',
     overdue: 'Overdue',
     pending: 'Upcoming',
   };

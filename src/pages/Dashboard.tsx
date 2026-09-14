@@ -4,6 +4,7 @@ import { isDemoModeActive } from '@/demo/demoFlag';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
+import { getCachedWindowDays } from '@/services/supabaseData';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
@@ -126,7 +127,7 @@ const Dashboard = () => {
   };
 
   const handleMarkPaid = async (id: string) => {
-    await BillService.markAsPaid(id);
+    await BillService.markAsPaid(id, true);
     loadBills();
   };
 
@@ -141,10 +142,9 @@ const Dashboard = () => {
     loadBills();
   };
 
-  const getSectionTitle = (section: 'overdue' | 'due_soon' | 'upcoming' | 'paid') => {
+  const getSectionTitle = (section: 'overdue' | 'upcoming' | 'paid') => {
     const labels = {
       overdue: 'Needs Attention',
-      due_soon: 'Due Soon',
       upcoming: 'Coming Up',
       paid: 'Handled',
     };
@@ -152,12 +152,13 @@ const Dashboard = () => {
   };
 
   // Dashboard stats - calculate these first so they're available below
-  const upcomingTotal = BillService.getUpcomingTotal();
+  const windowDays = getCachedWindowDays();
+  const comingUpTotal = BillService.getComingUpTotal(windowDays);
+  const outstandingTotal = BillService.getOutstandingTotal();
   const spending = BillService.getSpendingByCategory();
   const activeEvents = EventService.getActiveEvents();
 
   const overdueBills = bills.filter(b => b.status === 'overdue');
-  const dueSoonBills = bills.filter(b => b.status === 'due_soon');
 
   const hasSampleBills = bills.some(b => b.isSample) || activeEvents.some(e => e.isSample);
 
@@ -208,8 +209,9 @@ const Dashboard = () => {
           <div className="col-span-2 lg:col-span-1">
             <DashboardActionStrip
               overdueCount={overdueBills.length}
-              dueSoonCount={dueSoonBills.length}
-              upcomingTotal={upcomingTotal}
+              comingUpTotal={comingUpTotal}
+              comingUpWindowDays={windowDays}
+              outstandingTotal={outstandingTotal}
               onAttentionClick={() => needsAttentionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             />
           </div>
@@ -227,7 +229,7 @@ const Dashboard = () => {
             ) : (
               <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <BillList
-                  bills={[...overdueBills, ...dueSoonBills]}
+                  bills={overdueBills}
                   mode="grouped"
                   sectionTitle={getSectionTitle}
                   onMarkPaid={handleMarkPaid}

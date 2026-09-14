@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Scan } from 'lucide-react';
-import { BillService } from '@/services/BillService';
+import { BillService, isWithinComingUpWindow } from '@/services/BillService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
@@ -12,6 +12,7 @@ import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { PaymentCardService } from '@/services/PaymentCardService';
 import { BankAccountService } from '@/services/BankAccountService';
 import { UserService } from '@/services/UserService';
+import { getCachedWindowDays } from '@/services/supabaseData';
 import { useProfile } from '@/hooks/useProfile';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { formatCurrency } from '@/utils/currency';
@@ -42,15 +43,14 @@ import EditOnly from '@/components/EditOnly';
 import ScopeGate from '@/components/ScopeGate';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 
-type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
+type StatusFilter = 'all' | 'overdue' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
 
-const STATUS_CHIPS: { key: StatusFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'overdue', label: 'Needs attention' },
-  { key: 'due_soon', label: 'Due soon' },
-  { key: 'pending', label: 'Coming up' },
-  { key: 'paid', label: 'Handled' },
+const STATUS_CHIPS: { key: StatusFilter; label: (windowDays: number) => string }[] = [
+  { key: 'all', label: () => 'All' },
+  { key: 'overdue', label: () => 'Needs attention' },
+  { key: 'pending', label: (w) => `Coming up (${w}d)` },
+  { key: 'paid', label: () => 'Handled' },
 ];
 
 const SORT_LABELS: Record<SortKey, string> = {
@@ -113,15 +113,16 @@ const Bills = () => {
     window.history.replaceState(null, '', url);
   }, []);
 
+  const windowDays = getCachedWindowDays();
+
   const counts = useMemo(
     () => ({
       all: bills.length,
       overdue: bills.filter(b => b.status === 'overdue').length,
-      due_soon: bills.filter(b => b.status === 'due_soon').length,
-      pending: bills.filter(b => b.status === 'pending').length,
+      pending: bills.filter(b => isWithinComingUpWindow(b, windowDays)).length,
       paid: bills.filter(b => b.status === 'paid').length,
     }),
-    [bills],
+    [bills, windowDays],
   );
 
   const visibleBills = useMemo(() => {
@@ -184,7 +185,7 @@ const Bills = () => {
   const mode: 'grouped' | 'flat' =
     status === 'all' && sort === 'due_date' && category === 'all' && paidFrom === 'all' ? 'grouped' : 'flat';
 
-  const upcomingTotal = BillService.getUpcomingTotal();
+  const upcomingTotal = BillService.getComingUpTotal(windowDays);
   const insuranceCount = FinancialInfoService.getInsurance().length;
   const superCount = FinancialInfoService.getSuperannuation().length;
 
@@ -242,7 +243,7 @@ const Bills = () => {
   };
 
   const handleMarkPaid = async (id: string) => {
-    await BillService.markAsPaid(id);
+    await BillService.markAsPaid(id, true);
     loadBills();
     if (isDemoModeActive()) {
       setDemoNudge(true);
@@ -322,7 +323,7 @@ const Bills = () => {
                     : 'border-border hover:bg-muted',
                 )}
               >
-                {chip.label} ({counts[chip.key]})
+                {chip.label(windowDays)} ({counts[chip.key]})
               </button>
             ))}
           </div>

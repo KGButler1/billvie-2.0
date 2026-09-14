@@ -3,15 +3,17 @@ import { cn } from '@/lib/utils';
 
 interface DashboardActionStripProps {
   overdueCount: number;
-  dueSoonCount: number;
-  upcomingTotal: number;
+  comingUpTotal: number;
+  comingUpWindowDays: number;
+  outstandingTotal: number;
   onAttentionClick: () => void;
 }
 
 const DashboardActionStrip = ({
   overdueCount,
-  dueSoonCount,
-  upcomingTotal,
+  comingUpTotal,
+  comingUpWindowDays,
+  outstandingTotal,
   onAttentionClick,
 }: DashboardActionStripProps) => {
   const hasUrgent = overdueCount > 0;
@@ -42,8 +44,10 @@ const DashboardActionStrip = ({
           Needs Attention
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          {dueSoonCount > 0 && `${dueSoonCount} due soon · `}
-          ${upcomingTotal.toLocaleString()} coming up
+          ${comingUpTotal.toLocaleString()} coming up in {comingUpWindowDays} days
+        </p>
+        <p className="text-xs text-muted-foreground/70 mt-0.5">
+          ${outstandingTotal.toLocaleString()} total outstanding
         </p>
       </div>
     </button>

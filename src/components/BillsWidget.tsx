@@ -25,16 +25,12 @@ const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
   useEffect(() => { if (BillService.isLoaded()) setIsLoading(false); });
   if (isLoading) return <SkeletonCard className="mb-6" />;
   const bills = BillService.getAllBills();
-  const quiet = bills.filter((b) => b.status !== 'overdue' && b.status !== 'due_soon');
+  const unpaid = bills.filter((b) => b.status !== 'paid');
 
-  if (quiet.length === 0) return null;
+  if (unpaid.length === 0) return null;
 
-  const recent = [...quiet]
-    .sort((a, b) => {
-      if (!a.dueDate) return 1;
-      if (!b.dueDate) return -1;
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    })
+  const recent = [...unpaid]
+    .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
     .slice(0, 3);
 
   return (
@@ -43,7 +39,7 @@ const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
         onClick={() => navigate(isDemoModeActive() ? '/demo/bills' : '/bills')}
         className="flex items-center justify-between w-full mb-3"
       >
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Bills</h2>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Your Biggest Bills</h2>
         <span className="text-xs text-primary flex items-center gap-1">
           View all ({bills.length}) <ChevronRight className="w-3 h-3" />
         </span>

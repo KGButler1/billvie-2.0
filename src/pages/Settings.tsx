@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff, CalendarClock } from 'lucide-react';
 import DownloadDataSheet from '@/components/DownloadDataSheet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserSettings } from '@/types/bill';
+import { getComingUpWindowDays, getCachedWindowDays, setCachedWindowDays, getHouseholdId } from '@/services/supabaseData';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
 import ManageCardsSheet from '@/components/cards/ManageCardsSheet';
@@ -39,6 +40,9 @@ const Settings = () => {
   const [showBankAccountsSheet, setShowBankAccountsSheet] = useState(false);
   const [showDownloadSheet, setShowDownloadSheet] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [windowDays, setWindowDays] = useState<number>(getCachedWindowDays());
+  const [windowLoading, setWindowLoading] = useState(true);
+  const [windowSaving, setWindowSaving] = useState(false);
 
   useEffect(() => {
     const upgrade = searchParams.get('upgrade');
@@ -62,6 +66,32 @@ const Settings = () => {
     // Apply theme on mount
     UserService.applyTheme(settings.theme);
   }, [settings.theme]);
+
+  useEffect(() => {
+    getComingUpWindowDays()
+      .then(setWindowDays)
+      .catch(() => setWindowDays(14))
+      .finally(() => setWindowLoading(false));
+  }, []);
+
+  const handleWindowChange = async (days: number) => {
+    setWindowSaving(true);
+    try {
+      const householdId = await getHouseholdId();
+      const { error } = await supabase.rpc('update_bills_coming_up_window', {
+        p_household_id: householdId,
+        p_days: days,
+      });
+      if (error) throw error;
+      setWindowDays(days);
+      setCachedWindowDays(days);
+      toast.success(`Coming Up window set to ${days} days`);
+    } catch {
+      toast.error('Could not update the Coming Up window. Please try again.');
+    } finally {
+      setWindowSaving(false);
+    }
+  };
 
   const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
     const updated = UserService.saveSettings({ theme });
@@ -248,6 +278,48 @@ const Settings = () => {
               </div>
               <Switch id="notifications" disabled checked={false} />
             </div>
+          </div>
+        </section>
+
+        {/* Coming Up window Section */}
+        <section className="mb-8">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Bills</h2>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <CalendarClock className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <Label className="font-medium">Coming Up window</Label>
+                <p className="text-sm text-muted-foreground">
+                  Bills due within this window show up under "Coming Up." Applies to everyone in the household.
+                </p>
+              </div>
+            </div>
+            {windowLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {[7, 14, 21, 30].map((days) => (
+                  <button
+                    key={days}
+                    onClick={() => handleWindowChange(days)}
+                    disabled={windowSaving}
+                    className={cn(
+                      'p-3 rounded-lg border text-sm transition-colors',
+                      windowDays === days
+                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                        : 'border-border hover:bg-muted',
+                      windowSaving && 'opacity-50'
+                    )}
+                  >
+                    {days} days
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

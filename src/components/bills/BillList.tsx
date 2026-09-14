@@ -4,6 +4,8 @@ import { Bill } from '@/types/bill';
 import BillCard from '@/components/BillCard';
 import { PaymentCardService } from '@/services/PaymentCardService';
 import { cardExpiryFlag } from '@/utils/cardExpiry';
+import { isWithinComingUpWindow } from '@/services/BillService';
+import { getCachedWindowDays } from '@/services/supabaseData';
 
 // A bill whose card is expired or about to expire needs attention even if the
 // bill itself isn't overdue — presentation-only, BillService stays untouched.
@@ -14,7 +16,7 @@ const needsCardAttention = (bill: Bill): boolean =>
   bill.status !== 'paid' &&
   !!cardExpiryFlag(PaymentCardService.getById(bill.paymentCardId));
 
-type SectionKey = 'overdue' | 'due_soon' | 'upcoming' | 'paid';
+type SectionKey = 'overdue' | 'upcoming' | 'paid';
 
 interface BillSectionProps {
   title: string;
@@ -89,7 +91,6 @@ export const BillSection = ({
 
 const DEFAULT_TITLES: Record<SectionKey, string> = {
   overdue: 'Needs Attention',
-  due_soon: 'Due Soon',
   upcoming: 'Coming Up',
   paid: 'Handled',
 };
@@ -103,6 +104,7 @@ interface BillListProps {
   onEdit?: (bill: Bill) => void;
   onOpen?: (bill: Bill) => void;
   sectionTitle?: (section: SectionKey) => string;
+  comingUpWindowDays?: number;
   emptyState?: React.ReactNode;
 }
 
@@ -115,11 +117,17 @@ const BillList = ({
   onEdit,
   onOpen,
   sectionTitle,
+  comingUpWindowDays,
   emptyState,
 }: BillListProps) => {
   if (bills.length === 0) return <>{emptyState ?? null}</>;
 
-  const title = (key: SectionKey) => (sectionTitle ? sectionTitle(key) : DEFAULT_TITLES[key]);
+  const wd = comingUpWindowDays ?? getCachedWindowDays();
+  const title = (key: SectionKey) => {
+    if (sectionTitle) return sectionTitle(key);
+    if (key === 'upcoming') return `Coming Up in ${wd} days`;
+    return DEFAULT_TITLES[key];
+  };
 
   if (mode === 'flat') {
     return (
@@ -145,13 +153,14 @@ const BillList = ({
     );
   }
 
+  const windowDays = getCachedWindowDays();
+
   const groups: { key: SectionKey; items: Bill[]; collapsed?: boolean }[] = [
     {
       key: 'overdue',
       items: bills.filter(b => b.status === 'overdue' || needsCardAttention(b)),
     },
-    { key: 'due_soon', items: bills.filter(b => b.status === 'due_soon' && !needsCardAttention(b)) },
-    { key: 'upcoming', items: bills.filter(b => b.status === 'pending' && !needsCardAttention(b)) },
+    { key: 'upcoming', items: bills.filter(b => isWithinComingUpWindow(b, windowDays) && !needsCardAttention(b)) },
     { key: 'paid', items: bills.filter(b => b.status === 'paid'), collapsed: true },
   ];
 

@@ -2,7 +2,7 @@ import { Bill, BillStatus, BillCategory, RecurringInterval } from '@/types/bill'
 import { differenceInDays, parseISO, startOfDay, addWeeks, addMonths, addYears } from 'date-fns';
 import { categorizeByName } from '@/utils/billCategorizer';
 import { supabase } from '@/lib/supabase';
-import { getHouseholdId } from './supabaseData';
+import { getHouseholdId, getComingUpWindowDays } from './supabaseData';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { DEMO_BILLS } from '@/demo/demoData';
 
@@ -21,8 +21,21 @@ export const calculateBillStatus = (bill: Bill): BillStatus => {
   const daysUntilDue = differenceInDays(dueDate, today);
 
   if (daysUntilDue < 0) return bill.isAutoDebited ? 'pending' : 'overdue';
-  if (daysUntilDue <= 7) return 'due_soon';
   return 'pending';
+};
+
+export const isWithinComingUpWindow = (bill: Bill, windowDays: number): boolean => {
+  if (bill.status !== 'pending' || !bill.dueDate) return false;
+  const daysUntilDue = differenceInDays(startOfDay(parseISO(bill.dueDate)), startOfDay(new Date()));
+  return daysUntilDue <= windowDays;
+};
+
+const advanceToFuture = (dueDate: string, interval: RecurringInterval): string => {
+  let next = dueDate;
+  while (startOfDay(parseISO(next)) < startOfDay(new Date())) {
+    next = calculateNextDueDate(next, interval);
+  }
+  return next;
 };
 
 // Calculate next due date based on recurring interval
@@ -126,6 +139,26 @@ export class BillService {
     if (error) throw error;
     cache = (data || []).map(rowToBill);
     loaded = true;
+
+    await this.advanceAutoDebitedRecurring();
+  }
+
+  static async advanceAutoDebitedRecurring(): Promise<void> {
+    const toAdvance = cache.filter((b) =>
+      !b.deletedAt &&
+      b.status !== 'paid' &&
+      b.isRecurring &&
+      b.isAutoDebited &&
+      b.dueDate &&
+      b.recurringInterval &&
+      b.recurringInterval !== 'one_time' &&
+      startOfDay(parseISO(b.dueDate)) < startOfDay(new Date())
+    );
+
+    for (const bill of toAdvance) {
+      const nextDueDate = advanceToFuture(bill.dueDate!, bill.recurringInterval!);
+      await this.updateBill(bill.id, { dueDate: nextDueDate });
+    }
   }
 
   // Ensures cache is populated. Called by the synchronous getters as a
@@ -204,8 +237,8 @@ export class BillService {
       extractionConfidence: undefined,
     });
 
-    if (createNextRecurrence && bill.isRecurring && bill.dueDate && bill.recurringInterval && bill.recurringInterval !== 'one_time') {
-      const nextDueDate = calculateNextDueDate(bill.dueDate, bill.recurringInterval);
+    if (createNextRecurrence && bill.status !== 'paid' && bill.isRecurring && bill.dueDate && bill.recurringInterval && bill.recurringInterval !== 'one_time') {
+      const nextDueDate = advanceToFuture(calculateNextDueDate(bill.dueDate, bill.recurringInterval), bill.recurringInterval);
       await this.addBill({
         name: bill.name,
         amount: bill.amount,
@@ -292,8 +325,18 @@ export class BillService {
     return this.getUpcomingBills().reduce((sum, bill) => sum + (bill.amount || 0), 0);
   }
 
-  static getDueSoonBills(): Bill[] {
-    return this.getAllBills().filter((b) => b.status === 'due_soon');
+  static getComingUpBills(windowDays: number): Bill[] {
+    return this.getAllBills()
+      .filter((b) => isWithinComingUpWindow(b, windowDays))
+      .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''));
+  }
+
+  static getComingUpTotal(windowDays: number): number {
+    return this.getComingUpBills(windowDays).reduce((sum, b) => sum + (b.amount || 0), 0);
+  }
+
+  static getOutstandingTotal(): number {
+    return this.getAllBills().filter((b) => b.status !== 'paid').reduce((sum, b) => sum + (b.amount || 0), 0);
   }
 
   static async deleteBill(id: string): Promise<boolean> {
@@ -354,7 +397,6 @@ export class BillService {
 
     return {
       overdue: bills.filter((b) => b.status === 'overdue'),
-      due_soon: bills.filter((b) => b.status === 'due_soon'),
       pending: bills.filter((b) => b.status === 'pending'),
       paid: bills.filter((b) => b.status === 'paid'),
     };

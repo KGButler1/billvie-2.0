@@ -18,6 +18,7 @@ export interface HouseholdMembership {
 }
 
 let cachedHouseholdId: string | null = null;
+let cachedWindowDays: number | null = null;
 
 export async function fetchMyHouseholds(): Promise<HouseholdMembership[]> {
   const { data, error } = await supabase.rpc('my_households');
@@ -65,6 +66,28 @@ export function setCurrentHousehold(householdId: string): void {
 
 export function clearHouseholdCache(): void {
   cachedHouseholdId = null;
+  cachedWindowDays = null;
+}
+
+export async function getComingUpWindowDays(): Promise<number> {
+  if (cachedWindowDays !== null) return cachedWindowDays;
+  const householdId = await getHouseholdId();
+  const { data, error } = await supabase
+    .from('households')
+    .select('bills_coming_up_window_days')
+    .eq('id', householdId)
+    .single();
+  if (error) throw error;
+  cachedWindowDays = (data?.bills_coming_up_window_days as number) ?? 14;
+  return cachedWindowDays;
+}
+
+export function getCachedWindowDays(): number {
+  return cachedWindowDays ?? 14;
+}
+
+export function setCachedWindowDays(days: number): void {
+  cachedWindowDays = days;
 }
 
 export function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {

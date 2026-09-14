@@ -7,7 +7,7 @@ export type PaymentMethod =
   | 'cash'
   | 'transfer';
 
-export type BillStatus = 'pending' | 'paid' | 'overdue' | 'due_soon';
+export type BillStatus = 'pending' | 'paid' | 'overdue';
 
 export type BillCategory = 
   | 'utilities'
