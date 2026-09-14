@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, Settings, Info, Eye, EyeOff, Search } from 'lucide-react';
+import { Menu, X, Settings, Info, Search } from 'lucide-react';
 import { openSearch } from '@/components/search/GlobalSearch';
 
 import BillvieLogo from '@/components/BillvieLogo';
@@ -12,11 +12,9 @@ import AdminOnly from '@/components/AdminOnly';
 interface DashboardHeaderProps {
   onClearSamples: () => void;
   hasSampleBills: boolean;
-  isFamilyView?: boolean;
-  onToggleFamilyView?: () => void;
 }
 
-const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false, onToggleFamilyView }: DashboardHeaderProps) => {
+const DashboardHeader = ({ onClearSamples, hasSampleBills }: DashboardHeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const demo = isDemoModeActive();
@@ -44,20 +42,6 @@ const DashboardHeader = ({ onClearSamples, hasSampleBills, isFamilyView = false,
               </Button>
             )}
 
-
-            <AdminOnly>
-            {onToggleFamilyView && (
-              <Button
-                variant={isFamilyView ? "default" : "ghost"}
-                size="sm"
-                onClick={onToggleFamilyView}
-                className="text-sm gap-1.5"
-              >
-                {isFamilyView ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                <span className="hidden sm:inline">Family View</span>
-              </Button>
-            )}
-            </AdminOnly>
 
             {hasSampleBills && (
               <Button

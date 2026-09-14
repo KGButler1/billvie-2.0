@@ -51,7 +51,6 @@ const Dashboard = () => {
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isFamilyView, setIsFamilyView] = useState(false);
   const [billsLoading, setBillsLoading] = useState(() => !BillService.isLoaded());
   const needsAttentionRef = useRef<HTMLDivElement>(null);
 
@@ -142,24 +141,14 @@ const Dashboard = () => {
     loadBills();
   };
 
-  // Section title helpers based on Family View
   const getSectionTitle = (section: 'overdue' | 'due_soon' | 'upcoming' | 'paid') => {
-    if (isFamilyView) {
-      const familyLabels = {
-        overdue: 'Urgent — handle these first',
-        due_soon: 'Due soon — don\'t miss these',
-        upcoming: 'What needs to be handled',
-        paid: 'Already taken care of',
-      };
-      return familyLabels[section];
-    }
-    const defaultLabels = {
+    const labels = {
       overdue: 'Needs Attention',
       due_soon: 'Due Soon',
       upcoming: 'Coming Up',
       paid: 'Handled',
     };
-    return defaultLabels[section];
+    return labels[section];
   };
 
   // Dashboard stats - calculate these first so they're available below
@@ -186,30 +175,9 @@ const Dashboard = () => {
           loadBills();
         }}
         hasSampleBills={hasSampleBills}
-        isFamilyView={isFamilyView}
-        onToggleFamilyView={() => setIsFamilyView(!isFamilyView)}
       />
 
       <main className="container mx-auto px-4 pt-20">
-        {/* Family View Banner */}
-        {isFamilyView && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2"
-          >
-            <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-            <div className="text-sm text-foreground">
-              <strong>Family View</strong> — Here's what needs to be handled if you're stepping in
-              {AccessService.getActivePeople().length === 0 && (
-                <span className="block text-muted-foreground mt-0.5">
-                  Once you add someone with access, this view will show exactly what they'd see.
-                </span>
-              )}
-            </div>
-          </motion.div>
-        )}
-
         {/* Utility line: trust signal + clear samples + add bill */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -242,7 +210,6 @@ const Dashboard = () => {
               overdueCount={overdueBills.length}
               dueSoonCount={dueSoonBills.length}
               upcomingTotal={upcomingTotal}
-              isFamilyView={isFamilyView}
               onAttentionClick={() => needsAttentionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             />
           </div>
@@ -375,10 +342,7 @@ const Dashboard = () => {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <BottomNav
-        isFamilyView={isFamilyView}
-        onToggleFamilyView={() => setIsFamilyView(!isFamilyView)}
-      />
+      <BottomNav />
 
       {/* Dev Panel */}
       <AnimatePresence>

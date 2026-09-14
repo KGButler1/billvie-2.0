@@ -5,7 +5,6 @@ interface DashboardActionStripProps {
   overdueCount: number;
   dueSoonCount: number;
   upcomingTotal: number;
-  isFamilyView: boolean;
   onAttentionClick: () => void;
 }
 
@@ -13,7 +12,6 @@ const DashboardActionStrip = ({
   overdueCount,
   dueSoonCount,
   upcomingTotal,
-  isFamilyView,
   onAttentionClick,
 }: DashboardActionStripProps) => {
   const hasUrgent = overdueCount > 0;
@@ -41,11 +39,11 @@ const DashboardActionStrip = ({
           {overdueCount}
         </p>
         <p className={cn('text-sm mt-1', hasUrgent ? 'text-destructive' : 'text-muted-foreground')}>
-          {isFamilyView ? 'Urgent — handle these first' : 'Needs Attention'}
+          Needs Attention
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {dueSoonCount > 0 && `${dueSoonCount} due soon · `}
-          ${upcomingTotal.toLocaleString()} {isFamilyView ? 'to handle' : 'coming up'}
+          ${upcomingTotal.toLocaleString()} coming up
         </p>
       </div>
     </button>

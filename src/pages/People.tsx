@@ -161,6 +161,24 @@ const People = () => {
     }
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    const previewId = searchParams.get('preview');
+    if (!previewId || directory.length === 0) return;
+    const entry = directory.find(
+      (d) => d.trustedPersonId === previewId && d.status === 'active' && d.role === 'household'
+    );
+    if (entry) {
+      setExpanded(entry.key);
+      setPreviewOpen(entry.key);
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`panel-${entry.key}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+    searchParams.delete('preview');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams, directory]);
+
   const householdRows = directory.filter((d) => d.role === 'household');
   const professionalRows = directory.filter((d) => d.role === 'advisor' || d.role === 'accountant');
   const contactRows = directory.filter((d) => d.role === 'contact');

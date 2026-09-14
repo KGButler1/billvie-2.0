@@ -89,9 +89,13 @@ const BillRow = ({ bill, viewerId }: { bill: Bill; viewerId?: string }) => {
 
 const BillsContent = ({ personId }: { personId?: string }) => {
 
-  const bills = useMemo(() => BillService.getAllBills(), []);
+  const bills = useMemo(() => {
+    if (!personId) return [];
+    if (AccessService.hasWholeScope(personId, 'bills')) return BillService.getAllBills();
+    return BillService.getAllBills().filter((b) => AccessService.canSee(personId, 'bills', b.id));
+  }, [personId]);
   if (bills.length === 0) {
-    return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
+    return <p className="text-muted-foreground">Nothing has been shared here yet.</p>;
   }
 
   const groups = bills.reduce<Record<string, Bill[]>>((acc, bill) => {
@@ -168,14 +172,23 @@ const TaxContent = ({
   sharedCategories,
   sharedYears,
   documentId,
+  personId,
 }: {
   sharedCategories?: TaxCategory[];
   sharedYears?: number[];
   documentId?: string;
+  personId?: string;
 }) => {
   const docs = useMemo(() => {
     let list = TaxDocumentService.getAllDocuments();
     if (documentId) return list.filter((d) => d.id === documentId);
+    if (personId) {
+      if (AccessService.hasWholeScope(personId, 'tax_documents')) {
+        // whole scope — show everything (still apply category/year filters if provided)
+      } else {
+        list = list.filter((d) => AccessService.canSee(personId, 'tax_documents', d.id));
+      }
+    }
     if (sharedCategories?.length) {
       list = list.filter((d) => d.categories?.some((c) => sharedCategories.includes(c)));
     }
@@ -183,10 +196,10 @@ const TaxContent = ({
       list = list.filter((d) => sharedYears.includes(d.year));
     }
     return list;
-  }, [sharedCategories, sharedYears, documentId]);
+  }, [sharedCategories, sharedYears, documentId, personId]);
 
   if (docs.length === 0) {
-    return <p className="text-muted-foreground">No records have been shared here yet.</p>;
+    return <p className="text-muted-foreground">Nothing has been shared here yet.</p>;
   }
 
   return (
@@ -271,15 +284,17 @@ const KeyPeopleContent = ({ personId }: { personId?: string }) => {
   );
 };
 
-const EventsContent = ({ eventId }: { eventId?: string }) => {
-  const events = useMemo(
-    () => (eventId ? [] : EventService.getAllEvents()),
-    [eventId]
-  );
+const EventsContent = ({ eventId, personId }: { eventId?: string; personId?: string }) => {
+  const events = useMemo(() => {
+    if (eventId) return [];
+    if (!personId) return EventService.getAllEvents();
+    if (AccessService.hasWholeScope(personId, 'events')) return EventService.getAllEvents();
+    return EventService.getAllEvents().filter((e) => AccessService.canSee(personId, 'events', e.id));
+  }, [eventId, personId]);
 
   if (eventId) return <EventContent eventId={eventId} />;
   if (events.length === 0) {
-    return <p className="text-muted-foreground">Nothing has been added here yet.</p>;
+    return <p className="text-muted-foreground">Nothing has been shared here yet.</p>;
   }
 
   return (
@@ -389,9 +404,9 @@ const ShareContentPreview = ({
   sharedYears,
 }: ShareContentPreviewProps) => {
   if (scope === 'bills') return <BillsContent personId={personId} />;
-  if (scope === 'events') return <EventsContent eventId={resourceId} />;
+  if (scope === 'events') return <EventsContent eventId={resourceId} personId={personId} />;
   if (scope === 'tax_documents')
-    return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} documentId={resourceId} />;
+    return <TaxContent sharedCategories={sharedCategories} sharedYears={sharedYears} documentId={resourceId} personId={personId} />;
   if (scope === 'documents') return <DocumentsContent personId={personId} />;
   if (scope === 'key_people') return <KeyPeopleContent personId={personId} />;
   if (scope === 'financial_info') return <FinancialInfoContent personId={personId} />;

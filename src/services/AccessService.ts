@@ -190,7 +190,7 @@ export const AccessService = {
       (p) =>
         p.status === 'active' &&
         p.accessLevel !== 'owner' &&
-        grants.some((g) => g.personId === p.id)
+        (p.accessLevel === 'co_owner' || grants.some((g) => g.personId === p.id))
     );
   },
 };
