@@ -46,7 +46,15 @@ const PeopleBubbleRow = () => {
     );
   }
 
-  const allPeople = [...activePeople, ...invitedPeople];
+  const acceptedNoAccessPeople = PeopleService.getAll().filter(
+    (p) =>
+      p.status === 'active' &&
+      p.accessLevel !== 'owner' &&
+      p.accessLevel !== 'co_owner' &&
+      AccessService.getGrantsForPerson(p.id).length === 0
+  );
+
+  const allPeople = [...activePeople, ...acceptedNoAccessPeople, ...invitedPeople];
 
   const getBubbleClass = (person: typeof allPeople[number]) => {
     if (person.status === 'invited') {
