@@ -36,6 +36,8 @@ export class EventExpenseService {
       quantity: wide.quantity,
       date: wide.date,
       paymentMethod: wide.paymentMethod,
+      paymentCardId: wide.paymentCardId,
+      bankAccountId: wide.bankAccountId,
       isCancellable: wide.isCancellable || 'tbd',
       cancellationNotes: wide.cancellationNotes,
       notes: wide.notes,
@@ -61,6 +63,8 @@ export class EventExpenseService {
       category: expenseData.category,
       date: expenseData.date || null,
       payment_method: expenseData.paymentMethod || null,
+      payment_card_id: expenseData.paymentCardId || null,
+      bank_account_id: expenseData.bankAccountId || null,
       is_paid: expenseData.isPaid,
       paid_date: expenseData.paidDate || null,
       is_cancellable: expenseData.isCancellable || 'tbd',
@@ -119,6 +123,8 @@ export class EventExpenseService {
     if (updates.category !== undefined) row.category = updates.category;
     if (updates.date !== undefined) row.date = updates.date || null;
     if (updates.paymentMethod !== undefined) row.payment_method = updates.paymentMethod || null;
+    if (updates.paymentCardId !== undefined) row.payment_card_id = updates.paymentCardId || null;
+    if (updates.bankAccountId !== undefined) row.bank_account_id = updates.bankAccountId || null;
     if (updates.isPaid !== undefined) row.is_paid = updates.isPaid;
     if (updates.paidDate !== undefined) row.paid_date = updates.paidDate || null;
     if (updates.isCancellable !== undefined) row.is_cancellable = updates.isCancellable;

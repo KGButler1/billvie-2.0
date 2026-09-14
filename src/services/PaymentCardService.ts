@@ -2,6 +2,8 @@ import { PaymentCard } from '@/types/paymentCard';
 import { LinkedItem } from '@/types/linkedItem';
 import { BillService } from './BillService';
 import { FinancialInfoService } from './FinancialInfoService';
+import { EventService } from './EventService';
+import { EventExpenseService } from './EventExpenseService';
 import { formatCurrency } from '@/utils/currency';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
@@ -129,6 +131,20 @@ export const PaymentCardService = {
           path: '/financial',
         })
       );
+    EventService.getAllEvents().forEach((event) => {
+      if (event.deletedAt) return;
+      EventExpenseService.getExpenses(event.id)
+        .filter((e) => e.paymentCardId === id)
+        .forEach((e) =>
+          items.push({
+            id: e.id,
+            kind: 'event_expense',
+            title: e.name,
+            detail: e.amount !== undefined ? formatCurrency(e.amount) : undefined,
+            path: `/events/${event.id}`,
+          })
+        );
+    });
     return items;
   },
 
@@ -140,12 +156,18 @@ export const PaymentCardService = {
     return this.getLinkedItems(id).filter((i) => i.kind === 'debt').length;
   },
 
+  countLinkedEventExpenses(id: string): number {
+    return this.getLinkedItems(id).filter((i) => i.kind === 'event_expense').length;
+  },
+
   linkedSummary(id: string): string | undefined {
     const parts: string[] = [];
     const bills = this.countLinkedBills(id);
     const debts = this.countLinkedDebts(id);
+    const eventExpenses = this.countLinkedEventExpenses(id);
     if (bills) parts.push(`${bills} ${bills === 1 ? 'bill' : 'bills'}`);
     if (debts) parts.push(`${debts} ${debts === 1 ? 'debt' : 'debts'}`);
+    if (eventExpenses) parts.push(`${eventExpenses} event ${eventExpenses === 1 ? 'expense' : 'expenses'}`);
     if (!parts.length) return undefined;
     return `Linked to ${parts.join(', ')}. They'll keep showing this card until you restore it or delete it permanently.`;
   },

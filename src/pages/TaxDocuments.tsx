@@ -223,8 +223,6 @@ const TaxDocuments = () => {
         amount: row.amount ?? '',
         taxType: row.taxType === 'business' ? 'Business' : 'Personal',
         businessName: row.businessName ?? '',
-        notes: row.notes ?? '',
-        status: row.carriedFromYear ? `Carried from ${row.carriedFromYear}` : 'New',
       })),
       [
         { key: 'name', label: 'Item' },
@@ -234,8 +232,6 @@ const TaxDocuments = () => {
         { key: 'amount', label: 'Amount' },
         { key: 'taxType', label: 'Personal/Business' },
         { key: 'businessName', label: 'Business' },
-        { key: 'notes', label: 'Notes' },
-        { key: 'status', label: 'Status' },
       ]
     );
     downloadCSV(csv, `billvie-tax-export-${yearFilter}.csv`);

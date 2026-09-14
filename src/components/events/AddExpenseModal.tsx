@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Calendar as CalendarIcon } from 'lucide-react';
 import { Event, PAYMENT_METHOD_LABELS, PaymentMethod } from '@/types/bill';
-import { 
-  EventExpenseExtended, 
-  ExpenseUnit, 
+import {
+  EventExpenseExtended,
+  ExpenseUnit,
   CancellableStatus,
-  EXPENSE_UNIT_LABELS 
+  EXPENSE_UNIT_LABELS,
+  CATEGORY_ICONS,
 } from '@/types/event';
+import { EventType } from '@/types/bill';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 import { formatCurrency } from '@/utils/currency';
@@ -39,6 +41,9 @@ import {
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import CardPicker from '@/components/bills/CardPicker';
+import BankAccountPicker from '@/components/bills/BankAccountPicker';
+import DetailsAccordion from '@/components/shared/DetailsAccordion';
 
 interface AddExpenseModalProps {
   event: Event;
@@ -47,15 +52,31 @@ interface AddExpenseModalProps {
   onSave: () => void;
 }
 
+const CATEGORY_GROUPS: Record<EventType, string[]> = {
+  travel: ['Flights', 'Accommodation', 'Hotels', 'Transportation', 'Food & Dining', 'Activities', 'Shopping'],
+  wedding: ['Venue', 'Catering', 'Photography', 'Attire', 'Flowers', 'Entertainment', 'Invitations'],
+  moving: ['Moving Company', 'Packing Supplies', 'Deposits', 'Utilities Setup', 'Furniture', 'Repairs'],
+  renovation: ['Materials', 'Labor', 'Permits', 'Design', 'Appliances', 'Fixtures'],
+  birthday: ['Decorations', 'Cake', 'Gifts', 'Food & Drinks'],
+  custom: ['General', 'Other'],
+};
+
+function getDefaultCategories(eventType: EventType): string[] {
+  return CATEGORY_GROUPS[eventType] || CATEGORY_GROUPS.custom;
+}
+
 const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpenseModalProps) => {
-  const [categoryOptions, setCategoryOptions] = useState<string[]>(
-    () => CustomBillOptionsService.getEventCategories().map(c => c.label)
-  );
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [categoryQuery, setCategoryQuery] = useState('');
-  const existingExpense = editingExpenseId 
+  const existingExpense = editingExpenseId
     ? EventExpenseService.getExpenses(event.id).find(e => e.id === editingExpenseId)
     : null;
+
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
+    const defaults = getDefaultCategories(event.type);
+    const custom = CustomBillOptionsService.getEventCategories().map(c => c.label);
+    return [...new Set([...defaults, ...custom])];
+  });
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryQuery, setCategoryQuery] = useState('');
 
   const [formData, setFormData] = useState({
     category: existingExpense?.category || '',
@@ -66,6 +87,8 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
     quantityUnit: existingExpense?.quantity?.unit || 'items' as ExpenseUnit,
     date: existingExpense?.date ? new Date(existingExpense.date) : undefined as Date | undefined,
     paymentMethod: existingExpense?.paymentMethod || '',
+    paymentCardId: existingExpense?.paymentCardId || undefined as string | undefined,
+    bankAccountId: existingExpense?.bankAccountId || undefined as string | undefined,
     isPaid: existingExpense?.isPaid || false,
     isCancellable: existingExpense?.isCancellable || 'tbd' as CancellableStatus,
     cancellationNotes: existingExpense?.cancellationNotes || '',
@@ -74,9 +97,20 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const handlePaymentMethodChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      paymentMethod: value,
+      paymentCardId: value === 'credit_card' ? prev.paymentCardId : undefined,
+      bankAccountId: value && value !== 'credit_card' && value !== 'cash' && value !== 'check'
+        ? prev.bankAccountId
+        : undefined,
+    }));
+  };
+
   const handleSubmit = async () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Description is required';
     }
@@ -99,11 +133,15 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
       vendor: formData.vendor.trim() || undefined,
       amount: parseFloat(formData.amount),
       category: formData.category.trim(),
-      quantity: formData.quantityValue 
+      quantity: formData.quantityValue
         ? { value: parseFloat(formData.quantityValue), unit: formData.quantityUnit }
         : undefined,
       date: formData.date?.toISOString(),
       paymentMethod: formData.paymentMethod || undefined,
+      paymentCardId: formData.paymentMethod === 'credit_card' ? formData.paymentCardId : undefined,
+      bankAccountId: formData.paymentMethod && formData.paymentMethod !== 'credit_card' && formData.paymentMethod !== 'cash' && formData.paymentMethod !== 'check'
+        ? formData.bankAccountId
+        : undefined,
       isPaid: formData.isPaid,
       paidDate: formData.isPaid ? new Date().toISOString() : undefined,
       isCancellable: formData.isCancellable,
@@ -134,10 +172,11 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
     setCategoryOpen(false);
   };
 
-  // Calculate per-unit cost for display
   const perUnitCost = formData.amount && formData.quantityValue
     ? parseFloat(formData.amount) / parseFloat(formData.quantityValue)
     : null;
+
+  const defaultCategories = getDefaultCategories(event.type);
 
   return (
     <motion.div
@@ -165,9 +204,64 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
 
         {/* Form */}
         <div className="p-4 space-y-4">
+          {/* Description */}
+          <div className="space-y-2">
+            <Label>Description *</Label>
+            <Input
+              placeholder="e.g., Delta - SYD to LAX"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              className={cn(errors.name && 'border-destructive')}
+            />
+            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-2">
+            <Label>Amount *</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0"
+                value={formData.amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                className={cn('pl-7', errors.amount && 'border-destructive')}
+              />
+            </div>
+            {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
+          </div>
+
           {/* Category */}
           <div className="space-y-2">
             <Label>Category *</Label>
+
+            {/* Category chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {defaultCategories.map(cat => {
+                const icon = CATEGORY_ICONS[cat] || '📌';
+                const selected = formData.category === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => selectCategory(cat)}
+                    className={cn(
+                      'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-colors',
+                      selected
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border hover:bg-muted'
+                    )}
+                  >
+                    <span>{icon}</span>
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom category combobox */}
             <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -197,6 +291,7 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
                       <CommandGroup>
                         {filteredCategories.map(cat => (
                           <CommandItem key={cat} value={cat} onSelect={() => selectCategory(cat)}>
+                            {CATEGORY_ICONS[cat] && <span className="mr-1">{CATEGORY_ICONS[cat]}</span>}
                             {cat}
                           </CommandItem>
                         ))}
@@ -220,172 +315,171 @@ const AddExpenseModal = ({ event, editingExpenseId, onClose, onSave }: AddExpens
             {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label>Description *</Label>
-            <Input
-              placeholder="e.g., Delta - SYD to LAX"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className={cn(errors.name && 'border-destructive')}
-            />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-          </div>
-
-          {/* Vendor */}
-          <div className="space-y-2">
-            <Label>Company/Vendor (optional)</Label>
-            <Input
-              placeholder="e.g., Delta Airlines"
-              value={formData.vendor}
-              onChange={(e) => setFormData(prev => ({ ...prev, vendor: e.target.value }))}
-            />
-          </div>
-
-          {/* Amount */}
-          <div className="space-y-2">
-            <Label>Amount *</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+          {/* Details */}
+          <DetailsAccordion label="Add more details" defaultOpen={!!editingExpenseId}>
+            {/* Vendor */}
+            <div className="space-y-2">
+              <Label>Company/Vendor (optional)</Label>
               <Input
-                type="number"
-                step="0.01"
-                placeholder="0"
-                value={formData.amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                className={cn('pl-7', errors.amount && 'border-destructive')}
+                placeholder="e.g., Delta Airlines"
+                value={formData.vendor}
+                onChange={(e) => setFormData(prev => ({ ...prev, vendor: e.target.value }))}
               />
             </div>
-            {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
-          </div>
 
-          {/* Quantity */}
-          <div className="space-y-2">
-            <Label>Quantity (optional)</Label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                placeholder="e.g., 3"
-                value={formData.quantityValue}
-                onChange={(e) => setFormData(prev => ({ ...prev, quantityValue: e.target.value }))}
-                className="flex-1"
-              />
-              <Select 
-                value={formData.quantityUnit}
-                onValueChange={(v) => setFormData(prev => ({ ...prev, quantityUnit: v as ExpenseUnit }))}
+            {/* Quantity */}
+            <div className="space-y-2">
+              <Label>Quantity (optional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="e.g., 3"
+                  value={formData.quantityValue}
+                  onChange={(e) => setFormData(prev => ({ ...prev, quantityValue: e.target.value }))}
+                  className="flex-1"
+                />
+                <Select
+                  value={formData.quantityUnit}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, quantityUnit: v as ExpenseUnit }))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EXPENSE_UNIT_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {perUnitCost && perUnitCost > 0 && (
+                <p className="text-sm text-primary">
+                  Avg per {formData.quantityUnit.slice(0, -1)}: {formatCurrency(perUnitCost, { showCents: true })}
+                </p>
+              )}
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>Date (optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !formData.date && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.date ? format(formData.date, 'PPP') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, date }))}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <Label>Payment Method (optional)</Label>
+              <Select
+                value={formData.paymentMethod}
+                onValueChange={handlePaymentMethodChange}
               >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(EXPENSE_UNIT_LABELS).map(([value, label]) => (
+                  {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {perUnitCost && perUnitCost > 0 && (
-              <p className="text-sm text-primary">
-                Avg per {formData.quantityUnit.slice(0, -1)}: {formatCurrency(perUnitCost, { showCents: true })}
-              </p>
-            )}
-          </div>
 
-          {/* Date */}
-          <div className="space-y-2">
-            <Label>Date (optional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !formData.date && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.date ? format(formData.date, 'PPP') : 'Pick a date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.date}
-                  onSelect={(date) => setFormData(prev => ({ ...prev, date }))}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
+            {/* Card picker — only for credit cards */}
+            {formData.paymentMethod === 'credit_card' && (
+              <div className="space-y-2">
+                <Label>Which card?</Label>
+                <CardPicker
+                  value={formData.paymentCardId}
+                  onChange={(id) => setFormData(prev => ({ ...prev, paymentCardId: id }))}
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
+            )}
 
-          {/* Payment Method */}
-          <div className="space-y-2">
-            <Label>Payment Method (optional)</Label>
-            <Select 
-              value={formData.paymentMethod}
-              onValueChange={(v) => setFormData(prev => ({ ...prev, paymentMethod: v }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select method" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Bank account picker — for non-cash, non-check, non-credit-card methods */}
+            {formData.paymentMethod &&
+              formData.paymentMethod !== 'credit_card' &&
+              formData.paymentMethod !== 'cash' &&
+              formData.paymentMethod !== 'check' && (
+                <div className="space-y-2">
+                  <Label>Which account?</Label>
+                  <BankAccountPicker
+                    value={formData.bankAccountId}
+                    onChange={(id) => setFormData(prev => ({ ...prev, bankAccountId: id }))}
+                  />
+                </div>
+              )}
 
-          {/* Paid Toggle */}
-          <div className="flex items-center justify-between">
-            <Label>Mark as Paid</Label>
-            <Switch
-              checked={formData.isPaid}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPaid: checked }))}
-            />
-          </div>
-
-          {/* Cancellable */}
-          <div className="space-y-2">
-            <Label>Cancellable?</Label>
-            <Select 
-              value={formData.isCancellable}
-              onValueChange={(v) => setFormData(prev => ({ ...prev, isCancellable: v as CancellableStatus }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No (Non-refundable)</SelectItem>
-                <SelectItem value="tbd">TBD</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Cancellation Notes */}
-          {formData.isCancellable === 'yes' && (
-            <div className="space-y-2">
-              <Label>Cancellation Policy Notes</Label>
-              <Input
-                placeholder="e.g., No penalty until Dec 28"
-                value={formData.cancellationNotes}
-                onChange={(e) => setFormData(prev => ({ ...prev, cancellationNotes: e.target.value }))}
+            {/* Paid Toggle */}
+            <div className="flex items-center justify-between">
+              <Label>Mark as Paid</Label>
+              <Switch
+                checked={formData.isPaid}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPaid: checked }))}
               />
             </div>
-          )}
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label>Notes (optional)</Label>
-            <Textarea
-              placeholder="Additional details..."
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              rows={3}
-            />
-          </div>
+            {/* Cancellable */}
+            <div className="space-y-2">
+              <Label>Cancellable?</Label>
+              <Select
+                value={formData.isCancellable}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, isCancellable: v as CancellableStatus }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No (Non-refundable)</SelectItem>
+                  <SelectItem value="tbd">TBD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Cancellation Notes */}
+            {formData.isCancellable === 'yes' && (
+              <div className="space-y-2">
+                <Label>Cancellation Policy Notes</Label>
+                <Input
+                  placeholder="e.g., No penalty until Dec 28"
+                  value={formData.cancellationNotes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cancellationNotes: e.target.value }))}
+                />
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Notes (optional)</Label>
+              <Textarea
+                placeholder="Additional details..."
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
+              />
+            </div>
+          </DetailsAccordion>
         </div>
 
         {/* Footer */}

@@ -39,6 +39,7 @@ const KIND_LABELS: Record<LinkedItem['kind'], string> = {
   debt: 'Debts',
   income: 'Income',
   superannuation: 'Savings & retirement',
+  event_expense: 'Event expenses',
 };
 
 const ManageCardsSheet = ({ onClose }: ManageCardsSheetProps) => {

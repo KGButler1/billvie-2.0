@@ -27,6 +27,8 @@ export interface EventExpenseExtended {
   category: string;
   date?: string; // Date of purchase/reservation
   paymentMethod?: string;
+  paymentCardId?: string;
+  bankAccountId?: string;
   isPaid: boolean;
   paidDate?: string;
   isCancellable: CancellableStatus;

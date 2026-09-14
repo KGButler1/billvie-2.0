@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, ChartBar as BarChart3, Lock } from 'lucide-react';
+import { Plus, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { useProfile } from '@/hooks/useProfile';
@@ -15,13 +15,37 @@ import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import ScopeGate from '@/components/ScopeGate';
 import EditOnly from '@/components/EditOnly';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+
+type StatusFilter = 'all' | 'active' | 'completed';
+type SortKey = 'date' | 'name' | 'budget';
+
+const STATUS_CHIPS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'completed', label: 'Completed' },
+];
+
+const SORT_LABELS: Record<SortKey, string> = {
+  date: 'Newest first',
+  name: 'Name (A–Z)',
+  budget: 'Budget (high to low)',
+};
 
 const Events = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<'events' | 'general'>('events');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sort, setSort] = useState<SortKey>('date');
   const [isLoading, setIsLoading] = useState(() => !EventService.isLoaded());
 
   const { profile } = useProfile();
@@ -45,7 +69,6 @@ const Events = () => {
     if (canAddEvent()) {
       setIsCreating(true);
     } else {
-      setUpgradeReason('events');
       setShowUpgradeModal(true);
     }
   };
@@ -61,20 +84,34 @@ const Events = () => {
     loadEvents();
   };
 
-  const handleCompare = () => {
-    if (!isPaid) {
-      setUpgradeReason('general');
-      setShowUpgradeModal(true);
-      return;
-    }
-    navigate('/events/compare');
-  };
-
+  const allEvents = events;
   const activeEvents = events.filter(e => e.status === 'active' || e.status === 'planning');
   const completedEvents = events.filter(e => e.status === 'completed' || e.status === 'archived');
   const hasSampleEvents = events.some(e => e.isSample);
   const eventLimit = isPaid ? EVENT_LIMITS.paid : EVENT_LIMITS.free;
   const currentEventCount = EventService.getEventCount();
+
+  const counts = useMemo(() => ({
+    all: allEvents.length,
+    active: activeEvents.length,
+    completed: completedEvents.length,
+  }), [allEvents, activeEvents, completedEvents]);
+
+  const visibleEvents = useMemo(() => {
+    let list = allEvents;
+    if (statusFilter === 'active') list = activeEvents;
+    else if (statusFilter === 'completed') list = completedEvents;
+
+    const sorted = [...list];
+    if (sort === 'name') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === 'budget') {
+      sorted.sort((a, b) => (b.budget ?? 0) - (a.budget ?? 0));
+    } else {
+      sorted.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    }
+    return sorted;
+  }, [allEvents, activeEvents, completedEvents, statusFilter, sort]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -112,23 +149,49 @@ const Events = () => {
           Track big one-off commitments — trips, weddings, renovations — so your household knows
           what's planned, what's paid, and what can still change.
         </p>
-        {/* Advanced Features Bar */}
-        {events.length > 0 && (
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCompare}
-              className="whitespace-nowrap"
-            >
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Compare Events
-              {!isPaid && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
-            </Button>
-          </div>
-        )}
 
-        {/* Active Events */}
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {STATUS_CHIPS.map(chip => (
+              <button
+                key={chip.key}
+                onClick={() => setStatusFilter(chip.key)}
+                className={cn(
+                  'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                  statusFilter === chip.key
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border hover:bg-muted',
+                )}
+              >
+                {chip.label} ({counts[chip.key]})
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <Select value={sort} onValueChange={v => setSort(v as SortKey)}>
+              <SelectTrigger className="w-[170px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {Object.entries(SORT_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <EditOnly>
+            <Button onClick={handleTryCreateEvent} className="gap-1.5">
+              <Plus className="w-4 h-4" />
+              Add Event
+            </Button>
+            </EditOnly>
+          </div>
+        </div>
+
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div key="skeleton" exit={{ opacity: 0 }}>
@@ -136,65 +199,41 @@ const Events = () => {
             </motion.div>
           ) : (
             <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {activeEvents.length > 0 && (
-                <section className="mb-8">
-                  <h2 className="text-lg font-semibold mb-4">Active Events</h2>
-                  <div className="space-y-4">
-                    {activeEvents.map((event, index) => (
-                      <EventCard 
-                        key={event.id} 
-                        event={event} 
+              {visibleEvents.length > 0 ? (
+                <div className="space-y-4">
+                  {visibleEvents.map((event, index) => (
+                    <div key={event.id} className={cn(event.status === 'completed' || event.status === 'archived' ? 'opacity-60' : '')}>
+                      <EventCard
+                        event={event}
                         index={index}
                         onDelete={handleDeleteEvent}
                         onClick={() => navigate(`/events/${event.id}`)}
                       />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Completed Events */}
-              {completedEvents.length > 0 && (
-                <section className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-muted-foreground">Completed</h2>
-                  </div>
-                  <div className="space-y-4 opacity-60">
-                    {completedEvents.map((event, index) => (
-                      <div key={event.id} className="relative">
-                        <EventCard 
-                          event={event} 
-                          index={index}
-                          onDelete={handleDeleteEvent}
-                          onClick={() => navigate(`/events/${event.id}`)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Empty State */}
-              {events.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-20"
-                >
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20">
                   <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
                     <Calendar className="w-8 h-8 text-primary" />
                   </div>
-                  <h2 className="text-xl font-semibold mb-2">Plan your first event</h2>
+                  <h2 className="text-xl font-semibold mb-2">
+                    {events.length === 0 ? 'Plan your first event' : 'Nothing matches this filter'}
+                  </h2>
                   <p className="text-muted-foreground mb-6">
-                    Track trips, weddings, moves, and more!
+                    {events.length === 0
+                      ? 'Track trips, weddings, moves, and more!'
+                      : 'Try a different status filter.'}
                   </p>
-                  <EditOnly>
-                  <Button onClick={handleTryCreateEvent} className="btn-hero">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Event
-                  </Button>
-                  </EditOnly>
-                </motion.div>
+                  {events.length === 0 && (
+                    <EditOnly>
+                    <Button onClick={handleTryCreateEvent} className="btn-hero">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Event
+                    </Button>
+                    </EditOnly>
+                  )}
+                </div>
               )}
             </motion.div>
           )}
@@ -219,12 +258,10 @@ const Events = () => {
         )}
       </AnimatePresence>
 
-
-      {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        reason={upgradeReason}
+        reason="events"
       />
 
       <BottomNav />

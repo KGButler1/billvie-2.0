@@ -10,7 +10,6 @@ import Dashboard from "./pages/Dashboard";
 import Bills from "./pages/Bills";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
-import EventComparison from "./pages/EventComparison";
 import Settings from "./pages/Settings";
 import More from "./pages/More";
 import FinancialInfo from "./pages/FinancialInfo";
@@ -93,7 +92,6 @@ const App = () => {
               <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
               <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
-              <Route path="/events/compare" element={<ProtectedRoute><EventComparison /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
               <Route path="/financial" element={<ProtectedRoute><FinancialInfo /></ProtectedRoute>} />
