@@ -55,7 +55,7 @@ const Terms = () => {
           <p>
             Free plan: up to {FREE_BILL_LIMIT} bills, {FREE_EVENT_LIMIT} event, and {FREE_DOCUMENT_LIMIT} important
             documents, with {FREE_SCAN_LIMIT} free AI bill scans a month. Sharing with an advisor or accountant is
-            included on both plans. Financial Snapshot, tax export, the household summary, and data backup are
+            included on both plans. Financial Snapshot, tax export, the household summary, and data download are
             part of the paid plan.
           </p>
           <p>

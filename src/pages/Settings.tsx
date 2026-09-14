@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff } from 'lucide-react';
-import { downloadBackup } from '@/utils/dataBackup';
+import DownloadDataSheet from '@/components/DownloadDataSheet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -37,6 +37,7 @@ const Settings = () => {
   const [upgradeReason, setUpgradeReason] = useState<'general' | 'export'>('general');
   const [showCardsSheet, setShowCardsSheet] = useState(false);
   const [showBankAccountsSheet, setShowBankAccountsSheet] = useState(false);
+  const [showDownloadSheet, setShowDownloadSheet] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
@@ -323,10 +324,10 @@ const Settings = () => {
               )}
             </button>
 
-            {/* Backup */}
+            {/* Download */}
             <button
               onClick={() => {
-                if (isPaid) { downloadBackup(); return; }
+                if (isPaid) { setShowDownloadSheet(true); return; }
                 setUpgradeReason('export');
                 setShowUpgradeModal(true);
               }}
@@ -336,7 +337,7 @@ const Settings = () => {
                 <Download className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium">Backup Your Data</p>
+                <p className="font-medium">Download Your Data</p>
                 <p className="text-sm text-muted-foreground">A full copy for your own records</p>
               </div>
               {!isPaid ? (
@@ -454,6 +455,10 @@ const Settings = () => {
 
       <AnimatePresence>
         {showBankAccountsSheet && <ManageBankAccountsSheet onClose={() => setShowBankAccountsSheet(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDownloadSheet && <DownloadDataSheet onClose={() => setShowDownloadSheet(false)} />}
       </AnimatePresence>
 
       <BottomNav />

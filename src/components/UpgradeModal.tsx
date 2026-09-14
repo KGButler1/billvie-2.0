@@ -49,8 +49,8 @@ const UPGRADE_REASONS = {
     icon: Share2,
   },
   export: {
-    title: "Unlock Export",
-    description: "Export your data as PDF, CSV, or JSON for tax purposes or record keeping.",
+    title: "Unlock Data Download",
+    description: "Download a complete copy of your household's data as CSV files or JSON, for your own records.",
     icon: FileText,
   },
   scan: {
