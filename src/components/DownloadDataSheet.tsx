@@ -54,12 +54,15 @@ const DownloadDataSheet = ({ onClose }: DownloadDataSheetProps) => {
       const userIds = [...new Set((data || []).map((r) => r.exported_by).filter(Boolean))];
       let nameMap: Record<string, string> = {};
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, display_name')
-          .in('id', userIds);
-        if (profiles) {
-          nameMap = Object.fromEntries(profiles.map((p) => [p.id, p.display_name]));
+        const { data: people } = await supabase
+          .from('trusted_person')
+          .select('user_id, name')
+          .eq('household_id', householdId)
+          .in('user_id', userIds);
+        if (people) {
+          nameMap = Object.fromEntries(
+            people.filter((p) => p.user_id).map((p) => [p.user_id as string, p.name])
+          );
         }
       }
 
@@ -86,9 +89,12 @@ const DownloadDataSheet = ({ onClose }: DownloadDataSheetProps) => {
   const logExport = async (fmt: 'csv' | 'json') => {
     try {
       const householdId = await getHouseholdId();
+      const { data: session } = await supabase.auth.getSession();
+      const userId = session.session?.user?.id;
       await supabase.from('data_export_log').insert({
         household_id: householdId,
         format: fmt,
+        exported_by: userId,
       });
     } catch {
       // Non-fatal — the download succeeded, logging is best-effort
