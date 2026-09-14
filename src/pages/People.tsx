@@ -194,6 +194,17 @@ const People = () => {
     reload();
   };
 
+  const toggleCanEdit = async (entry: DirectoryEntry, next: boolean) => {
+    if (!entry.trustedPersonId) return;
+    try {
+      await PeopleService.setCanEdit(entry.trustedPersonId, next);
+      toast({ description: next ? `${firstName(entry.name)} can now make changes` : `${firstName(entry.name)} is view-only` });
+    } catch {
+      toast({ description: "That didn't save. Nothing has changed.", variant: 'destructive' });
+    }
+    reload();
+  };
+
   const handleStopSharing = async () => {
     if (!confirmRemove?.trustedPersonId) return;
     try {
@@ -344,6 +355,22 @@ const People = () => {
                           </label>
                         ))}
                       </div>
+                      {/* Can also make changes toggle */}
+                      {!entry.isOwner && !entry.isCoOwner && (
+                        <div className="pt-3 border-t border-border mt-3">
+                          <label className={`flex items-center justify-between min-h-[44px] gap-4 ${isCurrentUserAdmin ? 'cursor-pointer' : 'cursor-default'}`}>
+                            <span className="text-sm min-w-0">
+                              Can also make changes
+                              <span className="block text-xs text-muted-foreground">Add, edit, and delete — not just view</span>
+                            </span>
+                            <Switch
+                              checked={person?.canEdit ?? false}
+                              onCheckedChange={isCurrentUserAdmin ? (v) => toggleCanEdit(entry, v) : undefined}
+                              disabled={!isCurrentUserAdmin}
+                            />
+                          </label>
+                        </div>
+                      )}
                       {!isCurrentUserAdmin && (
                         <p className="text-xs text-muted-foreground mt-2">
                           Read-only — only an owner or co-owner can change this.

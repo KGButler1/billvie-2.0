@@ -36,6 +36,8 @@ import { cn } from '@/lib/utils';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import AdminOnly from '@/components/AdminOnly';
+import EditOnly from '@/components/EditOnly';
+import ScopeGate from '@/components/ScopeGate';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 
 type StatusFilter = 'all' | 'overdue' | 'due_soon' | 'pending' | 'paid';
@@ -236,6 +238,7 @@ const Bills = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
+        <ScopeGate scope="bills">
         <h1 className="text-2xl font-semibold hidden lg:block mb-2">Bills &amp; Commitments</h1>
 
         {demoNudge && (
@@ -310,12 +313,14 @@ const Bills = () => {
               </SelectContent>
             </Select>
 
+            <EditOnly>
             <AdminOnly>
             <Button onClick={handleTryAddBill} className="gap-1.5">
               <Plus className="w-4 h-4" />
               Add bill
             </Button>
             </AdminOnly>
+            </EditOnly>
           </div>
         </div>
 
@@ -340,17 +345,20 @@ const Bills = () => {
                     <p className="text-muted-foreground mb-6">
                       Add your first one so someone else knows what's running.
                     </p>
+                    <EditOnly>
                     <AdminOnly>
                     <Button onClick={handleTryAddBill} className="gap-1.5">
                       <Plus className="w-4 h-4" /> Add bill
                     </Button>
                     </AdminOnly>
+                    </EditOnly>
                   </div>
                 }
               />
             </motion.div>
           )}
         </AnimatePresence>
+        </ScopeGate>
       </main>
 
       <AnimatePresence>
@@ -396,6 +404,7 @@ const Bills = () => {
       />
 
       {/* FAB with menu */}
+      <EditOnly>
       <AdminOnly>
       <FabMenu
         choices={[
@@ -404,6 +413,7 @@ const Bills = () => {
         ]}
       />
       </AdminOnly>
+      </EditOnly>
 
       <ConfirmDeleteDialog
         open={!!pendingDeleteBill}

@@ -17,6 +17,7 @@ import EventAnalytics from '@/components/events/EventAnalytics';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import ScopeGate from '@/components/ScopeGate';
+import EditOnly from '@/components/EditOnly';
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -121,12 +122,14 @@ const EventDetail = () => {
               <p className="text-muted-foreground text-sm mb-4">
                 Add what's committed for this — so someone else could pick it up if needed.
               </p>
+              <EditOnly>
               <button
                 onClick={() => setIsAddingExpense(true)}
                 className="text-primary font-medium hover:underline"
               >
                 Add Expense
               </button>
+              </EditOnly>
             </motion.div>
           )}
         </section>
@@ -134,10 +137,12 @@ const EventDetail = () => {
       </main>
 
       {/* FAB */}
+      <EditOnly>
       <Fab onClick={() => {
         setEditingExpenseId(null);
         setIsAddingExpense(true);
       }} />
+      </EditOnly>
 
       {/* Add/Edit Expense Modal */}
       <AnimatePresence>

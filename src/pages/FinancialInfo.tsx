@@ -61,7 +61,9 @@ import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
 import ScopeGate from '@/components/ScopeGate';
 import AdminOnly from '@/components/AdminOnly';
+import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
+import EditOnly from '@/components/EditOnly';
 
 const OverviewTab = ({
   insurance,
@@ -130,9 +132,11 @@ const OverviewTab = ({
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Insurance
+            <EditOnly>
             <button onClick={onAddInsurance} className="p-1 rounded-lg hover:bg-muted transition-colors">
               <Plus className="w-4 h-4" />
             </button>
+            </EditOnly>
           </h2>
           <div className="space-y-4">
             {insurance.map((entry) => (
@@ -152,9 +156,11 @@ const OverviewTab = ({
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Accounts &amp; Retirement
+            <EditOnly>
             <button onClick={onAddSuper} className="p-1 rounded-lg hover:bg-muted transition-colors">
               <Plus className="w-4 h-4" />
             </button>
+            </EditOnly>
           </h2>
           <div className="space-y-4">
             {superannuation.map((entry) => (
@@ -174,9 +180,11 @@ const OverviewTab = ({
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Income
+            <EditOnly>
             <button onClick={onAddIncome} className="p-1 rounded-lg hover:bg-muted transition-colors">
               <Plus className="w-4 h-4" />
             </button>
+            </EditOnly>
           </h2>
           <div className="space-y-4">
             {income.map((entry) => (
@@ -199,9 +207,11 @@ const OverviewTab = ({
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Debts
+            <EditOnly>
             <button onClick={onAddDebt} className="p-1 rounded-lg hover:bg-muted transition-colors">
               <Plus className="w-4 h-4" />
             </button>
+            </EditOnly>
           </h2>
           <div className="space-y-4">
             {debts.map((entry) => (
@@ -226,9 +236,11 @@ const OverviewTab = ({
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Other
+            <EditOnly>
             <button onClick={onAddMisc} className="p-1 rounded-lg hover:bg-muted transition-colors">
               <Plus className="w-4 h-4" />
             </button>
+            </EditOnly>
           </h2>
           <div className="space-y-4">
             {misc.map((entry) => (
@@ -459,6 +471,7 @@ const FinancialInfo = () => {
                 />
               )}
 
+              <EditOnly>
               <Button 
                 onClick={() => {
                   setEditingItem(null);
@@ -470,6 +483,7 @@ const FinancialInfo = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Insurance
               </Button>
+              </EditOnly>
             </div>
           </TabsContent>
 
@@ -496,6 +510,7 @@ const FinancialInfo = () => {
                 />
               )}
 
+              <EditOnly>
               <Button 
                 onClick={() => {
                   setEditingItem(null);
@@ -507,6 +522,7 @@ const FinancialInfo = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Account
               </Button>
+              </EditOnly>
             </div>
           </TabsContent>
 
@@ -535,6 +551,7 @@ const FinancialInfo = () => {
                 />
               )}
 
+              <EditOnly>
               <Button
                 onClick={() => {
                   setEditingItem(null);
@@ -546,6 +563,7 @@ const FinancialInfo = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Income Source
               </Button>
+              </EditOnly>
             </div>
           </TabsContent>
 
@@ -576,6 +594,7 @@ const FinancialInfo = () => {
                 />
               )}
 
+              <EditOnly>
               <Button
                 onClick={() => {
                   setEditingItem(null);
@@ -587,6 +606,7 @@ const FinancialInfo = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Debt or Loan
               </Button>
+              </EditOnly>
             </div>
           </TabsContent>
 
@@ -613,6 +633,7 @@ const FinancialInfo = () => {
                 />
               )}
 
+              <EditOnly>
               <Button 
                 onClick={() => {
                   setEditingItem(null);
@@ -624,6 +645,7 @@ const FinancialInfo = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Info
               </Button>
+              </EditOnly>
             </div>
           </TabsContent>
         </Tabs>
@@ -714,6 +736,7 @@ const FinancialInfo = () => {
       />
 
       {activeTab !== 'overview' && (
+        <EditOnly>
         <Fab
           onClick={() => {
             setEditingItem(null);
@@ -724,6 +747,7 @@ const FinancialInfo = () => {
             else if (activeTab === 'misc') setShowMiscModal(true);
           }}
         />
+        </EditOnly>
       )}
 
       <BottomNav />
@@ -785,12 +809,14 @@ const SimpleCard = ({
         <p className="text-sm text-muted-foreground">{amountLabel}</p>
       </div>
       <div className="flex gap-1">
+        <EditOnly>
         <button onClick={onEdit} className="p-2 rounded-lg hover:bg-muted">
           <Edit2 className="w-4 h-4" />
         </button>
         <button onClick={onDelete} className="p-2 rounded-lg hover:bg-muted text-destructive">
           <Trash2 className="w-4 h-4" />
         </button>
+        </EditOnly>
       </div>
     </div>
     {linkedBill && (
@@ -853,12 +879,14 @@ const InsuranceCard = ({
           )}
         </div>
         <div className="flex gap-1">
+          <EditOnly>
           <Button variant="ghost" size="sm" onClick={onEdit}>
             <Edit2 className="w-4 h-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
             <Trash2 className="w-4 h-4" />
           </Button>
+          </EditOnly>
         </div>
       </div>
       
@@ -942,12 +970,14 @@ const SuperCard = ({
         )}
       </div>
       <div className="flex gap-1">
+        <EditOnly>
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <Edit2 className="w-4 h-4" />
         </Button>
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
           <Trash2 className="w-4 h-4" />
         </Button>
+        </EditOnly>
       </div>
     </div>
     {linkedAccount && (
@@ -989,12 +1019,14 @@ const MiscCard = ({
         <p className="text-muted-foreground">{entry.value}</p>
       </div>
       <div className="flex gap-1">
+        <EditOnly>
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <Edit2 className="w-4 h-4" />
         </Button>
         <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive">
           <Trash2 className="w-4 h-4" />
         </Button>
+        </EditOnly>
       </div>
     </div>
     {entry.notes && (

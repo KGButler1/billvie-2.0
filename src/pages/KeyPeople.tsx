@@ -16,6 +16,7 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import ScopeGate from '@/components/ScopeGate';
+import EditOnly from '@/components/EditOnly';
 
 const relationshipLabel = (value: string) =>
   KEY_PERSON_RELATIONSHIP_LABELS[value as KeyPersonRelationship] ?? value;
@@ -73,9 +74,11 @@ const KeyPeople = () => {
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold">Key People</h1>
+          <EditOnly>
           <Button size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">
             <Plus className="w-4 h-4" /> Add
           </Button>
+          </EditOnly>
         </div>
       </header>
 
@@ -83,9 +86,11 @@ const KeyPeople = () => {
         <ScopeGate scope="key_people">
         <div className="hidden lg:flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Key People</h1>
+          <EditOnly>
           <Button size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">
             <Plus className="w-4 h-4" /> Add
           </Button>
+          </EditOnly>
         </div>
 
         <AnimatePresence mode="wait">
@@ -108,9 +113,11 @@ const KeyPeople = () => {
                   <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                     Add the people who'd need to know — who to call, who holds a key, who knows the plan.
                   </p>
+                  <EditOnly>
                   <Button onClick={() => setIsAdding(true)} className="gap-2">
                     <Plus className="w-4 h-4" /> Add someone important
                   </Button>
+                  </EditOnly>
                 </motion.div>
               ) : (
                 <div className="space-y-3">
@@ -151,7 +158,7 @@ const KeyPeople = () => {
                           </button>
                         </div>
                         <div className="flex items-center gap-1">
-
+                          <EditOnly>
                           <button
                             onClick={() => setEditing(person)}
                             className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
@@ -164,6 +171,7 @@ const KeyPeople = () => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                          </EditOnly>
                         </div>
                       </div>
                     </motion.div>
@@ -201,7 +209,9 @@ const KeyPeople = () => {
         }}
       />
 
+      <EditOnly>
       <Fab onClick={() => setIsAdding(true)} />
+      </EditOnly>
 
       <BottomNav />
     </div>

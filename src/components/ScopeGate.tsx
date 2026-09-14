@@ -10,9 +10,22 @@ interface ScopeGateProps {
 }
 
 const ScopeGate = ({ scope, children, compact = false }: ScopeGateProps) => {
-  const { isAdmin, canSee } = useViewerAccess();
+  const { isAdmin, canEdit, canSee } = useViewerAccess();
 
-  if (isAdmin || canSee(scope)) return <>{children}</>;
+  if (isAdmin || canSee(scope)) {
+    if (canEdit) return <>{children}</>;
+    return (
+      <>
+        {!compact && (
+          <div className="flex items-center gap-2 px-1 pb-3 text-sm text-muted-foreground">
+            <EyeOff className="w-4 h-4 flex-shrink-0" />
+            <p>View only — ask an owner or co-owner to make changes.</p>
+          </div>
+        )}
+        {children}
+      </>
+    );
+  }
 
   if (compact) {
     return (

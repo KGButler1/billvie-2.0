@@ -37,6 +37,7 @@ import { canAddDocument } from '@/utils/documentLimits';
 import { FREE_DOCUMENT_LIMIT } from '@/constants/pricing';
 import UsageCounter from '@/components/shared/UsageCounter';
 import ScopeGate from '@/components/ScopeGate';
+import EditOnly from '@/components/EditOnly';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -171,9 +172,11 @@ const Documents = () => {
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold">Important Documents</h1>
+          <EditOnly>
           <Button size="sm" onClick={handleTryAddDocument} className="gap-1.5">
             <Plus className="w-4 h-4" /> Add
           </Button>
+          </EditOnly>
         </div>
       </header>
 
@@ -195,9 +198,11 @@ const Documents = () => {
           <>
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-2xl font-semibold hidden lg:block">Important Documents</h1>
+              <EditOnly>
               <Button onClick={handleTryAddDocument} className="gap-1.5">
                 <Plus className="w-4 h-4" /> Add
               </Button>
+              </EditOnly>
             </div>
             <UsageCounter
               count={DocumentService.getCount()}
@@ -220,9 +225,11 @@ const Documents = () => {
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
               Add important documents so they're easy to find when needed — insurance, super, accounts and investments, or anything your household depends on.
             </p>
+            <EditOnly>
             <Button onClick={handleTryAddDocument} className="gap-2">
               <Plus className="w-4 h-4" /> Add something important
             </Button>
+            </EditOnly>
           </motion.div>
         ) : (
           <>
@@ -411,7 +418,9 @@ const Documents = () => {
         reason="documents"
       />
 
+      <EditOnly>
       <Fab onClick={handleTryAddDocument} />
+      </EditOnly>
 
       <BottomNav />
     </div>

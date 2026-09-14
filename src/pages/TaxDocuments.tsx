@@ -52,6 +52,7 @@ import AttachmentManager from '@/components/documents/AttachmentManager';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/utils/currency';
 import ScopeGate from '@/components/ScopeGate';
+import EditOnly from '@/components/EditOnly';
 type RowSource = 'tax' | 'bill' | 'document';
 
 interface TaxRow {
@@ -410,6 +411,7 @@ const TaxDocuments = () => {
                                 </div>
 
                                 {row.source === 'tax' ? (
+                                  <EditOnly>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -419,7 +421,9 @@ const TaxDocuments = () => {
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
+                                  </EditOnly>
                                 ) : (
+                                  <EditOnly>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -429,6 +433,7 @@ const TaxDocuments = () => {
                                     <X className="w-4 h-4 mr-1" />
                                     <span className="hidden sm:inline">Remove from tax</span>
                                   </Button>
+                                  </EditOnly>
                                 )}
                               </div>
                             </motion.div>
@@ -450,10 +455,12 @@ const TaxDocuments = () => {
                         ? 'Try adjusting your filters'
                         : "Add a receipt here, or tick “Relevant for tax?” on a bill or document."}
                     </p>
+                    <EditOnly>
                     <Button onClick={() => setIsAddingDocument(true)}>
                       <Plus className="w-4 h-4 mr-2" />
                       Add Document
                     </Button>
+                    </EditOnly>
                   </motion.div>
                 )}
               </div>
@@ -558,7 +565,9 @@ const TaxDocuments = () => {
 
       {/* FAB */}
       {rows.length > 0 && (
+        <EditOnly>
         <Fab onClick={() => setIsAddingDocument(true)} />
+        </EditOnly>
       )}
 
       {/* Add Document Modal */}

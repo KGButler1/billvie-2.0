@@ -29,6 +29,7 @@ function rowToPerson(row: Record<string, unknown>): TrustedPerson {
     userId: (row.user_id as string) || undefined,
     inviteToken: (row.invite_token as string) || undefined,
     keyPersonId: (row.key_person_id as string) || undefined,
+    canEdit: (row.can_edit as boolean) ?? false,
     invitedAt: (row.invited_at as string) || undefined,
     activatedAt: (row.activated_at as string) || undefined,
     removedAt: (row.removed_at as string) || undefined,
@@ -103,6 +104,7 @@ export const PeopleService = {
     keyPersonId,
     accessLevel,
     scopes,
+    canEdit,
   }: {
     name: string;
     email: string;
@@ -110,6 +112,7 @@ export const PeopleService = {
     keyPersonId?: string;
     accessLevel?: 'trusted_person' | 'co_owner';
     scopes?: AccessScope[];
+    canEdit?: boolean;
   }): Promise<{ person: TrustedPerson; warning?: string }> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const { data: { session } } = await supabase.auth.getSession();
@@ -122,7 +125,7 @@ export const PeopleService = {
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
       },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId, accessLevel, scopes }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId, accessLevel, scopes, canEdit: canEdit ?? false }),
     });
 
     if (!response.ok) {
@@ -181,6 +184,14 @@ export const PeopleService = {
     const { error } = await supabase
       .from('trusted_person')
       .update({ key_person_id: keyPersonId, updated_at: now() })
+      .eq('id', personId);
+    if (error) throw error;
+  },
+
+  async setCanEdit(personId: string, value: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('trusted_person')
+      .update({ can_edit: value, updated_at: now() })
       .eq('id', personId);
     if (error) throw error;
   },

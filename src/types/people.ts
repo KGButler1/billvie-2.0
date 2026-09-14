@@ -11,6 +11,7 @@ export interface TrustedPerson {
   userId?: string;
   inviteToken?: string;
   keyPersonId?: string; // one-way link to the KeyPerson record, if any
+  canEdit?: boolean;
   invitedAt?: string;
   activatedAt?: string;
   removedAt?: string;

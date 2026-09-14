@@ -5,6 +5,7 @@ import { AccessScope } from '@/types/people';
 
 export interface ViewerAccess {
   isAdmin: boolean;
+  canEdit: boolean;
   canSee: (scope: AccessScope) => boolean;
   trustedPersonId?: string;
 }
@@ -14,6 +15,7 @@ export const useViewerAccess = (): ViewerAccess => {
   const me = PeopleService.getAll().find((p) => p.userId === user?.id);
   const isAdmin = me?.accessLevel === 'owner' || me?.accessLevel === 'co_owner';
   const trustedPersonId = me?.id;
+  const canEdit = isAdmin || (me?.canEdit ?? false);
 
   const canSee = (scope: AccessScope): boolean => {
     if (isAdmin) return true;
@@ -21,5 +23,5 @@ export const useViewerAccess = (): ViewerAccess => {
     return AccessService.canSee(trustedPersonId, scope);
   };
 
-  return { isAdmin, canSee, trustedPersonId };
+  return { isAdmin, canEdit, canSee, trustedPersonId };
 };

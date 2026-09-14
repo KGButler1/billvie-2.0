@@ -9,6 +9,7 @@ import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { PersonTagChips } from '@/components/people/PersonTags';
 import { AttachmentService, DocumentAttachment } from '@/services/AttachmentService';
 import DocumentViewerModal from './DocumentViewerModal';
+import EditOnly from '@/components/EditOnly';
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
   insurance: Shield,
@@ -131,12 +132,14 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
                 </p>
               )}
               {!hasAttachment && (
+                <EditOnly>
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(document.id); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Add the document itself
                 </button>
+                </EditOnly>
               )}
             </div>
           </div>
@@ -181,6 +184,7 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
           )}
 
           <div className="flex items-center gap-3 mt-3 flex-wrap" onClick={(e) => e.stopPropagation()}>
+            <EditOnly>
             <button
               onClick={() => onEdit(document.id)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
@@ -199,6 +203,7 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
             >
               <Trash2 className="w-3 h-3" /> Remove
             </button>
+            </EditOnly>
           </div>
         </div>
 

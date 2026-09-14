@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import EditOnly from '@/components/EditOnly';
 
 interface EventCardProps {
   event: Event;
@@ -90,6 +91,7 @@ const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
         <span className="text-sm text-muted-foreground">
           {event.expenses.length} expense{event.expenses.length !== 1 ? 's' : ''}
         </span>
+        <EditOnly>
         <Button
           variant="ghost"
           size="sm"
@@ -101,6 +103,7 @@ const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
         >
           <Trash2 className="w-4 h-4" />
         </Button>
+        </EditOnly>
       </div>
     </motion.div>
   );

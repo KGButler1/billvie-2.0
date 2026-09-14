@@ -46,6 +46,7 @@ const InvitePersonModal = ({
   const [role, setRole] = useState<PersonRole>(defaultRole);
   const [accessChoice, setAccessChoice] = useState<AccessLevelChoice>('trusted_person');
   const [selectedScopes, setSelectedScopes] = useState<Set<AccessScope>>(new Set());
+  const [canEdit, setCanEdit] = useState(false);
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -88,6 +89,7 @@ const InvitePersonModal = ({
         keyPersonId,
         accessLevel,
         scopes: scopes && scopes.length > 0 ? scopes : undefined,
+        canEdit,
       });
       if (result.warning) {
         toast({ description: result.warning });
@@ -259,6 +261,18 @@ const InvitePersonModal = ({
                       </label>
                     ))}
                   </div>
+                </div>
+                <div className="pt-1">
+                  <label className="flex items-center justify-between min-h-[44px] gap-4 cursor-pointer">
+                    <span className="text-sm min-w-0">
+                      Can also make changes
+                      <span className="block text-xs text-muted-foreground">Add, edit, and delete — not just view</span>
+                    </span>
+                    <Switch
+                      checked={canEdit}
+                      onCheckedChange={setCanEdit}
+                    />
+                  </label>
                 </div>
                 <button
                   type="button"

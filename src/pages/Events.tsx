@@ -14,6 +14,7 @@ import EventCard from '@/components/events/EventCard';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import ScopeGate from '@/components/ScopeGate';
+import EditOnly from '@/components/EditOnly';
 
 const Events = () => {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ const Events = () => {
           </div>
           <div className="flex items-center gap-2">
             {hasSampleEvents && (
+              <EditOnly>
               <Button
                 variant="ghost"
                 size="sm"
@@ -96,6 +98,7 @@ const Events = () => {
               >
                 Clear samples
               </Button>
+              </EditOnly>
             )}
           </div>
         </div>
@@ -185,10 +188,12 @@ const Events = () => {
                   <p className="text-muted-foreground mb-6">
                     Track trips, weddings, moves, and more!
                   </p>
+                  <EditOnly>
                   <Button onClick={handleTryCreateEvent} className="btn-hero">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Event
                   </Button>
+                  </EditOnly>
                 </motion.div>
               )}
             </motion.div>
@@ -199,7 +204,9 @@ const Events = () => {
 
       {/* FAB */}
       {events.length > 0 && (
+        <EditOnly>
         <Fab onClick={handleTryCreateEvent} />
+        </EditOnly>
       )}
 
       {/* Create Event Modal */}

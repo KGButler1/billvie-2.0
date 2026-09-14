@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { email, name, role, keyPersonId, accessLevel, scopes } = await req.json();
+    const { email, name, role, keyPersonId, accessLevel, scopes, canEdit } = await req.json();
     if (!email || !email.trim()) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
@@ -261,6 +261,7 @@ Deno.serve(async (req: Request) => {
         status: "invited",
         invite_token: inviteToken,
         key_person_id: keyPersonId || null,
+        can_edit: canEdit === true,
         invited_at: new Date().toISOString(),
       })
       .select()
