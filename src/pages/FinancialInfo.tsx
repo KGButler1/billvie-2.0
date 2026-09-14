@@ -63,7 +63,6 @@ import ScopeGate from '@/components/ScopeGate';
 import AdminOnly from '@/components/AdminOnly';
 import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
-import EditOnly from '@/components/EditOnly';
 
 const OverviewTab = ({
   insurance,
