@@ -28,7 +28,7 @@ import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { useProfile } from '@/hooks/useProfile';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { isDemoModeActive } from '@/demo/demoFlag';
-import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole } from '@/types/people';
+import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole, isProfessionalRole } from '@/types/people';
 import { scopeAccessSummary } from '@/utils/scopeItems';
 import { KeyPerson } from '@/types/keyPerson';
 import InvitePersonModal from '@/components/people/InvitePersonModal';
@@ -394,8 +394,8 @@ const People = () => {
                           </label>
                         ))}
                       </div>
-                      {/* Can also make changes toggle */}
-                      {!entry.isOwner && !entry.isCoOwner && (
+                      {/* Can also make changes toggle — hidden for advisor/accountant grants (permanently view-only) */}
+                      {!entry.isOwner && !entry.isCoOwner && !isProfessionalRole(entry.role as PersonRole) && (
                         <div className="pt-3 border-t border-border mt-3">
                           <label className={`flex items-center justify-between min-h-[44px] gap-4 ${isCurrentUserAdmin ? 'cursor-pointer' : 'cursor-default'}`}>
                             <span className="text-sm min-w-0">
@@ -409,6 +409,11 @@ const People = () => {
                             />
                           </label>
                         </div>
+                      )}
+                      {isProfessionalRole(entry.role as PersonRole) && !entry.isOwner && !entry.isCoOwner && (
+                        <p className="text-xs text-muted-foreground pt-3 border-t border-border mt-3">
+                          Advisors and accountants are view-only — they can see but not change anything.
+                        </p>
                       )}
                       {!isCurrentUserAdmin && (
                         <p className="text-xs text-muted-foreground mt-2">

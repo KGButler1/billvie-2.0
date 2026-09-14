@@ -59,3 +59,7 @@ export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {
   advisor: 'Advisor',
   accountant: 'Accountant',
 };
+
+export function isProfessionalRole(role: PersonRole): boolean {
+  return role === 'advisor' || role === 'accountant';
+}

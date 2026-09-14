@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { PersonRole, TrustedPerson, ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope } from '@/types/people';
+import { PersonRole, TrustedPerson, ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, isProfessionalRole } from '@/types/people';
 import { PeopleService } from '@/services/PeopleService';
 import { EntitlementService } from '@/services/EntitlementService';
 import { SessionExpiredError } from '@/lib/supabase';
@@ -48,6 +48,15 @@ const InvitePersonModal = ({
   const [accessChoice, setAccessChoice] = useState<AccessLevelChoice>('trusted_person');
   const [selectedScopes, setSelectedScopes] = useState<Set<AccessScope>>(new Set());
   const [canEdit, setCanEdit] = useState(false);
+
+  const isProfessional = isProfessionalRole(role);
+
+  useEffect(() => {
+    if (isProfessional) {
+      setSelectedScopes(new Set<AccessScope>(['tax_documents']));
+      setCanEdit(false);
+    }
+  }, [isProfessional]);
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -90,7 +99,7 @@ const InvitePersonModal = ({
         keyPersonId,
         accessLevel,
         scopes: scopes && scopes.length > 0 ? scopes : undefined,
-        canEdit,
+        canEdit: isProfessional ? false : canEdit,
       });
       if (result.warning) {
         toast({ description: result.warning });
@@ -109,6 +118,7 @@ const InvitePersonModal = ({
   };
 
   const showScopeToggles = role !== 'household' || accessChoice === 'trusted_person';
+  const showCanEditToggle = !isProfessional;
 
   return (
     <motion.div
@@ -267,18 +277,25 @@ const InvitePersonModal = ({
                     ))}
                   </div>
                 </div>
-                <div className="pt-1">
-                  <label className="flex items-center justify-between min-h-[44px] gap-4 cursor-pointer">
-                    <span className="text-sm min-w-0">
-                      Can also make changes
-                      <span className="block text-xs text-muted-foreground">Add, edit, and delete — not just view</span>
-                    </span>
-                    <Switch
-                      checked={canEdit}
-                      onCheckedChange={setCanEdit}
-                    />
-                  </label>
-                </div>
+                {showCanEditToggle && (
+                  <div className="pt-1">
+                    <label className="flex items-center justify-between min-h-[44px] gap-4 cursor-pointer">
+                      <span className="text-sm min-w-0">
+                        Can also make changes
+                        <span className="block text-xs text-muted-foreground">Add, edit, and delete — not just view</span>
+                      </span>
+                      <Switch
+                        checked={canEdit}
+                        onCheckedChange={setCanEdit}
+                      />
+                    </label>
+                  </div>
+                )}
+                {isProfessional && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Advisors and accountants are view-only — they can see but not change anything.
+                  </p>
+                )}
                 <button
                   type="button"
                   className="text-sm text-muted-foreground hover:underline"

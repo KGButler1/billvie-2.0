@@ -97,6 +97,8 @@ Deno.serve(async (req: Request) => {
     const displayName = (name || "").trim() || email.trim().split("@")[0];
     // accessLevel only applies to household members; advisors/accountants are always trusted_person
     const effectiveAccessLevel = pRole === "household" ? pAccessLevel : "trusted_person";
+    // Advisors and accountants are permanently view-only — canEdit is never allowed
+    const effectiveCanEdit = (pRole === "advisor" || pRole === "accountant") ? false : (canEdit === true);
 
     // Shared helper: build redirect URL (strips trailing slashes) and send the invite email.
     const sendInviteEmail = async (inviteEmail: string, token: string) => {
@@ -261,7 +263,7 @@ Deno.serve(async (req: Request) => {
         status: "invited",
         invite_token: inviteToken,
         key_person_id: keyPersonId || null,
-        can_edit: canEdit === true,
+        can_edit: effectiveCanEdit,
         invited_at: new Date().toISOString(),
       })
       .select()

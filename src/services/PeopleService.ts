@@ -188,6 +188,10 @@ export const PeopleService = {
   },
 
   async setCanEdit(personId: string, value: boolean): Promise<void> {
+    const person = this.getById(personId);
+    if (person && (person.role === 'advisor' || person.role === 'accountant')) {
+      throw new Error('Advisors and accountants are permanently view-only.');
+    }
     const { error } = await supabase
       .from('trusted_person')
       .update({ can_edit: value, updated_at: now() })
