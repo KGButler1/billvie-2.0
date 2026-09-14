@@ -7,6 +7,7 @@ import { EventExpenseService } from '@/services/EventExpenseService';
 import { TaxDocumentService } from '@/services/TaxDocumentService';
 import { DocumentService } from '@/services/DocumentService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
+import { ExclusionService } from '@/services/ExclusionService';
 import { AccessService } from '@/services/AccessService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
@@ -308,16 +309,17 @@ const EventsContent = ({ eventId, personId }: { eventId?: string; personId?: str
 
 const FinancialInfoContent = ({ personId }: { personId?: string }) => {
   const visible = !personId || AccessService.canSee(personId, 'financial_info');
-  const data = useMemo(
-    () => ({
-      insurance: FinancialInfoService.getInsurance(),
-      superannuation: FinancialInfoService.getSuperannuation(),
-      income: FinancialInfoService.getIncome(),
-      debts: FinancialInfoService.getDebts(),
-      misc: FinancialInfoService.getMisc(),
-    }),
-    []
-  );
+  const data = useMemo(() => {
+    const visible = (id: string) =>
+      !personId || !ExclusionService.isExcluded(personId, 'financial_info', id);
+    return {
+      insurance: FinancialInfoService.getInsurance().filter((i) => visible(i.id)),
+      superannuation: FinancialInfoService.getSuperannuation().filter((s) => visible(s.id)),
+      income: FinancialInfoService.getIncome().filter((i) => visible(i.id)),
+      debts: FinancialInfoService.getDebts().filter((d) => visible(d.id)),
+      misc: FinancialInfoService.getMisc().filter((m) => visible(m.id)),
+    };
+  }, [personId]);
 
   if (!visible) return <p className="text-muted-foreground">Nothing has been shared here yet.</p>;
 

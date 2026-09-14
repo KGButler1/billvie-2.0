@@ -550,6 +550,8 @@ const People = () => {
         case 'financial_info': {
           const items: { id: string; label: string }[] = [];
           FinancialInfoService.getInsurance().forEach((i) => items.push({ id: i.id, label: `${i.provider} (Insurance)` }));
+          FinancialInfoService.getSuperannuation().forEach((s) => items.push({ id: s.id, label: `${s.fundName} (Superannuation)` }));
+          FinancialInfoService.getIncome().forEach((i) => items.push({ id: i.id, label: `${i.sourceName} (Income)` }));
           FinancialInfoService.getDebts().forEach((d) => items.push({ id: d.id, label: `${d.owedTo} (Debt)` }));
           FinancialInfoService.getMisc().forEach((m) => items.push({ id: m.id, label: m.key }));
           return items;
