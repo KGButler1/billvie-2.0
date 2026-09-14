@@ -194,6 +194,12 @@ const Dashboard = () => {
     return `${ownerName} has trusted you with a view into this household`;
   }, [accessLoading, role, ownerName, profile?.userId]);
 
+  const bentoTileCount = (canSeeBills ? 1 : 0) + 1 + (canShowPeopleCard ? 1 : 0);
+  const bentoColsClass =
+    bentoTileCount >= 3 ? 'lg:grid-cols-[1.6fr_1.3fr_1fr]' :
+    bentoTileCount === 2 ? 'lg:grid-cols-2' :
+    'lg:grid-cols-1';
+
   const retryLoad = () => {
     setDataError(false);
     setBillsLoading(true);
@@ -314,7 +320,7 @@ const Dashboard = () => {
         </div>
 
         {/* Bento tile row — only renders visible tiles */}
-        <div className="grid grid-cols-2 lg:grid-cols-[1.6fr_1.3fr_1fr] gap-3 mb-6">
+        <div className={`grid grid-cols-2 ${bentoColsClass} gap-3 mb-6`}>
           {canSeeBills && (
             <div className="col-span-2 lg:col-span-1">
               <DashboardActionStrip
@@ -338,11 +344,11 @@ const Dashboard = () => {
         <AdminOnly><HouseholdSetupWidget /></AdminOnly>
 
         {/* Flow of sections — only visible ones render, no empty cells */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
+        <div className="columns-1 lg:columns-2 gap-2 mb-6">
           {sections
             .filter((s) => s.visible)
             .map((s) => (
-              <div key={s.key}>{s.render()}</div>
+              <div key={s.key} className="break-inside-avoid mb-2">{s.render()}</div>
             ))}
         </div>
 

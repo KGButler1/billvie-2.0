@@ -50,6 +50,7 @@ const InvitePersonModal = ({
   const [canEdit, setCanEdit] = useState(false);
 
   const isProfessional = isProfessionalRole(role);
+  const allowedRoles: PersonRole[] = defaultRole === 'household' ? ['household'] : ['advisor', 'accountant'];
 
   useEffect(() => {
     if (isProfessional) {
@@ -183,18 +184,24 @@ const InvitePersonModal = ({
 
             <div>
               <label className="text-sm font-medium mb-1.5 block">Who are they to you?</label>
-              <Select value={role} onValueChange={(v) => setRole(v as PersonRole)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {allowedRoles.length === 1 ? (
+                <p className="text-sm px-3 py-2 rounded-md border border-border bg-muted/30">
+                  {ROLE_OPTIONS.find((o) => o.value === allowedRoles[0])?.label}
+                </p>
+              ) : (
+                <Select value={role} onValueChange={(v) => setRole(v as PersonRole)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.filter((o) => allowedRoles.includes(o.value)).map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <p className="text-sm text-muted-foreground">

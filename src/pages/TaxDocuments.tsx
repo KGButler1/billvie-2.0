@@ -539,6 +539,7 @@ const TaxDocuments = () => {
           </Button>
 
           {/* Manage Categories/Years buttons */}
+          <EditOnly>
           <div className="flex gap-2 text-sm">
             <button
               onClick={() => setShowManageCategories(true)}
@@ -556,10 +557,13 @@ const TaxDocuments = () => {
               Manage Years
             </button>
           </div>
+          </EditOnly>
         </div>
 
         {/* Sharing Panel */}
+        <EditOnly>
         <TaxSharingPanel />
+        </EditOnly>
         </ScopeGate>
       </main>
 
