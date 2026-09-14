@@ -1,6 +1,8 @@
 import { PaymentCard } from '@/types/paymentCard';
+import { LinkedItem } from '@/types/linkedItem';
 import { BillService } from './BillService';
 import { FinancialInfoService } from './FinancialInfoService';
+import { formatCurrency } from '@/utils/currency';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 
@@ -102,12 +104,40 @@ export const PaymentCardService = {
     return updated;
   },
 
+  getLinkedItems(id: string): LinkedItem[] {
+    const items: LinkedItem[] = [];
+    BillService.getAllBills()
+      .filter((b) => !b.deletedAt && b.paymentCardId === id)
+      .forEach((b) =>
+        items.push({
+          id: b.id,
+          kind: 'bill',
+          title: b.name,
+          detail: b.amount !== undefined ? formatCurrency(b.amount) : undefined,
+          isAutoDebited: b.isAutoDebited,
+          path: '/bills',
+        })
+      );
+    FinancialInfoService.getDebts()
+      .filter((d) => !d.deletedAt && d.linkedPaymentCardId === id)
+      .forEach((d) =>
+        items.push({
+          id: d.id,
+          kind: 'debt',
+          title: d.owedTo,
+          detail: d.approximateBalance !== undefined ? formatCurrency(d.approximateBalance) : undefined,
+          path: '/financial',
+        })
+      );
+    return items;
+  },
+
   countLinkedBills(id: string): number {
-    return BillService.getAllBills().filter((b) => b.paymentCardId === id).length;
+    return this.getLinkedItems(id).filter((i) => i.kind === 'bill').length;
   },
 
   countLinkedDebts(id: string): number {
-    return FinancialInfoService.getDebts().filter((d) => d.linkedPaymentCardId === id).length;
+    return this.getLinkedItems(id).filter((i) => i.kind === 'debt').length;
   },
 
   linkedSummary(id: string): string | undefined {

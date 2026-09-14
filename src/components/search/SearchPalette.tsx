@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Receipt, FileText, CalendarDays, Users, UserCircle, Wallet } from 'lucide-react';
+import { Receipt, FileText, CalendarDays, Users, UserCircle, Wallet, CreditCard } from 'lucide-react';
 import {
   CommandDialog,
   CommandGroup,
@@ -22,9 +22,11 @@ const ICONS: Record<SearchResultType, typeof Receipt> = {
   key_person: Users,
   person: UserCircle,
   financial: Wallet,
+  payment_method: CreditCard,
 };
 
 const GROUP_ORDER: SearchResultType[] = [
+  'payment_method',
   'bill',
   'document',
   'key_person',

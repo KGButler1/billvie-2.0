@@ -1,6 +1,8 @@
 import { BankAccount } from '@/types/bankAccount';
+import { LinkedItem } from '@/types/linkedItem';
 import { BillService } from './BillService';
 import { FinancialInfoService } from './FinancialInfoService';
+import { formatCurrency } from '@/utils/currency';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 
@@ -99,20 +101,70 @@ export const BankAccountService = {
     return updated;
   },
 
+  getLinkedItems(id: string): LinkedItem[] {
+    const items: LinkedItem[] = [];
+    BillService.getAllBills()
+      .filter((b) => !b.deletedAt && b.bankAccountId === id)
+      .forEach((b) =>
+        items.push({
+          id: b.id,
+          kind: 'bill',
+          title: b.name,
+          detail: b.amount !== undefined ? formatCurrency(b.amount) : undefined,
+          isAutoDebited: b.isAutoDebited,
+          path: '/bills',
+        })
+      );
+    FinancialInfoService.getDebts()
+      .filter((d) => !d.deletedAt && d.linkedBankAccountId === id)
+      .forEach((d) =>
+        items.push({
+          id: d.id,
+          kind: 'debt',
+          title: d.owedTo,
+          detail: d.approximateBalance !== undefined ? formatCurrency(d.approximateBalance) : undefined,
+          path: '/financial',
+        })
+      );
+    FinancialInfoService.getIncome()
+      .filter((i) => !i.deletedAt && i.linkedBankAccountId === id)
+      .forEach((i) =>
+        items.push({
+          id: i.id,
+          kind: 'income',
+          title: i.sourceName,
+          detail: i.approximateAmount !== undefined ? formatCurrency(i.approximateAmount) : undefined,
+          path: '/financial',
+        })
+      );
+    FinancialInfoService.getSuperannuation()
+      .filter((s) => !s.deletedAt && s.linkedBankAccountId === id)
+      .forEach((s) =>
+        items.push({
+          id: s.id,
+          kind: 'superannuation',
+          title: s.fundName,
+          detail: s.estimatedBalance !== undefined ? formatCurrency(s.estimatedBalance) : undefined,
+          path: '/financial',
+        })
+      );
+    return items;
+  },
+
   countLinkedBills(id: string): number {
-    return BillService.getAllBills().filter((b) => b.bankAccountId === id).length;
+    return this.getLinkedItems(id).filter((i) => i.kind === 'bill').length;
   },
 
   countLinkedIncome(id: string): number {
-    return FinancialInfoService.getIncome().filter((i) => i.linkedBankAccountId === id).length;
+    return this.getLinkedItems(id).filter((i) => i.kind === 'income').length;
   },
 
   countLinkedDebts(id: string): number {
-    return FinancialInfoService.getDebts().filter((d) => d.linkedBankAccountId === id).length;
+    return this.getLinkedItems(id).filter((i) => i.kind === 'debt').length;
   },
 
   countLinkedSuperannuation(id: string): number {
-    return FinancialInfoService.getSuperannuation().filter((s) => s.linkedBankAccountId === id).length;
+    return this.getLinkedItems(id).filter((i) => i.kind === 'superannuation').length;
   },
 
   linkedSummary(id: string): string | undefined {

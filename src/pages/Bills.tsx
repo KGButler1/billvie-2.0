@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Scan } from 'lucide-react';
@@ -9,6 +9,8 @@ import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { TaxTagService } from '@/services/TaxTagService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
+import { PaymentCardService } from '@/services/PaymentCardService';
+import { BankAccountService } from '@/services/BankAccountService';
 import { UserService } from '@/services/UserService';
 import { useProfile } from '@/hooks/useProfile';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
@@ -65,6 +67,7 @@ const Bills = () => {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<SortKey>('due_date');
   const [category, setCategory] = useState<BillCategory | 'all'>('all');
+  const [paidFrom, setPaidFrom] = useState<string>('all');
   const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [detailBill, setDetailBill] = useState<Bill | null>(null);
@@ -93,6 +96,23 @@ const Bills = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const allCards = PaymentCardService.getAll();
+  const allAccounts = BankAccountService.getAll();
+  const hasPaymentSources = allCards.length > 0 || allAccounts.length > 0;
+
+  useEffect(() => {
+    const param = searchParams.get('paidFrom');
+    if (param) setPaidFrom(param);
+  }, [searchParams]);
+
+  const setPaidFromParam = useCallback((value: string) => {
+    setPaidFrom(value);
+    const url = new URL(window.location.href);
+    if (value === 'all') url.searchParams.delete('paidFrom');
+    else url.searchParams.set('paidFrom', value);
+    window.history.replaceState(null, '', url);
+  }, []);
+
   const counts = useMemo(
     () => ({
       all: bills.length,
@@ -108,6 +128,15 @@ const Bills = () => {
     let list = bills;
     if (status !== 'all') list = list.filter(b => b.status === status);
     if (category !== 'all') list = list.filter(b => b.category === category);
+    if (paidFrom !== 'all') {
+      if (paidFrom === 'none') {
+        list = list.filter(b => !b.paymentCardId && !b.bankAccountId);
+      } else if (paidFrom.startsWith('card:')) {
+        list = list.filter(b => b.paymentCardId === paidFrom.slice(5));
+      } else if (paidFrom.startsWith('account:')) {
+        list = list.filter(b => b.bankAccountId === paidFrom.slice(8));
+      }
+    }
 
     const sorted = [...list];
 
@@ -137,10 +166,23 @@ const Bills = () => {
     const group2 = sorted.filter(b => extractionPriority(b) === 2).sort(withinGroup);
     groups.push(...group0, ...group1, ...group2);
     return groups;
-  }, [bills, status, category, sort]);
+  }, [bills, status, category, sort, paidFrom]);
+
+  const paidFromLabel = useMemo(() => {
+    if (paidFrom === 'none') return 'an unrecorded source';
+    if (paidFrom.startsWith('card:')) {
+      const card = PaymentCardService.getById(paidFrom.slice(5));
+      return card?.nickname ?? 'this card';
+    }
+    if (paidFrom.startsWith('account:')) {
+      const account = BankAccountService.getById(paidFrom.slice(8));
+      return account?.nickname ?? 'this account';
+    }
+    return '';
+  }, [paidFrom]);
 
   const mode: 'grouped' | 'flat' =
-    status === 'all' && sort === 'due_date' && category === 'all' ? 'grouped' : 'flat';
+    status === 'all' && sort === 'due_date' && category === 'all' && paidFrom === 'all' ? 'grouped' : 'flat';
 
   const upcomingTotal = BillService.getUpcomingTotal();
   const insuranceCount = FinancialInfoService.getInsurance().length;
@@ -313,6 +355,38 @@ const Bills = () => {
               </SelectContent>
             </Select>
 
+            {hasPaymentSources && (
+              <Select value={paidFrom} onValueChange={setPaidFromParam}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="all">Any account or card</SelectItem>
+                  {allCards.length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Cards</div>
+                      {allCards.map(card => (
+                        <SelectItem key={`card:${card.id}`} value={`card:${card.id}`}>
+                          {card.nickname}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {allAccounts.length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Accounts</div>
+                      {allAccounts.map(account => (
+                        <SelectItem key={`account:${account.id}`} value={`account:${account.id}`}>
+                          {account.nickname}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  <SelectItem value="none">Not recorded</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
             <EditOnly>
             <AdminOnly>
             <Button onClick={handleTryAddBill} className="gap-1.5">
@@ -323,6 +397,13 @@ const Bills = () => {
             </EditOnly>
           </div>
         </div>
+
+        {paidFrom !== 'all' && (
+          <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+            <span>Showing {visibleBills.length} of {bills.length} — everything paid from {paidFromLabel}</span>
+            <button onClick={() => setPaidFromParam('all')} className="text-primary hover:underline">Clear</button>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {isLoading ? (
@@ -340,19 +421,26 @@ const Bills = () => {
                 onEdit={isAdmin ? setEditingBill : undefined}
                 onOpen={setDetailBill}
                 emptyState={
-                  <div className="text-center py-20">
-                    <h2 className="text-lg font-semibold mb-1">No bills tracked yet.</h2>
-                    <p className="text-muted-foreground mb-6">
-                      Add your first one so someone else knows what's running.
-                    </p>
-                    <EditOnly>
-                    <AdminOnly>
-                    <Button onClick={handleTryAddBill} className="gap-1.5">
-                      <Plus className="w-4 h-4" /> Add bill
-                    </Button>
-                    </AdminOnly>
-                    </EditOnly>
-                  </div>
+                  paidFrom !== 'all' ? (
+                    <div className="text-center py-20">
+                      <h2 className="text-lg font-semibold mb-1">Nothing is paid from this.</h2>
+                      <button onClick={() => setPaidFromParam('all')} className="text-primary hover:underline text-sm">Clear filter</button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <h2 className="text-lg font-semibold mb-1">No bills tracked yet.</h2>
+                      <p className="text-muted-foreground mb-6">
+                        Add your first one so someone else knows what's running.
+                      </p>
+                      <EditOnly>
+                      <AdminOnly>
+                      <Button onClick={handleTryAddBill} className="gap-1.5">
+                        <Plus className="w-4 h-4" /> Add bill
+                      </Button>
+                      </AdminOnly>
+                      </EditOnly>
+                    </div>
+                  )
                 }
               />
             </motion.div>

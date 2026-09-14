@@ -12,10 +12,11 @@ import FieldError from '@/components/ui/field-error';
 interface CardPickerProps {
   value?: string;
   onChange: (cardId: string | undefined) => void;
+  excludeId?: string;
 }
 
 // Mirrors PersonTagPicker: selectable chips plus an inline add row.
-const CardPicker = ({ value, onChange }: CardPickerProps) => {
+const CardPicker = ({ value, onChange, excludeId }: CardPickerProps) => {
   const [cards, setCards] = useState<PaymentCard[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [nickname, setNickname] = useState('');
@@ -51,7 +52,7 @@ const CardPicker = ({ value, onChange }: CardPickerProps) => {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1.5">
-        {cards.map((card) => {
+        {cards.filter((c) => c.id !== excludeId).map((card) => {
           const selected = card.id === value;
           const flag = cardExpiryFlag(card);
           return (

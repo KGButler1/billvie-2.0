@@ -11,9 +11,10 @@ import FieldError from '@/components/ui/field-error';
 interface BankAccountPickerProps {
   value?: string;
   onChange: (accountId: string | undefined) => void;
+  excludeId?: string;
 }
 
-const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
+const BankAccountPicker = ({ value, onChange, excludeId }: BankAccountPickerProps) => {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [nickname, setNickname] = useState('');
@@ -47,7 +48,7 @@ const BankAccountPicker = ({ value, onChange }: BankAccountPickerProps) => {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1.5">
-        {accounts.map((account) => {
+        {accounts.filter((a) => a.id !== excludeId).map((account) => {
           const selected = account.id === value;
           return (
             <button
