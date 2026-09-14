@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { isDemoModeActive } from '@/demo/demoFlag';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Scan, Shield } from 'lucide-react';
 import { BillService } from '@/services/BillService';
@@ -35,12 +34,11 @@ import BillsWidget from '@/components/BillsWidget';
 import FinancialSnapshotWidget from '@/components/FinancialSnapshotWidget';
 import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
-import AccessAwareSection from '@/components/AccessAwareSection';
 import AdminOnly from '@/components/AdminOnly';
 import DashboardActionStrip from '@/components/DashboardActionStrip';
 import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
-import { SkeletonRows, SkeletonCard } from '@/components/ui/skeleton';
+import { SkeletonRows } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -196,7 +194,7 @@ const Dashboard = () => {
 
   const bentoTileCount = (canSeeBills ? 1 : 0) + 1 + (canShowPeopleCard ? 1 : 0);
   const bentoColsClass =
-    bentoTileCount >= 3 ? 'lg:grid-cols-[1.6fr_1.3fr_1fr]' :
+    bentoTileCount >= 3 ? 'lg:grid-cols-[5fr_4fr_5fr]' :
     bentoTileCount === 2 ? 'lg:grid-cols-2' :
     'lg:grid-cols-1';
 
@@ -208,77 +206,6 @@ const Dashboard = () => {
       .catch(() => setDataError(true))
       .finally(() => setBillsLoading(false));
   };
-
-  const sections = [
-    {
-      key: 'needs-attention',
-      visible: canSeeBills,
-      render: () => (
-        <div ref={needsAttentionRef}>
-          <AnimatePresence mode="wait">
-            {billsLoading ? (
-              <motion.div key="skeleton" exit={{ opacity: 0 }}>
-                <SkeletonRows rows={3} />
-              </motion.div>
-            ) : dataError ? (
-              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <p className="text-sm text-muted-foreground mb-3">Couldn't load your bills.</p>
-                <button onClick={retryLoad} className="text-sm text-primary hover:underline">Retry</button>
-              </div>
-            ) : (
-              <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <BillList
-                  bills={overdueBills}
-                  mode="grouped"
-                  sectionTitle={getSectionTitle}
-                  onMarkPaid={handleMarkPaid}
-                  onMarkUnpaid={handleMarkUnpaid}
-                  onDelete={handleDeleteBill}
-                  onEdit={setEditingBill}
-                  onOpen={setDetailBill}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ),
-    },
-    {
-      key: 'documents',
-      visible: canSeeDocuments,
-      render: () => <DocumentsWidget />,
-    },
-    {
-      key: 'financial',
-      visible: canSeeFinancial,
-      render: () => <FinancialSnapshotWidget />,
-    },
-    {
-      key: 'tax',
-      visible: canSeeTaxDocs,
-      render: () => <TaxWidget />,
-    },
-    {
-      key: 'advisor',
-      visible: true,
-      render: () => <AdvisorWidget />,
-    },
-    {
-      key: 'spending-chart',
-      visible: canSeeBills,
-      render: () => <SpendingChart spending={spending} />,
-    },
-    {
-      key: 'events',
-      visible: canSeeEvents,
-      render: () => <ActiveEventsWidget events={activeEvents} />,
-    },
-    {
-      key: 'biggest-bills',
-      visible: canSeeBills,
-      render: () => <BillsWidget onOpen={setDetailBill} />,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -343,24 +270,72 @@ const Dashboard = () => {
         {/* Household setup (admin only, hidden when complete) */}
         <AdminOnly><HouseholdSetupWidget /></AdminOnly>
 
-        {/* Flow of sections — only visible ones render, no empty cells */}
-        <div className="columns-1 lg:columns-2 gap-2 mb-6">
-          {sections
-            .filter((s) => s.visible)
-            .map((s) => (
-              <div key={s.key} className="break-inside-avoid mb-2">{s.render()}</div>
-            ))}
-        </div>
-
-        {/* View all bills link */}
-        {canSeeBills && bills.length > 0 && (
-          <Link
-            to={isDemoModeActive() ? '/demo/bills' : '/bills'}
-            className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-8"
-          >
-            View all {bills.length} bills →
-          </Link>
+        {canSeeBills && overdueBills.length > 0 && (
+          <div ref={needsAttentionRef} className="mb-6">
+            <AnimatePresence mode="wait">
+              {billsLoading ? (
+                <motion.div key="skeleton" exit={{ opacity: 0 }}>
+                  <SkeletonRows rows={3} />
+                </motion.div>
+              ) : dataError ? (
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <p className="text-sm text-muted-foreground mb-3">Couldn't load your bills.</p>
+                  <button onClick={retryLoad} className="text-sm text-primary hover:underline">Retry</button>
+                </div>
+              ) : (
+                <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <BillList
+                    bills={overdueBills}
+                    mode="grouped"
+                    sectionTitle={getSectionTitle}
+                    onMarkPaid={handleMarkPaid}
+                    onMarkUnpaid={handleMarkUnpaid}
+                    onDelete={handleDeleteBill}
+                    onEdit={setEditingBill}
+                    onOpen={setDetailBill}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
+
+        {canSeeEvents && activeEvents.length > 0 && (
+          <div className="mb-6">
+            <ActiveEventsWidget events={activeEvents} />
+          </div>
+        )}
+
+        {(() => {
+          const hasHouseholdRecords = canSeeDocuments || canSeeFinancial || canSeeTaxDocs;
+          const hasSpendingAndBills = canSeeBills;
+          if (!hasHouseholdRecords && !hasSpendingAndBills) return null;
+          const bothColumns = hasHouseholdRecords && hasSpendingAndBills;
+          return (
+            <div className={`grid grid-cols-1 ${bothColumns ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6 mb-6`}>
+              {hasHouseholdRecords && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Household Records</p>
+                  <div className="space-y-2">
+                    {canSeeDocuments && <DocumentsWidget />}
+                    {canSeeFinancial && <FinancialSnapshotWidget />}
+                    {canSeeTaxDocs && <TaxWidget />}
+                    <AdvisorWidget />
+                  </div>
+                </div>
+              )}
+              {hasSpendingAndBills && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Spending &amp; Bills</p>
+                  <div className="space-y-2">
+                    <SpendingChart spending={spending} />
+                    <BillsWidget onOpen={setDetailBill} />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Empty State — only for roles that can see bills */}
         {canSeeBills && !billsLoading && !dataError && bills.length === 0 && canAddBills && (

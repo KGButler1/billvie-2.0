@@ -37,16 +37,16 @@ const DashboardActionStrip = ({
         <AlertTriangle className={cn('w-6 h-6', hasUrgent ? 'text-destructive' : 'text-muted-foreground')} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-2xl font-bold leading-none">
-          {overdueCount}
-        </p>
-        <p className={cn('text-sm mt-1', hasUrgent ? 'text-destructive' : 'text-muted-foreground')}>
+        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">
           Needs Attention
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className={cn('text-2xl font-bold leading-none', hasUrgent && 'text-destructive')}>
+          {overdueCount}
+        </p>
+        <p className="text-sm font-medium mt-2">
           ${comingUpTotal.toLocaleString()} coming up in {comingUpWindowDays} days
         </p>
-        <p className="text-xs text-muted-foreground/70 mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           ${outstandingTotal.toLocaleString()} total outstanding
         </p>
       </div>

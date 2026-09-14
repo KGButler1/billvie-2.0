@@ -112,7 +112,10 @@ const PeopleBubbleRow = () => {
         </span>
       </button>
       <TooltipProvider delayDuration={200}>
-        <div className="flex gap-3 overflow-x-auto pb-1 pt-2">
+        <div
+          className="flex gap-3 overflow-x-auto pb-1 pt-2"
+          style={{ maskImage: 'linear-gradient(to right, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 90%, transparent 100%)' }}
+        >
           {allPeople.map((person) => {
             const isPending = person.status === 'invited';
             const isActive = person.status === 'active';

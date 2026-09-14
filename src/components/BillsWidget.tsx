@@ -31,7 +31,7 @@ const BillsWidget = ({ onOpen }: { onOpen: (bill: Bill) => void }) => {
 
   const recent = [...unpaid]
     .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
-    .slice(0, 3);
+    .slice(0, 5);
 
   return (
     <div className="mb-6">
