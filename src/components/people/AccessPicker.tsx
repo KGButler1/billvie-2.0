@@ -76,7 +76,7 @@ const AccessPicker = ({ scope, itemId, roleFilter, selectedPersonIds, onChange }
       : `${joinNames(selectedNames)} will see this`;
 
   const toggle = (personId: string, next: boolean) => {
-    if (!next && AccessService.hasWholeScope(personId, scope)) {
+    if (!next && itemId && AccessService.hasWholeScope(personId, scope)) {
       setNarrowing(personId);
       return;
     }

@@ -5,7 +5,7 @@ import { ArrowLeft, Plus, Shield, Wallet, FileText, Trash2, Pencil as Edit2, Ext
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import FinancialAccessCard from '@/components/financial/FinancialAccessCard';
+import { FinancialSharingPanel } from '@/components/financial/FinancialSharingPanel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,7 +59,6 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
-import AdminOnly from '@/components/AdminOnly';
 import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { useAccessRedirect } from '@/hooks/useAccessRedirect';
@@ -368,7 +367,7 @@ const FinancialInfo = () => {
         <DismissibleIntro storageKey="billvie_financial_intro">
           The numbers a spouse or advisor would need to know — what's protected, what's owed, what's coming in. Not a budget, just the facts someone would need if you weren't the one explaining them.
         </DismissibleIntro>
-        <AdminOnly><FinancialAccessCard /></AdminOnly>
+        <EditOnly><FinancialSharingPanel /></EditOnly>
         {/* Summary Cards */}
         <AnimatePresence mode="wait">
           {isLoading ? (

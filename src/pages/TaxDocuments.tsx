@@ -270,6 +270,103 @@ const TaxDocuments = () => {
           Anything tagged relevant for tax on a bill or a document shows up here automatically. Add something here directly too, if it doesn't live anywhere else.
         </DismissibleIntro>
 
+        {/* Sharing Panel */}
+        <EditOnly>
+        <TaxSharingPanel />
+        </EditOnly>
+
+        {/* Search and Filters */}
+        <div className="space-y-3 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search this year..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Select value={String(yearFilter)} onValueChange={(v) => setYearFilter(parseInt(v))}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as TaxCategory | 'all')}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="all">All Categories</SelectItem>
+                {allCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Business filter — only worth showing once there's more than one */}
+          {businessNames.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {['all', ...businessNames].map((name) => (
+                <button
+                  key={name}
+                  onClick={() => setBusinessFilter(name)}
+                  className={cn(
+                    'text-xs px-3 py-1.5 rounded-full border transition-colors',
+                    businessFilter === name
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border hover:bg-muted'
+                  )}
+                >
+                  {name === 'all' ? 'All businesses' : name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => (isPaid ? handleExportCSV() : setShowUpgradeModal(true))}
+          >
+            {isPaid ? <Download className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+            Export for Accountant
+          </Button>
+
+          {/* Manage Categories/Years buttons */}
+          <EditOnly>
+          <div className="flex gap-2 text-sm">
+            <button
+              onClick={() => setShowManageCategories(true)}
+              className="text-primary hover:underline flex items-center gap-1"
+            >
+              <Settings className="w-3 h-3" />
+              Manage Categories
+            </button>
+            <span className="text-muted-foreground">•</span>
+            <button
+              onClick={() => setShowManageYears(true)}
+              className="text-primary hover:underline flex items-center gap-1"
+            >
+              <Calendar className="w-3 h-3" />
+              Manage Years
+            </button>
+          </div>
+          </EditOnly>
+        </div>
+
         {/* Year Summary */}
         <AnimatePresence mode="wait">
           {isLoading ? (
@@ -467,103 +564,6 @@ const TaxDocuments = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Search and Filters */}
-        <div className="space-y-3 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search this year..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Select value={String(yearFilter)} onValueChange={(v) => setYearFilter(parseInt(v))}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as TaxCategory | 'all')}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                <SelectItem value="all">All Categories</SelectItem>
-                {allCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Business filter — only worth showing once there's more than one */}
-          {businessNames.length > 1 && (
-            <div className="flex flex-wrap gap-1.5">
-              {['all', ...businessNames].map((name) => (
-                <button
-                  key={name}
-                  onClick={() => setBusinessFilter(name)}
-                  className={cn(
-                    'text-xs px-3 py-1.5 rounded-full border transition-colors',
-                    businessFilter === name
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:bg-muted'
-                  )}
-                >
-                  {name === 'all' ? 'All businesses' : name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => (isPaid ? handleExportCSV() : setShowUpgradeModal(true))}
-          >
-            {isPaid ? <Download className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
-            Export for Accountant
-          </Button>
-
-          {/* Manage Categories/Years buttons */}
-          <EditOnly>
-          <div className="flex gap-2 text-sm">
-            <button
-              onClick={() => setShowManageCategories(true)}
-              className="text-primary hover:underline flex items-center gap-1"
-            >
-              <Settings className="w-3 h-3" />
-              Manage Categories
-            </button>
-            <span className="text-muted-foreground">•</span>
-            <button
-              onClick={() => setShowManageYears(true)}
-              className="text-primary hover:underline flex items-center gap-1"
-            >
-              <Calendar className="w-3 h-3" />
-              Manage Years
-            </button>
-          </div>
-          </EditOnly>
-        </div>
-
-        {/* Sharing Panel */}
-        <EditOnly>
-        <TaxSharingPanel />
-        </EditOnly>
         </ScopeGate>
       </main>
 
