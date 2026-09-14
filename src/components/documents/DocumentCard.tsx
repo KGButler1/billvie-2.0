@@ -31,7 +31,7 @@ const joinNames = (names: string[]) => {
 interface DocumentCardProps {
   document: HouseholdDocument;
   onDelete: (id: string) => void;
-  onEditAccess: (id: string) => void;
+  onEditAccess?: (id: string) => void;
   onLinks: (id: string) => void;
   onEdit: (id: string) => void;
 }
@@ -97,12 +97,18 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
               <p className="text-xs text-muted-foreground truncate">{document.provider}</p>
             )}
 
+            {onEditAccess ? (
             <button
               onClick={(e) => { e.stopPropagation(); onEditAccess(document.id); }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 block text-left"
             >
               {viewers.length > 0 ? `Visible to ${joinNames(viewers)}` : 'Only you can see this'}
             </button>
+            ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              {viewers.length > 0 ? `Visible to ${joinNames(viewers)}` : 'Only you can see this'}
+            </p>
+            )}
 
             <div className="mt-1 space-y-0.5">
               {attachments.length > 0 && (

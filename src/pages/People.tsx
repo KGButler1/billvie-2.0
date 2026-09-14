@@ -27,6 +27,7 @@ import { ExclusionService } from '@/services/ExclusionService';
 import { KeyPeopleService } from '@/services/KeyPeopleService';
 import { useProfile } from '@/hooks/useProfile';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { isDemoModeActive } from '@/demo/demoFlag';
 import { ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope, PersonRole } from '@/types/people';
 import { scopeAccessSummary } from '@/utils/scopeItems';
 import { KeyPerson } from '@/types/keyPerson';
@@ -139,7 +140,18 @@ const People = () => {
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
 
-  const { isAdmin: isCurrentUserAdmin } = useViewerAccess();
+  const { isAdmin: isCurrentUserAdmin, personRole } = useViewerAccess();
+
+  const isFamilyViewer = !isCurrentUserAdmin && personRole === 'household';
+  const isAdvisorViewer = !isCurrentUserAdmin && (personRole === 'advisor' || personRole === 'accountant');
+  const { canSee, accessLoading: accessResolving } = useViewerAccess();
+
+  useEffect(() => {
+    if (accessResolving) return;
+    if (isAdvisorViewer && !canSee('key_people')) {
+      navigate(isDemoModeActive() ? '/demo/dashboard' : '/dashboard', { replace: true });
+    }
+  }, [accessResolving, isAdvisorViewer, canSee, navigate]);
 
   const reload = useCallback(async () => {
     await PeopleService.refresh();
@@ -267,7 +279,7 @@ const People = () => {
     return `Can see ${joinScopes(entry.scopes)}`;
   };
 
-  const Row = ({ entry }: { entry: DirectoryEntry }) => {
+  const Row = ({ entry, viewOnly = false }: { entry: DirectoryEntry; viewOnly?: boolean }) => {
     const isOpen = expanded === entry.key;
     const person = entry.trustedPersonId ? PeopleService.getById(entry.trustedPersonId) : undefined;
     const history = entry.trustedPersonId ? AccessService.getHistoryForPerson(entry.trustedPersonId) : [];
@@ -337,6 +349,15 @@ const People = () => {
                       This is your own account. You'll always see everything in the
                       household, so there's nothing to turn on or off here.
                     </p>
+                  ) : viewOnly ? (
+                    <div>
+                      <p className="text-sm font-medium mb-1">What {firstName(entry.name)} can see</p>
+                      {entry.scopes.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Can't see anything yet.</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{joinScopes(entry.scopes)}.</p>
+                      )}
+                    </div>
                   ) : (
                   <>
                     <div>
@@ -608,21 +629,22 @@ const People = () => {
     <div className="min-h-screen bg-background pb-24 lg:pt-16">
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center">
-          <h1 className="text-xl font-bold">Trusted People</h1>
+          <h1 className="text-xl font-bold">{isAdvisorViewer ? 'Key Contacts' : 'Trusted People'}</h1>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-20 lg:pt-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold hidden lg:block mb-2">Trusted People</h1>
-          <p className="text-base">{statusLine}</p>
-          {showFreeNote && (
+          <h1 className="text-2xl font-semibold hidden lg:block mb-2">{isAdvisorViewer ? 'Key Contacts' : 'Trusted People'}</h1>
+          {!isAdvisorViewer && <p className="text-base">{statusLine}</p>}
+          {showFreeNote && !isAdvisorViewer && (
             <p className="text-xs text-muted-foreground mt-1">
               Free includes one trusted person. Advisors and accountants are always free, however many you add.
             </p>
           )}
         </div>
 
+        {!isAdvisorViewer && (
         <Section title="Your household">
           <AnimatePresence mode="wait">
             {isLoading ? (
@@ -631,7 +653,7 @@ const People = () => {
               </motion.div>
             ) : (
               <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {householdRows.some((r) => r.trustedPerson?.status === 'invited') && (
+                {householdRows.some((r) => r.trustedPerson?.status === 'invited') && isCurrentUserAdmin && (
                   <p className="text-xs text-muted-foreground mb-3 px-1">
                     Haven't heard back from someone you invited? If they can't find it, ask them to check spam or junk —
                     first emails from a new sender sometimes land there.
@@ -652,7 +674,7 @@ const People = () => {
                 ) : (
                   <>
                     {householdRows.map((entry) => (
-                      <Row key={entry.key} entry={entry} />
+                      <Row key={entry.key} entry={entry} viewOnly={isFamilyViewer} />
                     ))}
                     {isCurrentUserAdmin && (
                       <div className="p-3">
@@ -668,7 +690,9 @@ const People = () => {
             )}
           </AnimatePresence>
         </Section>
+        )}
 
+        {!isAdvisorViewer && (
         <Section title="Advisors & accountants" subtitle="Always free, however many you need.">
           {professionalRows.length === 0 ? (
             <EmptyState
@@ -684,7 +708,7 @@ const People = () => {
           ) : (
             <>
               {professionalRows.map((entry) => (
-                <Row key={entry.key} entry={entry} />
+                <Row key={entry.key} entry={entry} viewOnly={isFamilyViewer} />
               ))}
               {isCurrentUserAdmin && (
                 <div className="p-3">
@@ -696,6 +720,7 @@ const People = () => {
             </>
           )}
         </Section>
+        )}
 
         <Section
           title="Key contacts"
@@ -705,21 +730,25 @@ const People = () => {
             <EmptyState
               text="No one added yet."
               action={
-                <Button variant="outline" onClick={() => navigate('/key-people?add=1')}>
-                  Add a key contact
-                </Button>
+                isCurrentUserAdmin ? (
+                  <Button variant="outline" onClick={() => navigate('/key-people?add=1')}>
+                    Add a key contact
+                  </Button>
+                ) : undefined
               }
             />
           ) : (
             <>
               {contactRows.map((entry) => (
-                <Row key={entry.key} entry={entry} />
+                <Row key={entry.key} entry={entry} viewOnly={isFamilyViewer} />
               ))}
-              <div className="p-3">
-                <Button variant="outline" size="sm" onClick={() => navigate('/key-people')}>
-                  Manage key contacts
-                </Button>
-              </div>
+              {isCurrentUserAdmin && (
+                <div className="p-3">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/key-people')}>
+                    Manage key contacts
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </Section>

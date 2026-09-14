@@ -36,8 +36,9 @@ import UpgradeModal from '@/components/UpgradeModal';
 import { canAddDocument } from '@/utils/documentLimits';
 import { FREE_DOCUMENT_LIMIT } from '@/constants/pricing';
 import UsageCounter from '@/components/shared/UsageCounter';
-import ScopeGate from '@/components/ScopeGate';
 import EditOnly from '@/components/EditOnly';
+import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { useAccessRedirect } from '@/hooks/useAccessRedirect';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -62,6 +63,8 @@ const SORT_LABELS: Record<SortKey, string> = {
 const Documents = () => {
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
+  const { isAdmin } = useViewerAccess();
+  const { accessLoading } = useAccessRedirect('documents');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [documents, setDocuments] = useState<HouseholdDocument[]>(() => DocumentService.getAll());
   const [scannedDocs, setScannedDocs] = useState<HouseholdDocument[]>(() => DocumentService.getScanned());
@@ -181,7 +184,10 @@ const Documents = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
-        <ScopeGate scope="documents">
+        {accessLoading ? (
+          <SkeletonRows rows={4} />
+        ) : (
+        <>
         {demoNudge && (
           <p className="text-sm text-muted-foreground italic mb-4">
             This is what a note looks like for your own family. Nothing fancy, just clear.
@@ -311,7 +317,7 @@ const Documents = () => {
                               >
                                 <DocumentCard
                                   document={doc}
-                                  onEditAccess={(id) => setAccessId(id)}
+                                  onEditAccess={isAdmin ? (id) => setAccessId(id) : undefined}
                                   onLinks={(id) => setLinkingId(id)}
                                   onEdit={(id) => {
                                     setEditingId(id);
@@ -348,7 +354,7 @@ const Documents = () => {
                     <DocumentCard
                       key={doc.id}
                       document={doc}
-                      onEditAccess={(id) => setAccessId(id)}
+                      onEditAccess={isAdmin ? (id) => setAccessId(id) : undefined}
                       onLinks={(id) => setLinkingId(id)}
                       onEdit={(id) => {
                         setEditingId(id);
@@ -368,7 +374,8 @@ const Documents = () => {
             )}
           </>
         )}
-        </ScopeGate>
+        </>
+        )}
       </main>
 
       <AnimatePresence>

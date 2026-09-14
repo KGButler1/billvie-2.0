@@ -1,12 +1,13 @@
 import { useAuth } from '@/hooks/useAuth';
 import { PeopleService } from '@/services/PeopleService';
 import { AccessService } from '@/services/AccessService';
-import { AccessScope } from '@/types/people';
+import { AccessScope, PersonRole } from '@/types/people';
 
 export type ViewerRole = 'owner' | 'co_owner' | 'restricted';
 
 export interface ViewerAccess {
   role: ViewerRole;
+  personRole?: PersonRole;
   isAdmin: boolean;
   canEdit: boolean;
   canSee: (scope: AccessScope) => boolean;
@@ -22,6 +23,7 @@ export const useViewerAccess = (): ViewerAccess => {
   const isAdmin = me?.accessLevel === 'owner' || me?.accessLevel === 'co_owner';
   const trustedPersonId = me?.id;
   const canEdit = isAdmin || (me?.canEdit ?? false);
+  const personRole = me?.role;
 
   const role: ViewerRole = me?.accessLevel === 'owner'
     ? 'owner'
@@ -35,5 +37,5 @@ export const useViewerAccess = (): ViewerAccess => {
     return AccessService.canSee(trustedPersonId, scope);
   };
 
-  return { role, isAdmin, canEdit, canSee, trustedPersonId, accessLoading };
+  return { role, personRole, isAdmin, canEdit, canSee, trustedPersonId, accessLoading };
 };

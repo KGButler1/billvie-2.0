@@ -59,10 +59,10 @@ import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
 import { useProfile } from '@/hooks/useProfile';
 import UpgradeModal from '@/components/UpgradeModal';
-import ScopeGate from '@/components/ScopeGate';
 import AdminOnly from '@/components/AdminOnly';
 import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { useAccessRedirect } from '@/hooks/useAccessRedirect';
 
 const OverviewTab = ({
   insurance,
@@ -266,6 +266,7 @@ const FinancialInfo = () => {
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { accessLoading } = useAccessRedirect('financial_info');
   const [activeTab, setActiveTab] = useState('overview');
   
   // Data states
@@ -355,7 +356,14 @@ const FinancialInfo = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
-        <ScopeGate scope="financial_info">
+        {accessLoading ? (
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonRows rows={4} />
+          </div>
+        ) : (
+        <>
         <h1 className="text-2xl font-semibold hidden lg:block mb-4">Financial Snapshot</h1>
         <DismissibleIntro storageKey="billvie_financial_intro">
           The numbers a spouse or advisor would need to know — what's protected, what's owed, what's coming in. Not a budget, just the facts someone would need if you weren't the one explaining them.
@@ -648,7 +656,8 @@ const FinancialInfo = () => {
             </div>
           </TabsContent>
         </Tabs>
-        </ScopeGate>
+        </>
+        )}
       </main>
 
       {/* Insurance Modal */}

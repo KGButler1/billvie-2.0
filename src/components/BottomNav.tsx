@@ -48,9 +48,16 @@ const desktopNavItems: NavItem[] = [
 ];
 
 const useFilteredNav = (items: NavItem[]) => {
-  const { isAdmin, canSee, accessLoading } = useViewerAccess();
+  const { isAdmin, canSee, accessLoading, personRole } = useViewerAccess();
 
   return items.filter((item) => {
+    if (item.path === '/people') {
+      if (accessLoading) return true;
+      if (isAdmin) return true;
+      if (personRole === 'household') return true;
+      if (canSee('key_people')) return true;
+      return false;
+    }
     if (!item.scope) return true;
     if (accessLoading) return true;
     if (isAdmin) return true;

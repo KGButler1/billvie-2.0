@@ -38,10 +38,9 @@ import {
 import { cn } from '@/lib/utils';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { SkeletonRows } from '@/components/ui/skeleton';
-import AdminOnly from '@/components/AdminOnly';
 import EditOnly from '@/components/EditOnly';
-import ScopeGate from '@/components/ScopeGate';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { useAccessRedirect } from '@/hooks/useAccessRedirect';
 
 type StatusFilter = 'all' | 'overdue' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
@@ -61,7 +60,8 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 const Bills = () => {
-  const { isAdmin } = useViewerAccess();
+  const { canEdit } = useViewerAccess();
+  const { accessLoading } = useAccessRedirect('bills');
   const [searchParams] = useSearchParams();
   const [bills, setBills] = useState<Bill[]>([]);
   const [status, setStatus] = useState<StatusFilter>('all');
@@ -285,7 +285,10 @@ const Bills = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-20 lg:pt-8 max-w-4xl">
-        <ScopeGate scope="bills">
+        {accessLoading ? (
+          <SkeletonRows rows={4} />
+        ) : (
+        <>
         <h1 className="text-2xl font-semibold hidden lg:block mb-2">Bills &amp; Commitments</h1>
 
         {demoNudge && (
@@ -393,12 +396,10 @@ const Bills = () => {
             )}
 
             <EditOnly>
-            <AdminOnly>
             <Button onClick={handleTryAddBill} className="gap-1.5">
               <Plus className="w-4 h-4" />
               Add bill
             </Button>
-            </AdminOnly>
             </EditOnly>
           </div>
         </div>
@@ -420,10 +421,10 @@ const Bills = () => {
               <BillList
                 bills={visibleBills}
                 mode={mode}
-                onMarkPaid={isAdmin ? handleMarkPaid : undefined}
-                onMarkUnpaid={isAdmin ? handleMarkUnpaid : undefined}
-                onDelete={isAdmin ? handleDelete : undefined}
-                onEdit={isAdmin ? setEditingBill : undefined}
+                onMarkPaid={canEdit ? handleMarkPaid : undefined}
+                onMarkUnpaid={canEdit ? handleMarkUnpaid : undefined}
+                onDelete={canEdit ? handleDelete : undefined}
+                onEdit={canEdit ? setEditingBill : undefined}
                 onOpen={setDetailBill}
                 emptyState={
                   paidFrom !== 'all' ? (
@@ -438,11 +439,9 @@ const Bills = () => {
                         Add your first one so someone else knows what's running.
                       </p>
                       <EditOnly>
-                      <AdminOnly>
                       <Button onClick={handleTryAddBill} className="gap-1.5">
                         <Plus className="w-4 h-4" /> Add bill
                       </Button>
-                      </AdminOnly>
                       </EditOnly>
                     </div>
                   )
@@ -451,7 +450,8 @@ const Bills = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        </ScopeGate>
+        </>
+        )}
       </main>
 
       <AnimatePresence>
@@ -498,14 +498,12 @@ const Bills = () => {
 
       {/* FAB with menu */}
       <EditOnly>
-      <AdminOnly>
       <FabMenu
         choices={[
           { label: 'Scan', icon: <Scan className="w-5 h-5" />, onClick: handleTryScanBill },
           { label: 'Add manually', icon: <Plus className="w-5 h-5" />, onClick: handleTryAddBill },
         ]}
       />
-      </AdminOnly>
       </EditOnly>
 
       <ConfirmDeleteDialog
