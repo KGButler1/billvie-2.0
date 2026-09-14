@@ -217,6 +217,24 @@ export class BillService {
     return updatedBill;
   }
 
+  static async generateNextOccurrence(bill: Bill): Promise<Bill | undefined> {
+    if (!bill.isRecurring || !bill.dueDate || !bill.recurringInterval || bill.recurringInterval === 'one_time') {
+      return undefined;
+    }
+    const nextDueDate = advanceToFuture(calculateNextDueDate(bill.dueDate, bill.recurringInterval), bill.recurringInterval);
+    return this.addBill({
+      name: bill.name,
+      amount: bill.amount,
+      dueDate: nextDueDate,
+      isRecurring: bill.isRecurring,
+      recurringInterval: bill.recurringInterval,
+      paymentMethod: bill.paymentMethod,
+      category: bill.category,
+      notes: bill.notes,
+      isAutoDebited: bill.isAutoDebited,
+    });
+  }
+
   static async markAsPaid(id: string, createNextRecurrence = false): Promise<Bill | undefined> {
     const bill = this.getBillById(id);
     if (!bill) return undefined;
@@ -238,18 +256,7 @@ export class BillService {
     });
 
     if (createNextRecurrence && bill.status !== 'paid' && bill.isRecurring && bill.dueDate && bill.recurringInterval && bill.recurringInterval !== 'one_time') {
-      const nextDueDate = advanceToFuture(calculateNextDueDate(bill.dueDate, bill.recurringInterval), bill.recurringInterval);
-      await this.addBill({
-        name: bill.name,
-        amount: bill.amount,
-        dueDate: nextDueDate,
-        isRecurring: bill.isRecurring,
-        recurringInterval: bill.recurringInterval,
-        paymentMethod: bill.paymentMethod,
-        category: bill.category,
-        notes: bill.notes,
-        isAutoDebited: bill.isAutoDebited,
-      });
+      await this.generateNextOccurrence(bill);
     }
 
     return updatedBill;
@@ -415,5 +422,23 @@ export class BillService {
 
   static getBillCount(): number {
     return this.getAllBills().filter((b) => !b.isSample).length;
+  }
+
+  static getBackfillCandidates(): Bill[] {
+    const all = this.getAllBills();
+    const paidRecurring = all.filter((b) => b.status === 'paid' && b.isRecurring && b.dueDate && b.recurringInterval && b.recurringInterval !== 'one_time');
+    return paidRecurring.filter((b) => {
+      const hasSuccessor = all.some(
+        (other) =>
+          other.id !== b.id &&
+          other.name === b.name &&
+          other.status !== 'paid' &&
+          !other.deletedAt &&
+          other.dueDate &&
+          b.dueDate &&
+          new Date(other.dueDate) > new Date(b.dueDate)
+      );
+      return !hasSuccessor;
+    });
   }
 }
