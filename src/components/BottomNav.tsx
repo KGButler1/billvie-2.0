@@ -4,6 +4,8 @@ import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Buildi
 import { openSearch } from '@/components/search/GlobalSearch';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { AccessScope } from '@/types/people';
 import UpgradeModal from '@/components/UpgradeModal';
 
 import { cn } from '@/lib/utils';
@@ -23,24 +25,50 @@ import { isDemoModeActive } from '@/demo/demoFlag';
 
 const demoPrefix = (path: string) => (isDemoModeActive() ? `/demo${path}` : path);
 
-const mobileNav = [
+interface NavItem {
+  path: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  scope?: AccessScope;
+  altScope?: AccessScope;
+}
+
+const mobileNavItems: NavItem[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/documents', icon: FolderOpen, label: 'Documents' },
+  { path: '/documents', icon: FolderOpen, label: 'Documents', scope: 'documents', altScope: 'tax_documents' },
   { path: '/people', icon: Users, label: 'People' },
 ];
 
-const desktopNav = [
+const desktopNavItems: NavItem[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/bills', icon: Receipt, label: 'Bills' },
-  { path: '/documents', icon: FolderOpen, label: 'Documents' },
-  { path: '/financial', icon: Building, label: 'Snapshot' },
+  { path: '/bills', icon: Receipt, label: 'Bills', scope: 'bills' },
+  { path: '/documents', icon: FolderOpen, label: 'Documents', scope: 'documents', altScope: 'tax_documents' },
+  { path: '/financial', icon: Building, label: 'Snapshot', scope: 'financial_info' },
   { path: '/people', icon: Users, label: 'People' },
 ];
+
+const useFilteredNav = (items: NavItem[]) => {
+  const { isAdmin, canSee, accessLoading } = useViewerAccess();
+
+  return items.filter((item) => {
+    if (!item.scope) return true;
+    if (accessLoading) return true;
+    if (isAdmin) return true;
+    if (canSee(item.scope)) return true;
+    if (item.altScope && canSee(item.altScope)) return true;
+    return false;
+  });
+};
 
 const AccountDropdownContent = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { profile } = useProfile();
+  const { isAdmin, canSee, accessLoading } = useViewerAccess();
+
+  const canSeeEvents = accessLoading || isAdmin || canSee('events');
+  const canSeeTaxDocs = accessLoading || isAdmin || canSee('tax_documents');
+  const canSeeSnapshot = accessLoading || isAdmin || canSee('financial_info');
 
   return (
     <>
@@ -59,15 +87,21 @@ const AccountDropdownContent = () => {
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuLabel>Records &amp; Tools</DropdownMenuLabel>
-      <DropdownMenuItem onClick={() => navigate('/events')}>
-        <Calendar className="w-4 h-4 mr-2" /> Events
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => navigate('/tax-documents')}>
-        <Receipt className="w-4 h-4 mr-2" /> Tax Documents
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => navigate('/financial')}>
-        <Building className="w-4 h-4 mr-2" /> Financial Snapshot
-      </DropdownMenuItem>
+      {canSeeEvents && (
+        <DropdownMenuItem onClick={() => navigate('/events')}>
+          <Calendar className="w-4 h-4 mr-2" /> Events
+        </DropdownMenuItem>
+      )}
+      {canSeeTaxDocs && (
+        <DropdownMenuItem onClick={() => navigate('/tax-documents')}>
+          <Receipt className="w-4 h-4 mr-2" /> Tax Documents
+        </DropdownMenuItem>
+      )}
+      {canSeeSnapshot && (
+        <DropdownMenuItem onClick={() => navigate('/financial')}>
+          <Building className="w-4 h-4 mr-2" /> Financial Snapshot
+        </DropdownMenuItem>
+      )}
       <DropdownMenuSeparator />
       <DropdownMenuLabel>App</DropdownMenuLabel>
       <DropdownMenuItem onClick={() => navigate('/settings')}>
@@ -108,6 +142,9 @@ const BottomNav = () => {
 
   const isPaid = profile?.isPaid ?? false;
 
+  const filteredDesktopNav = useFilteredNav(desktopNavItems);
+  const filteredMobileNav = useFilteredNav(mobileNavItems);
+
   const handleNavClick = (path: string) => {
     if (path === '/financial' && !isPaid) {
       setShowUpgradeModal(true);
@@ -129,7 +166,7 @@ const BottomNav = () => {
           </button>
 
           <nav className="flex items-center gap-1">
-            {desktopNav.map(({ path, icon: Icon, label }) => {
+            {filteredDesktopNav.map(({ path, icon: Icon, label }) => {
               const active = isActive(path);
               const locked = path === '/financial' && !isPaid;
               return (
@@ -195,7 +232,7 @@ const BottomNav = () => {
 
       {/* Mobile bottom nav */}
       <nav className="bottom-nav lg:hidden">
-        {mobileNav.map(({ path, icon: Icon, label }) => {
+        {filteredMobileNav.map(({ path, icon: Icon, label }) => {
           const active = isActive(path);
           return (
             <Link
