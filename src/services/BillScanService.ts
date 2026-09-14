@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, getValidSession, SessionExpiredError } from '@/lib/supabase';
 
 export interface ScanQuota {
   used: number;
@@ -15,8 +15,12 @@ export interface TriggerScanError {
 }
 
 async function getAuthHeader(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session ? `Bearer ${session.access_token}` : null;
+  try {
+    const session = await getValidSession();
+    return session ? `Bearer ${session.access_token}` : null;
+  } catch {
+    return null;
+  }
 }
 
 function getFunctionUrl(slug: string): string {
@@ -44,7 +48,12 @@ export const BillScanService = {
   },
 
   async uploadScanFile(file: File): Promise<{ documentId: string; documentUrl: string } | null> {
-    const { data: { session } } = await supabase.auth.getSession();
+    let session;
+    try {
+      session = await getValidSession();
+    } catch {
+      return null;
+    }
     if (!session) return null;
 
     const userId = session.user.id;

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, getValidSession } from '@/lib/supabase';
 
 const STORAGE_KEY = 'billvie:current_household_id';
 
@@ -35,7 +35,7 @@ export async function fetchMyHouseholds(): Promise<HouseholdMembership[]> {
 export async function getHouseholdId(): Promise<string> {
   if (cachedHouseholdId) return cachedHouseholdId;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = await getValidSession();
   if (!session?.user?.id) throw new Error('Not authenticated');
 
   const households = await fetchMyHouseholds();

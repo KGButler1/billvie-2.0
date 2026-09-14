@@ -14,3 +14,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
+
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('Your session has expired — please sign in again.');
+    this.name = 'SessionExpiredError';
+  }
+}
+
+export async function getValidSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const isExpiring = !session || (session.expires_at !== undefined &&
+    session.expires_at * 1000 < Date.now() + 60_000);
+  if (isExpiring) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    if (error || !refreshed.session) {
+      await supabase.auth.signOut();
+      throw new SessionExpiredError();
+    }
+    return refreshed.session;
+  }
+  return session;
+}

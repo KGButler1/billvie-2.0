@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import FileCapture, { CapturedFile } from '@/components/shared/FileCapture';
 import { BillScanService } from '@/services/BillScanService';
+import { SessionExpiredError } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
 
 interface BillScanModalProps {
@@ -80,6 +81,9 @@ const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
           ));
         } else if ('error' in result) {
           if (uploaded) await BillScanService.deleteScanDocument(uploaded.documentId);
+          if (result.error === 'Not authenticated') {
+            setError('Your session has expired — please sign in again.');
+          }
           setFiles((prev) => prev.map((f) =>
             f.id === staged.id ? { ...f, status: 'error' as const } : f
           ));
@@ -88,8 +92,11 @@ const BillScanModal = ({ onClose, onUpgradeClick }: BillScanModalProps) => {
             f.id === staged.id ? { ...f, status: 'done' as const } : f
           ));
         }
-      } catch {
+      } catch (err) {
         if (uploaded) await BillScanService.deleteScanDocument(uploaded.documentId);
+        if (err instanceof SessionExpiredError) {
+          setError(err.message);
+        }
         setFiles((prev) => prev.map((f) =>
           f.id === staged.id ? { ...f, status: 'error' as const } : f
         ));

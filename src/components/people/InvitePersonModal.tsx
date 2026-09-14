@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { PersonRole, TrustedPerson, ACCESS_SCOPES, ACCESS_SCOPE_LABELS, AccessScope } from '@/types/people';
 import { PeopleService } from '@/services/PeopleService';
 import { EntitlementService } from '@/services/EntitlementService';
+import { SessionExpiredError } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import FieldError from '@/components/ui/field-error';
@@ -96,8 +97,12 @@ const InvitePersonModal = ({
       }
       onInvited(result.person);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not send the invite.';
-      toast({ description: msg, variant: 'destructive' });
+      if (err instanceof SessionExpiredError) {
+        toast({ description: err.message, variant: 'destructive' });
+      } else {
+        const msg = err instanceof Error ? err.message : 'Could not send the invite.';
+        toast({ description: msg, variant: 'destructive' });
+      }
     } finally {
       setSending(false);
     }

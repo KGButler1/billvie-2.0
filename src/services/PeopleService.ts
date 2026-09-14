@@ -2,7 +2,7 @@ import { TrustedPerson, PersonRole, AccessScope, TrustedPersonStatus } from '@/t
 import { AccessService } from './AccessService';
 import { KeyPeopleService } from './KeyPeopleService';
 import { KEY_PERSON_RELATIONSHIP_LABELS, KeyPersonRelationship } from '@/types/keyPerson';
-import { supabase } from '@/lib/supabase';
+import { supabase, getValidSession } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { DEMO_PEOPLE } from '@/demo/demoData';
@@ -115,8 +115,7 @@ export const PeopleService = {
     canEdit?: boolean;
   }): Promise<{ person: TrustedPerson; warning?: string }> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
+    const session = await getValidSession();
 
     const response = await fetch(`${supabaseUrl}/functions/v1/invite-household-member`, {
       method: 'POST',
