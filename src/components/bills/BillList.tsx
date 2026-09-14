@@ -16,7 +16,7 @@ const needsCardAttention = (bill: Bill): boolean =>
   bill.status !== 'paid' &&
   !!cardExpiryFlag(PaymentCardService.getById(bill.paymentCardId));
 
-type SectionKey = 'overdue' | 'upcoming' | 'paid';
+type SectionKey = 'overdue' | 'upcoming' | 'later' | 'paid';
 
 interface BillSectionProps {
   title: string;
@@ -92,6 +92,7 @@ export const BillSection = ({
 const DEFAULT_TITLES: Record<SectionKey, string> = {
   overdue: 'Needs Attention',
   upcoming: 'Coming Up',
+  later: 'Later',
   paid: 'Handled',
 };
 
@@ -161,6 +162,7 @@ const BillList = ({
       items: bills.filter(b => b.status === 'overdue' || needsCardAttention(b)),
     },
     { key: 'upcoming', items: bills.filter(b => isWithinComingUpWindow(b, windowDays) && !needsCardAttention(b)) },
+    { key: 'later', items: bills.filter(b => b.status === 'pending' && !isWithinComingUpWindow(b, windowDays) && !needsCardAttention(b)) },
     { key: 'paid', items: bills.filter(b => b.status === 'paid'), collapsed: true },
   ];
 

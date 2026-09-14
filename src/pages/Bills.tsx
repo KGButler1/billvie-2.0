@@ -127,7 +127,11 @@ const Bills = () => {
 
   const visibleBills = useMemo(() => {
     let list = bills;
-    if (status !== 'all') list = list.filter(b => b.status === status);
+    if (status === 'pending') {
+      list = list.filter(b => isWithinComingUpWindow(b, windowDays));
+    } else if (status !== 'all') {
+      list = list.filter(b => b.status === status);
+    }
     if (category !== 'all') list = list.filter(b => b.category === category);
     if (paidFrom !== 'all') {
       if (paidFrom === 'none') {
