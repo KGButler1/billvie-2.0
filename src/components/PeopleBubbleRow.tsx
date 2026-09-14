@@ -6,6 +6,8 @@ import { PeopleService } from '@/services/PeopleService';
 import { getAccessState } from '@/utils/accessState';
 import { isDemoModeActive } from '@/demo/demoFlag';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { ACCESS_SCOPE_LABELS } from '@/types/people';
 
 const initials = (name: string) =>
   name
@@ -46,6 +48,20 @@ const PeopleBubbleRow = () => {
 
   const allPeople = [...activePeople, ...invitedPeople];
 
+  const getTooltipContent = (person: typeof allPeople[number]) => {
+    const firstName = person.name.split(' ')[0];
+    if (person.status === 'invited') {
+      return `Invited — waiting for ${firstName} to accept`;
+    }
+    const scopes = AccessService.getGrantsForPerson(person.id)
+      .filter((g) => !g.revokedAt)
+      .map((g) => ACCESS_SCOPE_LABELS[g.scope]);
+    if (scopes.length > 0) {
+      return `${firstName} can see: ${scopes.join(', ')}`;
+    }
+    return `${firstName} has access`;
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 h-full">
       <button
@@ -59,31 +75,39 @@ const PeopleBubbleRow = () => {
           View all ({allPeople.length})
         </span>
       </button>
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {allPeople.map((person) => {
-          const isPending = person.status === 'invited';
-          return (
-            <button
-              key={person.id}
-              onClick={() => navigate(demoPrefix('/people'))}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
-            >
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                  isPending
-                    ? 'bg-amber-500/10 text-amber-700 ring-2 ring-amber-500/40 ring-offset-2 ring-offset-background'
-                    : 'bg-primary/10 text-primary hover:bg-primary/20'
-                }`}
-              >
-                {initials(person.name)}
-              </div>
-              <span className="text-[10px] text-muted-foreground max-w-[3.5rem] truncate">
-                {person.name.split(' ')[0]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <TooltipProvider delayDuration={200}>
+        <div className="flex gap-3 overflow-x-auto pb-1 pt-2">
+          {allPeople.map((person) => {
+            const isPending = person.status === 'invited';
+            return (
+              <Tooltip key={person.id}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => navigate(demoPrefix('/people'))}
+                    className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-colors ring-2 ring-offset-2 ring-offset-background ${
+                        isPending
+                          ? 'bg-amber-500/10 text-amber-700 ring-amber-500/40'
+                          : 'bg-primary/10 text-primary hover:bg-primary/20 ring-transparent'
+                      }`}
+                    >
+                      {initials(person.name)}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground max-w-[3.5rem] truncate">
+                      {person.name.split(' ')[0]}
+                    </span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {getTooltipContent(person)}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </TooltipProvider>
     </div>
   );
 };
