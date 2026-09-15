@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Filter } from 'lucide-react';
+import { ChevronDown, Check, Filter, Loader2 } from 'lucide-react';
 import { CategorySummary, EXPENSE_UNIT_LABELS } from '@/types/event';
+import { EventExpenseService } from '@/services/EventExpenseService';
 import ExpenseItem from './ExpenseItem';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/utils/currency';
+import { toast } from 'sonner';
 
 interface CategoryAccordionProps {
   summary: CategorySummary;
@@ -22,6 +24,7 @@ const CategoryAccordion = ({
 }: CategoryAccordionProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'cancellable'>('all');
+  const [markingAllPaid, setMarkingAllPaid] = useState(false);
 
   const filteredExpenses = summary.expenses.filter(expense => {
     if (filter === 'unpaid') return !expense.isPaid;
@@ -105,12 +108,23 @@ const CategoryAccordion = ({
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => {
-                    // Mark all as paid - handled in parent
-                    onExpenseUpdate();
+                  disabled={markingAllPaid}
+                  onClick={async () => {
+                    setMarkingAllPaid(true);
+                    try {
+                      await EventExpenseService.markCategoryPaid(eventId, summary.name);
+                      onExpenseUpdate();
+                      toast.success(`Marked all ${summary.name} expenses as paid`);
+                    } catch {
+                      toast.error('Could not mark all as paid — try again');
+                    } finally {
+                      setMarkingAllPaid(false);
+                    }
                   }}
                 >
-                  <Check className="w-3 h-3 mr-1" />
+                  {markingAllPaid
+                    ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    : <Check className="w-3 h-3 mr-1" />}
                   Mark All Paid
                 </Button>
               )}

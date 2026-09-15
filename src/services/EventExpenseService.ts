@@ -91,14 +91,27 @@ export class EventExpenseService {
     const event = EventService.getEventById(eventId);
     if (event) {
       event.expenses.push({
-        id: newExpense.id,
+        id: data.id,
         eventId,
-        name: newExpense.name,
-        amount: newExpense.amount,
-        category: newExpense.category,
-        isPaid: newExpense.isPaid,
-        paidDate: newExpense.paidDate,
-        createdAt: newExpense.createdAt,
+        name: data.name,
+        amount: Number(data.amount),
+        category: data.category,
+        isPaid: data.is_paid,
+        paidDate: data.paid_date || undefined,
+        createdAt: data.created_at,
+        description: data.description || undefined,
+        vendor: data.vendor || undefined,
+        quantity: data.quantity_value != null && data.quantity_unit != null
+          ? { value: Number(data.quantity_value), unit: data.quantity_unit as ExpenseUnit }
+          : undefined,
+        date: data.date || undefined,
+        paymentMethod: data.payment_method || undefined,
+        paymentCardId: data.payment_card_id || undefined,
+        bankAccountId: data.bank_account_id || undefined,
+        isCancellable: data.is_cancellable || 'tbd',
+        cancellationNotes: data.cancellation_notes || undefined,
+        notes: data.notes || undefined,
+        updatedAt: data.updated_at || data.created_at,
       });
     }
 
@@ -113,23 +126,23 @@ export class EventExpenseService {
   ): Promise<EventExpenseExtended | undefined> {
     const row: Record<string, unknown> = { updated_at: now() };
     if (updates.name !== undefined) row.name = updates.name;
-    if (updates.description !== undefined) row.description = updates.description || null;
-    if (updates.vendor !== undefined) row.vendor = updates.vendor || null;
+    if (updates.description !== undefined) row.description = updates.description ?? null;
+    if (updates.vendor !== undefined) row.vendor = updates.vendor ?? null;
     if (updates.amount !== undefined) row.amount = updates.amount;
     if (updates.quantity !== undefined) {
       row.quantity_value = updates.quantity?.value ?? null;
       row.quantity_unit = updates.quantity?.unit ?? null;
     }
     if (updates.category !== undefined) row.category = updates.category;
-    if (updates.date !== undefined) row.date = updates.date || null;
-    if (updates.paymentMethod !== undefined) row.payment_method = updates.paymentMethod || null;
-    if (updates.paymentCardId !== undefined) row.payment_card_id = updates.paymentCardId || null;
-    if (updates.bankAccountId !== undefined) row.bank_account_id = updates.bankAccountId || null;
+    if (updates.date !== undefined) row.date = updates.date ?? null;
+    if (updates.paymentMethod !== undefined) row.payment_method = updates.paymentMethod ?? null;
+    if (updates.paymentCardId !== undefined) row.payment_card_id = updates.paymentCardId ?? null;
+    if (updates.bankAccountId !== undefined) row.bank_account_id = updates.bankAccountId ?? null;
     if (updates.isPaid !== undefined) row.is_paid = updates.isPaid;
-    if (updates.paidDate !== undefined) row.paid_date = updates.paidDate || null;
+    if (updates.paidDate !== undefined) row.paid_date = updates.paidDate ?? null;
     if (updates.isCancellable !== undefined) row.is_cancellable = updates.isCancellable;
-    if (updates.cancellationNotes !== undefined) row.cancellation_notes = updates.cancellationNotes || null;
-    if (updates.notes !== undefined) row.notes = updates.notes || null;
+    if (updates.cancellationNotes !== undefined) row.cancellation_notes = updates.cancellationNotes ?? null;
+    if (updates.notes !== undefined) row.notes = updates.notes ?? null;
 
     const { data, error } = await supabase
       .from('event_expenses')
@@ -153,6 +166,19 @@ export class EventExpenseService {
           isPaid: data.is_paid,
           paidDate: data.paid_date || undefined,
           createdAt: data.created_at,
+          description: data.description || undefined,
+          vendor: data.vendor || undefined,
+          quantity: data.quantity_value != null && data.quantity_unit != null
+            ? { value: Number(data.quantity_value), unit: data.quantity_unit as ExpenseUnit }
+            : undefined,
+          date: data.date || undefined,
+          paymentMethod: data.payment_method || undefined,
+          paymentCardId: data.payment_card_id || undefined,
+          bankAccountId: data.bank_account_id || undefined,
+          isCancellable: data.is_cancellable || 'tbd',
+          cancellationNotes: data.cancellation_notes || undefined,
+          notes: data.notes || undefined,
+          updatedAt: data.updated_at || data.created_at,
         };
       }
     }
@@ -166,6 +192,19 @@ export class EventExpenseService {
       isPaid: data.is_paid,
       paidDate: data.paid_date || undefined,
       createdAt: data.created_at,
+      description: data.description || undefined,
+      vendor: data.vendor || undefined,
+      quantity: data.quantity_value != null && data.quantity_unit != null
+        ? { value: Number(data.quantity_value), unit: data.quantity_unit as ExpenseUnit }
+        : undefined,
+      date: data.date || undefined,
+      paymentMethod: data.payment_method || undefined,
+      paymentCardId: data.payment_card_id || undefined,
+      bankAccountId: data.bank_account_id || undefined,
+      isCancellable: data.is_cancellable || 'tbd',
+      cancellationNotes: data.cancellation_notes || undefined,
+      notes: data.notes || undefined,
+      updatedAt: data.updated_at || data.created_at,
     });
   }
 
@@ -186,7 +225,7 @@ export class EventExpenseService {
   static async markAsUnpaid(eventId: string, expenseId: string): Promise<EventExpenseExtended | undefined> {
     return this.updateExpense(eventId, expenseId, {
       isPaid: false,
-      paidDate: undefined,
+      paidDate: null,
     });
   }
 

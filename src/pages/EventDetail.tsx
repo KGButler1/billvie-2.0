@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Users } from 'lucide-react';
-import { Event } from '@/types/bill';
+import { Plus, Users, ArrowLeft } from 'lucide-react';
+import { Event, EVENT_TYPE_LABELS } from '@/types/bill';
 import { EventService } from '@/services/EventService';
 import { EventExpenseService } from '@/services/EventExpenseService';
 import { useProfile } from '@/hooks/useProfile';
@@ -68,13 +68,38 @@ const EventDetail = () => {
     <div className="min-h-screen bg-background pb-24">
       <EventHeader event={event} onUpdate={loadEvent} />
 
-      <main className="container mx-auto px-4 pt-20">
+      {/* Desktop back-nav — matches RecentlyDeleted pattern */}
+      <div className="hidden lg:flex items-center gap-3 container mx-auto px-4 pt-8 mb-2">
+        <h1 className="text-2xl font-bold">{event.name}</h1>
+        <button
+          onClick={() => navigate('/events')}
+          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Events
+        </button>
+        <span className="text-sm text-muted-foreground">· {EVENT_TYPE_LABELS[event.type]}</span>
+      </div>
+
+      <main className="container mx-auto px-4 pt-20 lg:pt-4">
         <ScopeGate scope="events">
         <p className="text-sm text-muted-foreground mb-4">
           What's committed for this, and what your household would need to know.
         </p>
-        {/* Share Button */}
-        <div className="flex justify-end mb-4">
+        {/* Share + Add Expense buttons */}
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <EditOnly>
+          <Button
+            onClick={() => {
+              setEditingExpenseId(null);
+              setIsAddingExpense(true);
+            }}
+            className="gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Add Expense
+          </Button>
+          </EditOnly>
           <Button
             variant="outline"
             size="sm"

@@ -64,6 +64,19 @@ export interface EventExpense {
   paidDate?: string;
   isPaid: boolean;
   createdAt: string;
+  // Extended fields — populated from the DB row so the in-memory cache
+  // carries the full shape and toExtendedExpense doesn't lose data.
+  description?: string;
+  vendor?: string;
+  quantity?: { value: number; unit: string };
+  date?: string;
+  paymentMethod?: string;
+  paymentCardId?: string;
+  bankAccountId?: string;
+  isCancellable?: string;
+  cancellationNotes?: string;
+  notes?: string;
+  updatedAt?: string;
 }
 
 export interface Event {

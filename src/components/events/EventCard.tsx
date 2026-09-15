@@ -4,7 +4,7 @@ import { Event, EVENT_TYPE_LABELS } from '@/types/bill';
 import { EventService } from '@/services/EventService';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import EditOnly from '@/components/EditOnly';
 
@@ -23,6 +23,12 @@ const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
   
   const daysUntil = event.startDate 
     ? differenceInDays(parseISO(event.startDate), new Date())
+    : null;
+
+  const dateLabel = event.startDate
+    ? daysUntil !== null && daysUntil > 0
+      ? `${daysUntil} days away`
+      : format(parseISO(event.startDate), 'MMM d, yyyy')
     : null;
 
   const statusColors = {
@@ -54,8 +60,10 @@ const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{EVENT_TYPE_LABELS[event.type]}</span>
-            {daysUntil !== null && daysUntil > 0 && (
-              <span className="text-primary font-medium">• {daysUntil} days away</span>
+            {dateLabel && (
+              <span className={cn(daysUntil !== null && daysUntil > 0 && 'text-primary font-medium')}>
+                • {dateLabel}
+              </span>
             )}
           </div>
         </div>
@@ -64,25 +72,31 @@ const EventCard = ({ event, index, onDelete, onClick }: EventCardProps) => {
         </span>
       </div>
 
-      {/* Budget Progress */}
+      {/* Total committed / Paid so far */}
       <div className="space-y-2 mb-3">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">
-            Spent: <span className={cn('font-medium', isOverBudget ? 'text-destructive' : 'text-foreground')}>
+            Total committed: <span className="font-medium text-foreground">
+              ${totalPlanned.toLocaleString()}
+            </span>
+          </span>
+          <span className="text-muted-foreground">
+            Paid so far: <span className={cn('font-medium', totalSpent > 0 ? 'text-foreground' : 'text-muted-foreground')}>
               ${totalSpent.toLocaleString()}
             </span>
           </span>
-          {event.budget && (
-            <span className="text-muted-foreground">
-              Budget: <span className="font-medium text-foreground">${event.budget.toLocaleString()}</span>
-            </span>
-          )}
         </div>
         {event.budget && (
-          <Progress 
-            value={Math.min(progress, 100)} 
-            className={cn('h-2', isOverBudget && '[&>div]:bg-destructive')}
-          />
+          <>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Budget: ${event.budget.toLocaleString()}</span>
+              {isOverBudget && <span className="text-destructive font-medium">Over budget</span>}
+            </div>
+            <Progress 
+              value={Math.min(progress, 100)} 
+              className={cn('h-2', isOverBudget && '[&>div]:bg-destructive')}
+            />
+          </>
         )}
       </div>
 
