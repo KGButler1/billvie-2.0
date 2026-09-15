@@ -62,7 +62,7 @@ const ProgressRing = ({ covered, total }: { covered: number; total: number }) =>
 const HouseholdSetupWidget = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
-  const { checks, covered, total } = getReadinessSummary();
+  const { checks, covered, total, sharedZeroCount } = getReadinessSummary();
   const complete = covered === total;
 
   const dismissKey = profile?.householdId ? `${DISMISS_PREFIX}${profile.householdId}` : null;
@@ -102,8 +102,14 @@ const HouseholdSetupWidget = () => {
             Household setup
           </Link>
           {complete ? (
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Check className="w-3 h-3 text-primary" /> Household set up
+            <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+              <Check className="w-3 h-3 text-primary shrink-0" />
+              <span className="truncate">
+                Household set up
+                {sharedZeroCount > 0
+                  ? ` \u00b7 ${sharedZeroCount} area${sharedZeroCount === 1 ? '' : 's'} no one else can see`
+                  : ' \u00b7 Shared with your household'}
+              </span>
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -145,11 +151,19 @@ const HouseholdSetupWidget = () => {
                 {checks.map((check) => {
                   const Icon = icons[check.id] || Receipt;
                   const isPending = check.id === 'access' && check.pending;
+                  const isCovered = check.covered;
+                  const isSharedZero = isCovered && check.shareScope && (check.sharedWithCount ?? 0) === 0;
+                  const shareCount = check.sharedWithCount ?? 0;
                   return (
                     <button
                       key={check.id}
                       onClick={() => {
-                        const target = check.covered ? check.viewPath : isPending ? '/people' : check.actionPath;
+                        if (isSharedZero) {
+                          const target = `/people?scope=${check.shareScope}`;
+                          navigate(isDemoModeActive() ? `/demo${target}` : target);
+                          return;
+                        }
+                        const target = isCovered ? check.viewPath : isPending ? '/people' : check.actionPath;
                         navigate(isDemoModeActive() ? `/demo${target}` : target);
                       }}
                       className="flex flex-col items-center gap-1.5 text-center group"
@@ -157,8 +171,10 @@ const HouseholdSetupWidget = () => {
                       <span className="relative">
                         <span
                           className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            check.covered
-                              ? 'bg-primary/10 text-primary'
+                            isCovered
+                              ? isSharedZero
+                                ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30'
+                                : 'bg-primary/10 text-primary'
                               : isPending
                                 ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30'
                                 : 'border border-dashed border-border text-muted-foreground group-hover:border-primary/50'
@@ -172,14 +188,16 @@ const HouseholdSetupWidget = () => {
                         </span>
                         <span
                           className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ${
-                            check.covered
-                              ? 'bg-primary text-primary-foreground'
+                            isCovered
+                              ? isSharedZero
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-primary text-primary-foreground'
                               : isPending
                                 ? 'bg-amber-500 text-white'
                                 : 'bg-muted text-muted-foreground'
                           }`}
                         >
-                          {check.covered ? (
+                          {isCovered ? (
                             <Check className="w-2.5 h-2.5" />
                           ) : isPending ? (
                             <Clock className="w-2.5 h-2.5" />
@@ -190,11 +208,24 @@ const HouseholdSetupWidget = () => {
                       </span>
                       <span
                         className={`text-[10px] leading-tight ${
-                          check.covered ? 'text-foreground' : 'text-muted-foreground'
+                          isCovered ? 'text-foreground' : 'text-muted-foreground'
                         }`}
                       >
                         {check.label}
                       </span>
+                      {isCovered && check.shareScope && (
+                        <span
+                          className={`text-[9px] leading-tight ${
+                            shareCount > 0
+                              ? 'text-muted-foreground'
+                              : 'text-amber-600'
+                          }`}
+                        >
+                          {shareCount > 0
+                            ? `${shareCount} can see`
+                            : 'No one else can see'}
+                        </span>
+                      )}
                     </button>
                   );
                 })}

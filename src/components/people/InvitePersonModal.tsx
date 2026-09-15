@@ -48,16 +48,26 @@ const InvitePersonModal = ({
   const [accessChoice, setAccessChoice] = useState<AccessLevelChoice>('trusted_person');
   const [selectedScopes, setSelectedScopes] = useState<Set<AccessScope>>(new Set());
   const [canEdit, setCanEdit] = useState(false);
+  const [scopesTouched, setScopesTouched] = useState(false);
 
   const isProfessional = isProfessionalRole(role);
   const allowedRoles: PersonRole[] = defaultRole === 'household' ? ['household'] : ['advisor', 'accountant'];
 
+  const defaultScopesForRole = (r: PersonRole): AccessScope[] => {
+    if (r === 'household') return ['key_people', 'bills'];
+    if (r === 'accountant') return ['tax_documents'];
+    if (r === 'advisor') return ['financial_info'];
+    return [];
+  };
+
   useEffect(() => {
     if (isProfessional) {
-      setSelectedScopes(new Set<AccessScope>(['tax_documents']));
       setCanEdit(false);
     }
-  }, [isProfessional]);
+    if (!scopesTouched) {
+      setSelectedScopes(new Set<AccessScope>(defaultScopesForRole(role)));
+    }
+  }, [role, isProfessional, scopesTouched]);
   const [blockedReason, setBlockedReason] = useState<string | undefined>();
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -80,6 +90,7 @@ const InvitePersonModal = ({
   };
 
   const toggleScope = (scope: AccessScope) => {
+    setScopesTouched(true);
     setSelectedScopes((prev) => {
       const next = new Set(prev);
       if (next.has(scope)) next.delete(scope);
@@ -283,6 +294,11 @@ const InvitePersonModal = ({
                       </label>
                     ))}
                   </div>
+                  {role === 'household' && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      We've suggested the basics. You can change this any time from People.
+                    </p>
+                  )}
                 </div>
                 {showCanEditToggle && (
                   <div className="pt-1">
