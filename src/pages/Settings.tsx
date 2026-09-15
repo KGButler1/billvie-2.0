@@ -381,10 +381,13 @@ const Settings = () => {
             {/* Hidden reminders */}
             {hiddenReminders.length > 0 && (
               <div className="border-t border-border p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-1">
                   <Eye className="w-4 h-4 text-muted-foreground" />
                   <p className="text-sm font-medium">Hidden reminders</p>
                 </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  These reminders were dismissed and won't reappear until you show them again.
+                </p>
                 <div className="space-y-2">
                   {hiddenReminders.map((d) => {
                     const key = `${d.ruleKey}:${d.entityId ?? ''}`;

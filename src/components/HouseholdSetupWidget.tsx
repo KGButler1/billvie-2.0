@@ -209,7 +209,7 @@ const HouseholdSetupWidget = () => {
                         </span>
                       </span>
                       <span
-                        className={`text-[10px] leading-tight ${
+                        className={`text-xs leading-tight ${
                           isCovered ? 'text-foreground' : 'text-muted-foreground'
                         }`}
                       >
@@ -217,7 +217,7 @@ const HouseholdSetupWidget = () => {
                       </span>
                       {isCovered && check.shareScope && (
                         <span
-                          className={`text-[9px] leading-tight ${
+                          className={`text-xs leading-tight ${
                             shareCount > 0
                               ? 'text-muted-foreground'
                               : 'text-amber-600'

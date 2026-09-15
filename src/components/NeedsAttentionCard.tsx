@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { toast } from 'sonner';
 import { SkeletonRows } from '@/components/ui/skeleton';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 const severityOrder: Record<AttentionSeverity, number> = { critical: 0, warning: 1, info: 2 };
 
@@ -26,14 +27,6 @@ const severityBorder = (severity: AttentionSeverity) => {
   }
 };
 
-const severityLabel = (severity: AttentionSeverity) => {
-  switch (severity) {
-    case 'critical': return 'Critical';
-    case 'warning': return 'Warning';
-    case 'info': return 'Info';
-  }
-};
-
 interface NeedsAttentionCardProps {
   onCriticalSeen?: (hasCritical: boolean) => void;
 }
@@ -49,6 +42,7 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   const [error, setError] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -99,6 +93,19 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
     }
   };
 
+  const handleSnoozeAll = async () => {
+    setBulkLoading(true);
+    try {
+      await AttentionService.snoozeAll(sorted, 30);
+      toast.success(`Snoozed ${sorted.length} reminder${sorted.length === 1 ? '' : 's'} for 30 days`);
+      await loadItems();
+    } catch {
+      toast.error('Could not snooze these reminders. Please try again.');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   if (!isAdmin) return null;
 
   const visibleItems = isPaid
@@ -117,6 +124,7 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   });
 
   const displayItems = showAll ? sorted : sorted.slice(0, 5);
+  const anyActionInProgress = actionLoading !== null || bulkLoading;
 
   if (loading) {
     return (
@@ -165,6 +173,10 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
           {displayItems.map((item, idx) => {
             const actionKey = `${item.ruleKey}:${item.entityId ?? ''}`;
             const isActing = actionLoading === actionKey;
+            const isFreeGap = item.category === 'gap' && !isPaid;
+            const dismissTooltip = isFreeGap
+              ? "Don't remind me about this — restore anytime in Settings"
+              : "Dismiss — won't show again until you restore it in Settings";
             return (
               <motion.div
                 key={`${item.ruleKey}-${item.entityId ?? 'null'}-${idx}`}
@@ -191,33 +203,48 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isPaid && (
                       <>
-                        <button
-                          onClick={() => handleSnooze(item)}
-                          disabled={isActing}
-                          aria-label={`Snooze ${item.title} for 30 days`}
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
-                        >
-                          {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
-                        </button>
-                        <button
-                          onClick={() => handleDismiss(item)}
-                          disabled={isActing}
-                          aria-label={`Dismiss ${item.title}`}
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
-                        >
-                          <X className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => handleSnooze(item)}
+                              disabled={isActing || bulkLoading}
+                              aria-label={`Snooze ${item.title} for 30 days`}
+                              className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                              {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Snooze for 30 days</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => handleDismiss(item)}
+                              disabled={isActing || bulkLoading}
+                              aria-label={`Dismiss ${item.title}`}
+                              className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                              <X className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>{dismissTooltip}</TooltipContent>
+                        </Tooltip>
                       </>
                     )}
-                    {item.category === 'gap' && !isPaid && (
-                      <button
-                        onClick={() => handleDismiss(item)}
-                        disabled={isActing}
-                        aria-label={`Don't remind me about ${item.title}`}
-                        className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
-                      >
-                        {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5 text-muted-foreground" />}
-                      </button>
+                    {isFreeGap && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleDismiss(item)}
+                            disabled={isActing || bulkLoading}
+                            aria-label={`Don't remind me about ${item.title}`}
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                          >
+                            {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5 text-muted-foreground" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{dismissTooltip}</TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </div>
@@ -235,12 +262,24 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
           </button>
         )}
         {showAll && sorted.length > 5 && (
-          <button
-            onClick={() => setShowAll(false)}
-            className="w-full text-sm text-muted-foreground hover:text-foreground py-2"
-          >
-            Show fewer
-          </button>
+          <>
+            <button
+              onClick={() => setShowAll(false)}
+              className="w-full text-sm text-muted-foreground hover:text-foreground py-2"
+            >
+              Show fewer
+            </button>
+            {isPaid && (
+              <button
+                onClick={handleSnoozeAll}
+                disabled={anyActionInProgress}
+                className="w-full text-sm text-muted-foreground hover:text-foreground py-2 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {bulkLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Snooze all for 30 days
+              </button>
+            )}
+          </>
         )}
 
         {hiddenCount > 0 && !isPaid && (

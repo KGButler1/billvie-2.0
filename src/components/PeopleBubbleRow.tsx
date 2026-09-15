@@ -144,7 +144,7 @@ const PeopleBubbleRow = () => {
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-muted-foreground max-w-[3.5rem] truncate">
+                    <span className="text-xs text-muted-foreground max-w-[3.5rem] truncate">
                       {person.name.split(' ')[0]}
                     </span>
                   </button>

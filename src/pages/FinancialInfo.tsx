@@ -131,8 +131,8 @@ const OverviewTab = ({
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Insurance
             <EditOnly>
-            <button onClick={onAddInsurance} className="p-1 rounded-lg hover:bg-muted transition-colors">
-              <Plus className="w-4 h-4" />
+            <button onClick={onAddInsurance} className="p-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
             </button>
             </EditOnly>
           </h2>
@@ -155,8 +155,8 @@ const OverviewTab = ({
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Accounts &amp; Retirement
             <EditOnly>
-            <button onClick={onAddSuper} className="p-1 rounded-lg hover:bg-muted transition-colors">
-              <Plus className="w-4 h-4" />
+            <button onClick={onAddSuper} className="p-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
             </button>
             </EditOnly>
           </h2>
@@ -179,8 +179,8 @@ const OverviewTab = ({
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Income
             <EditOnly>
-            <button onClick={onAddIncome} className="p-1 rounded-lg hover:bg-muted transition-colors">
-              <Plus className="w-4 h-4" />
+            <button onClick={onAddIncome} className="p-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
             </button>
             </EditOnly>
           </h2>
@@ -206,8 +206,8 @@ const OverviewTab = ({
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Debts
             <EditOnly>
-            <button onClick={onAddDebt} className="p-1 rounded-lg hover:bg-muted transition-colors">
-              <Plus className="w-4 h-4" />
+            <button onClick={onAddDebt} className="p-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
             </button>
             </EditOnly>
           </h2>
@@ -235,8 +235,8 @@ const OverviewTab = ({
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
             Other
             <EditOnly>
-            <button onClick={onAddMisc} className="p-1 rounded-lg hover:bg-muted transition-colors">
-              <Plus className="w-4 h-4" />
+            <button onClick={onAddMisc} className="p-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
             </button>
             </EditOnly>
           </h2>
@@ -484,7 +484,6 @@ const FinancialInfo = () => {
                   setShowInsuranceModal(true);
                 }}
                 className="w-full"
-                variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Insurance
@@ -523,7 +522,6 @@ const FinancialInfo = () => {
                   setShowSuperModal(true);
                 }}
                 className="w-full"
-                variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Account
@@ -564,7 +562,6 @@ const FinancialInfo = () => {
                   setShowIncomeModal(true);
                 }}
                 className="w-full"
-                variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Income Source
@@ -607,7 +604,6 @@ const FinancialInfo = () => {
                   setShowDebtModal(true);
                 }}
                 className="w-full"
-                variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Debt or Loan
@@ -646,7 +642,6 @@ const FinancialInfo = () => {
                   setShowMiscModal(true);
                 }}
                 className="w-full"
-                variant="outline"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Info

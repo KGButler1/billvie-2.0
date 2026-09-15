@@ -443,9 +443,8 @@ const People = () => {
                     {isCurrentUserAdmin && entry.scopes.length > 0 && (
                       <div>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          className="px-0"
                           onClick={() => setPreviewOpen(previewOpen === entry.key ? null : entry.key)}
                         >
                           Preview what {firstName(entry.name)} sees
@@ -739,7 +738,7 @@ const People = () => {
                     ))}
                     {isCurrentUserAdmin && (
                       <div className="p-3">
-                        <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'household' })}>
+                        <Button size="sm" onClick={() => setInviteState({ role: 'household' })}>
                           <UserPlus className="w-4 h-4 mr-2" />
                           Invite someone you trust
                         </Button>
@@ -760,7 +759,7 @@ const People = () => {
               text="No advisor or accountant added."
               action={
                 isCurrentUserAdmin ? (
-                  <Button variant="outline" onClick={() => setInviteState({ role: 'advisor' })}>
+                  <Button onClick={() => setInviteState({ role: 'advisor' })}>
                     Add an advisor
                   </Button>
                 ) : undefined
@@ -773,7 +772,7 @@ const People = () => {
               ))}
               {isCurrentUserAdmin && (
                 <div className="p-3">
-                  <Button variant="outline" size="sm" onClick={() => setInviteState({ role: 'advisor' })}>
+                  <Button size="sm" onClick={() => setInviteState({ role: 'advisor' })}>
                     Add an advisor
                   </Button>
                 </div>
@@ -792,7 +791,7 @@ const People = () => {
               text="No one added yet."
               action={
                 isCurrentUserAdmin ? (
-                  <Button variant="outline" onClick={() => navigate('/key-people?add=1')}>
+                  <Button onClick={() => navigate('/key-people?add=1')}>
                     Add a key contact
                   </Button>
                 ) : undefined
@@ -805,7 +804,7 @@ const People = () => {
               ))}
               {isCurrentUserAdmin && (
                 <div className="p-3">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/key-people')}>
+                  <Button size="sm" onClick={() => navigate('/key-people')}>
                     Manage key contacts
                   </Button>
                 </div>

@@ -68,6 +68,22 @@ export const AttentionService = {
     if (error) throw error;
   },
 
+  async snoozeAll(items: AttentionItem[], days: number): Promise<void> {
+    const householdId = await getHouseholdId();
+    const snoozedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    const rows = items.map((item) => ({
+      household_id: householdId,
+      rule_key: item.ruleKey,
+      entity_id: item.entityId,
+      snoozed_until: snoozedUntil,
+      dismissed_at: null,
+    }));
+    const { error } = await supabase
+      .from('attention_dismissals')
+      .upsert(rows, { onConflict: 'household_id,rule_key,entity_id' });
+    if (error) throw error;
+  },
+
   async dismiss(ruleKey: string, entityId: string | null): Promise<void> {
     const householdId = await getHouseholdId();
     const { error } = await supabase
