@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Plus, Check } from 'lucide-react';
 import { PeopleService } from '@/services/PeopleService';
 import { AccessService } from '@/services/AccessService';
+import { ItemFlagService } from '@/services/ItemFlagService';
 import { AccessScope } from '@/types/people';
 import {
   Command,
@@ -55,12 +57,18 @@ export const PersonTagPicker = ({
   open: controlledOpen,
   onOpenChange,
 }: PersonTagPickerProps) => {
+  const navigate = useNavigate();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = onOpenChange ?? setUncontrolledOpen;
 
   const candidates = useMemo(
-    () => PeopleService.getAll().filter((p) => p.status === 'invited' || p.status === 'active'),
+    () =>
+      PeopleService.getAll().filter(
+        (p) =>
+          (p.status === 'invited' || p.status === 'active') &&
+          p.accessLevel !== 'owner'
+      ),
     []
   );
 
@@ -134,6 +142,58 @@ export const PersonTagPicker = ({
       <p className="text-xs text-muted-foreground">
         Point someone to this. It doesn't change who can see it.
       </p>
+    </div>
+  );
+};
+
+interface FlaggedInitialsStackProps {
+  itemType: 'bill' | 'document';
+  itemId: string;
+  max?: number;
+}
+
+export const FlaggedInitialsStack = ({ itemType, itemId, max = 3 }: FlaggedInitialsStackProps) => {
+  const navigate = useNavigate();
+  const flags = ItemFlagService.getForItem(itemType, itemId);
+  if (flags.length === 0) return null;
+
+  const people = flags
+    .map((f) => PeopleService.getById(f.trustedPersonId))
+    .filter((p): p is NonNullable<typeof p> => !!p && p.status !== 'removed');
+
+  if (people.length === 0) return null;
+
+  const visible = people.slice(0, max);
+  const overflow = people.length - max;
+  const scope = itemType === 'bill' ? 'bills' : 'documents';
+
+  return (
+    <div className="flex items-center gap-0.5 flex-shrink-0" aria-label={`Flagged for ${people.map(p => p.name).join(', ')}`}>
+      {visible.map((p) => {
+        const hasAccess = AccessService.canSee(p.id, scope, itemId);
+        return (
+          <span
+            key={p.id}
+            title={hasAccess ? p.name : `${p.name} can't see ${itemType === 'bill' ? 'bills' : 'documents'} yet · Give access`}
+            onClick={(e) => {
+              if (!hasAccess) {
+                e.stopPropagation();
+                navigate('/people');
+              }
+            }}
+            className={`w-6 h-6 rounded-full text-[10px] font-medium flex items-center justify-center flex-shrink-0 border ${
+              hasAccess
+                ? 'bg-primary/15 text-primary border-transparent'
+                : 'bg-muted text-muted-foreground border-dashed border-muted-foreground/40 cursor-pointer'
+            }`}
+          >
+            {initials(p.name)}
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span className="text-xs text-muted-foreground ml-0.5">+{overflow}</span>
+      )}
     </div>
   );
 };

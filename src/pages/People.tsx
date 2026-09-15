@@ -37,6 +37,7 @@ import ShareContentPreview from '@/components/sharing/ShareContentPreview';
 import { cn } from '@/lib/utils';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { DocumentService } from '@/services/DocumentService';
+import { ItemFlagService } from '@/services/ItemFlagService';
 import { KeyPeopleService as KPService } from '@/services/KeyPeopleService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 
@@ -159,7 +160,7 @@ const People = () => {
   }, []);
 
   useEffect(() => {
-    Promise.all([PeopleService.refresh(), KeyPeopleService.refresh(), AccessService.refresh(), ExclusionService.refresh()])
+    Promise.all([PeopleService.refresh(), KeyPeopleService.refresh(), AccessService.refresh(), ExclusionService.refresh(), ItemFlagService.refresh()])
       .then(reload)
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -513,6 +514,44 @@ const People = () => {
                         )}
                       </div>
                     )}
+
+                    {isCurrentUserAdmin && entry.trustedPersonId && (() => {
+                      const counts = ItemFlagService.countForPerson(entry.trustedPersonId);
+                      const total = counts.bills + counts.documents;
+                      if (total === 0) return null;
+                      const hasBillsAccess = entry.scopes.includes('bills');
+                      const hasDocsAccess = entry.scopes.includes('documents');
+                      const notVisible =
+                        (counts.bills > 0 && !hasBillsAccess ? counts.bills : 0) +
+                        (counts.documents > 0 && !hasDocsAccess ? counts.documents : 0);
+                      return (
+                        <div>
+                          <p className="text-sm font-medium mb-1">Flagged for {firstName(entry.name)}</p>
+                          <p className="text-xs">
+                            {counts.bills > 0 && (
+                              <button
+                                className="text-primary hover:underline"
+                                onClick={() => navigate(`/bills?for=${entry.trustedPersonId}`)}
+                              >
+                                {counts.bills} {counts.bills === 1 ? 'bill' : 'bills'}
+                              </button>
+                            )}
+                            {counts.bills > 0 && counts.documents > 0 && ' · '}
+                            {counts.documents > 0 && (
+                              <button
+                                className="text-primary hover:underline"
+                                onClick={() => navigate(`/documents?for=${entry.trustedPersonId}`)}
+                              >
+                                {counts.documents} {counts.documents === 1 ? 'document' : 'documents'}
+                              </button>
+                            )}
+                            {notVisible > 0 && (
+                              <span className="text-muted-foreground"> · {notVisible} not visible yet</span>
+                            )}
+                          </p>
+                        </div>
+                      );
+                    })()}
 
                     {isCurrentUserAdmin && renderExclusionPicker(entry)}
 

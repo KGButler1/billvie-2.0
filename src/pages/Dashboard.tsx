@@ -36,11 +36,13 @@ import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
 import KeyContactsWidget from '@/components/KeyContactsWidget';
 import ViewerGuideCard from '@/components/ViewerGuideCard';
+import ForYouCard from '@/components/ForYouCard';
 import AdminOnly from '@/components/AdminOnly';
 import DashboardActionStrip from '@/components/DashboardActionStrip';
 import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
 import { SkeletonRows } from '@/components/ui/skeleton';
+import { ItemFlagService } from '@/services/ItemFlagService';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -65,6 +67,7 @@ const Dashboard = () => {
       .then(loadBills)
       .catch(() => setDataError(true))
       .finally(() => setBillsLoading(false));
+    ItemFlagService.refresh().catch(console.error);
     loadBills();
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -248,6 +251,9 @@ const Dashboard = () => {
             {canAddBills && <AddButton label="Add bill" onClick={handleTryAddBill} />}
           </div>
         </div>
+
+        {/* For you — only for trusted persons with flagged items */}
+        {!isAdmin && <ForYouCard />}
 
         {/* Bento tile row — only renders visible tiles */}
         <div className={`grid grid-cols-2 ${bentoColsClass} gap-3 mb-6`}>

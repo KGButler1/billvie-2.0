@@ -39,6 +39,10 @@ import UsageCounter from '@/components/shared/UsageCounter';
 import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { useAccessRedirect } from '@/hooks/useAccessRedirect';
+import { ItemFlagService } from '@/services/ItemFlagService';
+import { PeopleService } from '@/services/PeopleService';
+import { FlaggedInitialsStack } from '@/components/people/PersonTags';
+import { X } from 'lucide-react';
 
 type DocType = HouseholdDocument['type'];
 type SortKey = 'updated' | 'title' | 'type';
@@ -76,12 +80,20 @@ const Documents = () => {
   const [demoNudge, setDemoNudge] = useState(false);
   const [typeFilter, setTypeFilter] = useState<DocType | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('updated');
+  const [forYouFilter, setForYouFilter] = useState(false);
+  const [forPersonFilter, setForPersonFilter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !DocumentService.isLoaded());
   const [pendingDeleteDocument, setPendingDeleteDocument] = useState<string | null>(null);
 
   useEffect(() => {
     DocumentService.refresh().then(reload).catch(console.error).finally(() => setIsLoading(false));
+    ItemFlagService.refresh().catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const forParam = searchParams.get('for');
+    if (forParam) setForPersonFilter(forParam);
+  }, [searchParams]);
 
   const reload = () => {
     setDocuments(DocumentService.getAll());
@@ -93,12 +105,16 @@ const Documents = () => {
     personIds: string[],
     linkedBillId?: string,
     tax?: TaxRelevanceValue,
-    linkedFinancialEntry?: { type: 'insurance' | 'super'; id: string }
+    linkedFinancialEntry?: { type: 'insurance' | 'super'; id: string },
+    flaggedPersonIds?: string[]
   ) => {
     const created = await DocumentService.add(doc);
     await Promise.all(personIds.map((pid) => AccessService.grantItem(pid, 'documents', created.id)));
     if (linkedBillId) await DocumentLinkService.linkToBill(created.id, linkedBillId);
     if (tax) await TaxTagService.setTag(created.id, 'document', tax);
+    if (flaggedPersonIds && flaggedPersonIds.length > 0) {
+      await ItemFlagService.setFlags('document', created.id, flaggedPersonIds);
+    }
     if (linkedFinancialEntry) {
       if (linkedFinancialEntry.type === 'insurance') {
         await FinancialInfoService.updateInsurance(linkedFinancialEntry.id, { linkedDocumentId: created.id });
@@ -118,9 +134,12 @@ const Documents = () => {
     }
   };
 
-  const handleEditSave = async (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => {
+  const handleEditSave = async (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue, flaggedPersonIds?: string[]) => {
     await DocumentService.update(id, updates);
     if (tax) await TaxTagService.setTag(id, 'document', tax);
+    if (flaggedPersonIds) {
+      await ItemFlagService.setFlags('document', id, flaggedPersonIds);
+    }
     reload();
     setEditingId(null);
     if (isDemoModeActive()) {
@@ -140,6 +159,17 @@ const Documents = () => {
   // Important documents: filtered + sorted, grouped by type
   const filteredDocs = useMemo(() => {
     let list = documents;
+    if (forYouFilter) {
+      const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+      if (me) {
+        const flaggedIds = ItemFlagService.getFlagsForPersonByType(me.id, 'document').map((f) => f.itemId);
+        list = list.filter((d) => flaggedIds.includes(d.id));
+      }
+    }
+    if (forPersonFilter) {
+      const flaggedIds = ItemFlagService.getFlagsForPersonByType(forPersonFilter, 'document').map((f) => f.itemId);
+      list = list.filter((d) => flaggedIds.includes(d.id));
+    }
     if (typeFilter !== 'all') list = list.filter((d) => d.type === typeFilter);
 
     const sorted = [...list].sort((a, b) => {
@@ -169,6 +199,20 @@ const Documents = () => {
     const types = new Set(documents.map((d) => d.type));
     return TYPE_ORDER.filter((t) => types.has(t));
   }, [documents]);
+
+  const forYouCount = useMemo(() => {
+    const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+    if (!me) return 0;
+    return ItemFlagService.getFlagsForPersonByType(me.id, 'document')
+      .filter((f) => documents.some((d) => d.id === f.itemId))
+      .length;
+  }, [documents, profile?.userId]);
+
+  const forPersonName = useMemo(() => {
+    if (!forPersonFilter) return null;
+    const p = PeopleService.getById(forPersonFilter);
+    return p?.name ?? null;
+  }, [forPersonFilter]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -276,6 +320,36 @@ const Documents = () => {
                         {TYPE_LABELS[t] || t}
                       </button>
                     ))}
+                    {forYouCount > 0 && (
+                      <button
+                        onClick={() => setForYouFilter(!forYouFilter)}
+                        className={cn(
+                          'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                          forYouFilter
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'border-border hover:bg-muted'
+                        )}
+                      >
+                        For you ({forYouCount})
+                      </button>
+                    )}
+                    {forPersonName && (
+                      <span className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-full border border-primary bg-primary/5 text-primary">
+                        For {forPersonName}
+                        <button
+                          onClick={() => {
+                            setForPersonFilter(null);
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete('for');
+                            window.history.replaceState(null, '', url);
+                          }}
+                          className="p-0.5 rounded-full hover:bg-primary/10"
+                          aria-label="Clear filter"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 ml-auto">

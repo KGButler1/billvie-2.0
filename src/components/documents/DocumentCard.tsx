@@ -6,7 +6,7 @@ import { AccessService } from '@/services/AccessService';
 import { DocumentLinkService } from '@/services/DocumentLinkService';
 import { BillService } from '@/services/BillService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
-import { PersonTagChips } from '@/components/people/PersonTags';
+import { PersonTagChips, FlaggedInitialsStack } from '@/components/people/PersonTags';
 import { AttachmentService, DocumentAttachment } from '@/services/AttachmentService';
 import DocumentViewerModal from './DocumentViewerModal';
 import EditOnly from '@/components/EditOnly';
@@ -150,6 +150,9 @@ const DocumentCard = ({ document, onDelete, onEditAccess, onLinks, onEdit }: Doc
             </div>
           </div>
 
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <FlaggedInitialsStack itemType="document" itemId={document.id} />
+          </div>
           <PersonTagChips personIds={document.taggedPersonIds} className="mt-2" />
 
           {document.importantDate && (

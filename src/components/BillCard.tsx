@@ -5,7 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import CategoryBadge from './CategoryBadge';
-import { PersonTagChips } from '@/components/people/PersonTags';
+import { PersonTagChips, FlaggedInitialsStack } from '@/components/people/PersonTags';
 import { CustomBillOptionsService } from '@/services/CustomBillOptionsService';
 import { PaymentCardService } from '@/services/PaymentCardService';
 import { BankAccountService } from '@/services/BankAccountService';
@@ -108,12 +108,11 @@ const BillCard = ({ bill, onMarkPaid, onMarkUnpaid, onDelete, onEdit, onOpen }: 
             )}
           </div>
 
-          {/* Category badge */}
-          {bill.category && (
-            <div className="mb-2">
-              <CategoryBadge category={bill.category} />
-            </div>
-          )}
+          {/* Category badge + flagged people */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {bill.category && <CategoryBadge category={bill.category} />}
+            <FlaggedInitialsStack itemType="bill" itemId={bill.id} />
+          </div>
 
           <PersonTagChips personIds={bill.taggedPersonIds} className="mb-2" />
 

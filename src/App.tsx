@@ -14,7 +14,6 @@ import Settings from "./pages/Settings";
 import More from "./pages/More";
 import FinancialInfo from "./pages/FinancialInfo";
 import TaxDocuments from "./pages/TaxDocuments";
-import AccountantPortal from "./pages/AccountantPortal";
 import Documents from "./pages/Documents";
 import People from "./pages/People";
 import HouseholdSummary from "./pages/HouseholdSummary";
@@ -96,7 +95,7 @@ const App = () => {
               <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
               <Route path="/financial" element={<ProtectedRoute><FinancialInfo /></ProtectedRoute>} />
               <Route path="/tax-documents" element={<ProtectedRoute><TaxDocuments /></ProtectedRoute>} />
-              <Route path="/accountant" element={<ProtectedRoute><AccountantPortal /></ProtectedRoute>} />
+              <Route path="/accountant" element={<Navigate to="/dashboard" replace />} />
               <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
               <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
               <Route path="/advisor" element={<Navigate to="/people" replace />} />

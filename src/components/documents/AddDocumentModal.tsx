@@ -31,9 +31,10 @@ interface AddDocumentModalProps {
     personIds: string[],
     linkedBillId?: string,
     tax?: TaxRelevanceValue,
-    linkedFinancialEntry?: { type: 'insurance' | 'super'; id: string }
+    linkedFinancialEntry?: { type: 'insurance' | 'super'; id: string },
+    flaggedPersonIds?: string[]
   ) => void;
-  onEdit: (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue) => void;
+  onEdit: (id: string, updates: Partial<HouseholdDocument>, tax?: TaxRelevanceValue, flaggedPersonIds?: string[]) => void;
   onClose: () => void;
 }
 
@@ -192,12 +193,12 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
     };
 
     if (document) {
-      onEdit(document.id, shared, tax);
+      onEdit(document.id, shared, tax, taggedPersonIds);
     } else {
       const linkedFinancialEntry = linkedFinancial
         ? { type: financialEntryType(type) as 'insurance' | 'super', id: linkedFinancial.id }
         : undefined;
-      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id, tax, linkedFinancialEntry);
+      onAdd(shared, [...householdIds, ...professionalIds], linkedBill?.id, tax, linkedFinancialEntry, taggedPersonIds);
     }
   };
 

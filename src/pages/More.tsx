@@ -49,7 +49,7 @@ const More = () => {
   
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
-  const isAccountant = profile?.role === 'advisor' || profile?.role === 'accountant';
+
 
   const handleLockedFeature = (feature: 'financial') => {
     if (isPaid) {
@@ -108,14 +108,6 @@ const More = () => {
               description="Who to call, and why"
               onClick={() => navigate('/key-people')}
             />
-            {isAccountant && (
-              <MenuItem
-                icon={Users}
-                label="Accountant Portal"
-                description="Manage your clients"
-                onClick={() => navigate('/accountant')}
-              />
-            )}
           </div>
         </section>
 

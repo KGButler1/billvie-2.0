@@ -25,6 +25,7 @@ import {
   RECURRING_LABELS,
 } from '@/types/bill';
 import { PersonTagPicker } from '@/components/people/PersonTags';
+import { ItemFlagService } from '@/services/ItemFlagService';
 import CardPicker from '@/components/bills/CardPicker';
 import BankAccountPicker from '@/components/bills/BankAccountPicker';
 import { CustomBillOptionsService, CustomOption } from '@/services/CustomBillOptionsService';
@@ -43,7 +44,9 @@ interface QuickAddBillProps {
   onAdd: (
     bill: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
     linkedDocumentId?: string,
-    tax?: TaxRelevanceValue
+    tax?: TaxRelevanceValue,
+    billId?: string,
+    flaggedPersonIds?: string[]
   ) => void;
   onClose: () => void;
   /** When provided with mode="edit", the form pre-fills and saves back to this bill. */
@@ -283,7 +286,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
       category: category || undefined,
       notes: notes.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
-    }, !isEdit ? linkedDocument?.id : undefined, tax);
+    }, !isEdit ? linkedDocument?.id : undefined, tax, isEdit ? (editingBill?.id ?? initialBill?.id) : undefined, taggedPersonIds);
   };
 
   // Helper to get display label for custom options

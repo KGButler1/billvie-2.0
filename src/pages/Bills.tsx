@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Scan } from 'lucide-react';
+import { Plus, Scan, X } from 'lucide-react';
 import { BillService, isWithinComingUpWindow } from '@/services/BillService';
 import { MilestoneService } from '@/services/MilestoneService';
 import { showMilestoneToast } from '@/components/MilestoneToast';
@@ -41,6 +41,9 @@ import { SkeletonRows } from '@/components/ui/skeleton';
 import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { useAccessRedirect } from '@/hooks/useAccessRedirect';
+import { ItemFlagService } from '@/services/ItemFlagService';
+import { PeopleService } from '@/services/PeopleService';
+import { FlaggedInitialsStack } from '@/components/people/PersonTags';
 
 type StatusFilter = 'all' | 'overdue' | 'pending' | 'paid';
 type SortKey = 'due_date' | 'amount' | 'name' | 'category';
@@ -68,6 +71,8 @@ const Bills = () => {
   const [sort, setSort] = useState<SortKey>('due_date');
   const [category, setCategory] = useState<BillCategory | 'all'>('all');
   const [paidFrom, setPaidFrom] = useState<string>('all');
+  const [forYouFilter, setForYouFilter] = useState(false);
+  const [forPersonFilter, setForPersonFilter] = useState<string | null>(null);
   const [isAddingBill, setIsAddingBill] = useState(() => searchParams.get('add') === 'bill');
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [detailBill, setDetailBill] = useState<Bill | null>(null);
@@ -85,6 +90,7 @@ const Bills = () => {
 
   useEffect(() => {
     BillService.refresh().then(loadBills).catch(console.error).finally(() => setIsLoading(false));
+    ItemFlagService.refresh().catch(console.error);
 
     const channel = supabase
       .channel('bills-changes')
@@ -103,6 +109,8 @@ const Bills = () => {
   useEffect(() => {
     const param = searchParams.get('paidFrom');
     if (param) setPaidFrom(param);
+    const forParam = searchParams.get('for');
+    if (forParam) setForPersonFilter(forParam);
   }, [searchParams]);
 
   const setPaidFromParam = useCallback((value: string) => {
@@ -125,8 +133,33 @@ const Bills = () => {
     [bills, windowDays],
   );
 
+  const forYouCount = useMemo(() => {
+    const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+    if (!me) return 0;
+    return ItemFlagService.getFlagsForPersonByType(me.id, 'bill')
+      .filter((f) => bills.some((b) => b.id === f.itemId))
+      .length;
+  }, [bills, profile?.userId]);
+
+  const forPersonName = useMemo(() => {
+    if (!forPersonFilter) return null;
+    const p = PeopleService.getById(forPersonFilter);
+    return p?.name ?? null;
+  }, [forPersonFilter]);
+
   const visibleBills = useMemo(() => {
     let list = bills;
+    if (forYouFilter) {
+      const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+      if (me) {
+        const flaggedIds = ItemFlagService.getFlagsForPersonByType(me.id, 'bill').map((f) => f.itemId);
+        list = list.filter((b) => flaggedIds.includes(b.id));
+      }
+    }
+    if (forPersonFilter) {
+      const flaggedIds = ItemFlagService.getFlagsForPersonByType(forPersonFilter, 'bill').map((f) => f.itemId);
+      list = list.filter((b) => flaggedIds.includes(b.id));
+    }
     if (status === 'pending') {
       list = list.filter(b => isWithinComingUpWindow(b, windowDays));
     } else if (status !== 'all') {
@@ -217,11 +250,16 @@ const Bills = () => {
   const handleAddBill = async (
     billData: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
     linkedDocumentId?: string,
-    tax?: TaxRelevanceValue
+    tax?: TaxRelevanceValue,
+    _billId?: string,
+    flaggedPersonIds?: string[]
   ) => {
     const created = await BillService.addBill(billData);
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     if (tax) TaxTagService.setTag(created.id, 'bill', tax);
+    if (flaggedPersonIds && flaggedPersonIds.length > 0) {
+      await ItemFlagService.setFlags('bill', created.id, flaggedPersonIds);
+    }
     const msg = MilestoneService.recordMilestone('bills');
     if (msg) showMilestoneToast(msg);
     loadBills();
@@ -232,19 +270,25 @@ const Bills = () => {
   const handleUpdateBill = async (
     updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
     _linkedDocumentId?: string,
-    tax?: TaxRelevanceValue
+    tax?: TaxRelevanceValue,
+    billId?: string,
+    flaggedPersonIds?: string[]
   ) => {
-    if (!editingBill) return;
-    await BillService.updateBill(editingBill.id, {
+    const id = billId ?? editingBill?.id;
+    if (!id) return;
+    await BillService.updateBill(id, {
       ...updates,
       extractionStatus: '',
       extractionConfidence: undefined,
     });
-    if (tax) TaxTagService.setTag(editingBill.id, 'bill', tax);
+    if (tax) TaxTagService.setTag(id, 'bill', tax);
+    if (flaggedPersonIds) {
+      await ItemFlagService.setFlags('bill', id, flaggedPersonIds);
+    }
     loadBills();
     setEditingBill(null);
     setDetailBill(null);
-  };
+    };
 
   const handleMarkPaid = async (id: string) => {
     await BillService.markAsPaid(id, true);
@@ -333,6 +377,36 @@ const Bills = () => {
                 {chip.label(windowDays)} ({counts[chip.key]})
               </button>
             ))}
+            {forYouCount > 0 && (
+              <button
+                onClick={() => setForYouFilter(!forYouFilter)}
+                className={cn(
+                  'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                  forYouFilter
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border hover:bg-muted',
+                )}
+              >
+                For you ({forYouCount})
+              </button>
+            )}
+            {forPersonName && (
+              <span className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-full border border-primary bg-primary/5 text-primary">
+                For {forPersonName}
+                <button
+                  onClick={() => {
+                    setForPersonFilter(null);
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('for');
+                    window.history.replaceState(null, '', url);
+                  }}
+                  className="p-0.5 rounded-full hover:bg-primary/10"
+                  aria-label="Clear filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
