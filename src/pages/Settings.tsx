@@ -28,6 +28,15 @@ import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import AdminOnly from '@/components/AdminOnly';
 
+const SETUP_DISMISS_PREFIX = 'billvie_setup_widget_dismissed:';
+
+const clearSetupDismissed = () => {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(SETUP_DISMISS_PREFIX)) localStorage.removeItem(key);
+  }
+};
+
 const Settings = () => {
   const navigate = useNavigate();
   const { isAdmin } = useViewerAccess();
@@ -43,6 +52,13 @@ const Settings = () => {
   const [windowDays, setWindowDays] = useState<number>(getCachedWindowDays());
   const [windowLoading, setWindowLoading] = useState(true);
   const [windowSaving, setWindowSaving] = useState(false);
+  const [setupDismissed, setSetupDismissed] = useState(false);
+
+  useEffect(() => {
+    if (profile?.householdId) {
+      setSetupDismissed(localStorage.getItem(`${SETUP_DISMISS_PREFIX}${profile.householdId}`) === 'true');
+    }
+  }, [profile?.householdId]);
 
   useEffect(() => {
     const upgrade = searchParams.get('upgrade');
@@ -277,6 +293,31 @@ const Settings = () => {
                 </div>
               </div>
               <Switch id="notifications" disabled checked={false} />
+            </div>
+          </div>
+        </section>
+
+        {/* Household Section */}
+        <section className="mb-8">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Household</h2>
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <div className="p-4 flex items-center justify-between">
+              <div>
+                <Label htmlFor="show-setup" className="font-medium">Show household setup on dashboard</Label>
+                <p className="text-sm text-muted-foreground">The readiness checklist that appears on your dashboard</p>
+              </div>
+              <Switch
+                id="show-setup"
+                checked={!setupDismissed}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    clearSetupDismissed();
+                    setSetupDismissed(false);
+                  } else {
+                    setSetupDismissed(true);
+                  }
+                }}
+              />
             </div>
           </div>
         </section>

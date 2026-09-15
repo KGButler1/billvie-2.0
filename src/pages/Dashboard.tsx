@@ -34,6 +34,8 @@ import BillsWidget from '@/components/BillsWidget';
 import FinancialSnapshotWidget from '@/components/FinancialSnapshotWidget';
 import TaxWidget from '@/components/TaxWidget';
 import HouseholdSetupWidget from '@/components/HouseholdSetupWidget';
+import KeyContactsWidget from '@/components/KeyContactsWidget';
+import ViewerGuideCard from '@/components/ViewerGuideCard';
 import AdminOnly from '@/components/AdminOnly';
 import DashboardActionStrip from '@/components/DashboardActionStrip';
 import OrganizationStrip from '@/components/OrganizationStrip';
@@ -166,6 +168,7 @@ const Dashboard = () => {
   const canSeeTaxDocs = accessLoading || isAdmin || canSee('tax_documents');
   const canSeeFinancial = accessLoading || isAdmin || canSee('financial_info');
   const canSeeEvents = accessLoading || isAdmin || canSee('events');
+  const canSeeKeyPeople = accessLoading || isAdmin || canSee('key_people');
 
   const canShowPeopleCard = useMemo(() => {
     if (accessLoading || isAdmin) return true;
@@ -309,33 +312,47 @@ const Dashboard = () => {
         {(() => {
           const hasHouseholdRecords = canSeeDocuments || canSeeFinancial || canSeeTaxDocs;
           const hasSpendingAndBills = canSeeBills;
-          if (!hasHouseholdRecords && !hasSpendingAndBills) return null;
-          const bothColumns = hasHouseholdRecords && hasSpendingAndBills;
+          const hasKeyContacts = canSeeKeyPeople;
+          const hasLeftColumn = hasHouseholdRecords || hasKeyContacts;
+          const isViewer = !isAdmin;
+          const hasRightColumn = hasSpendingAndBills || isViewer;
+          if (!hasLeftColumn && !hasRightColumn) return null;
+          const bothColumns = hasLeftColumn && hasRightColumn;
           return (
             <div className={`grid grid-cols-1 ${bothColumns ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6 mb-6`}>
-              {hasHouseholdRecords && (
+              {hasLeftColumn && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Household Records</p>
-                  <div className="space-y-2">
-                    {canSeeDocuments && <DocumentsWidget />}
-                    {canSeeFinancial && <FinancialSnapshotWidget />}
-                    {canSeeTaxDocs && <TaxWidget />}
-                    <AdvisorWidget />
-                  </div>
+                  {hasHouseholdRecords && (
+                    <>
+                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Household Records</p>
+                      <div className="space-y-2 mb-4">
+                        {canSeeDocuments && <DocumentsWidget />}
+                        {canSeeFinancial && <FinancialSnapshotWidget />}
+                        {canSeeTaxDocs && <TaxWidget />}
+                        <AdvisorWidget />
+                      </div>
+                    </>
+                  )}
+                  {hasKeyContacts && <KeyContactsWidget />}
                 </div>
               )}
-              {hasSpendingAndBills && (
+              {hasRightColumn && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Spending &amp; Bills</p>
-                  <div className="space-y-2">
-                    <SpendingChart spending={spending} />
-                    <BillsWidget onOpen={setDetailBill} />
-                  </div>
+                  {isViewer && <ViewerGuideCard />}
+                  {hasSpendingAndBills && (
+                    <>
+                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Spending</p>
+                      <SpendingChart spending={spending} />
+                    </>
+                  )}
                 </div>
               )}
             </div>
           );
         })()}
+
+        {/* Your Biggest Bills — full width, below the grid */}
+        {canSeeBills && <BillsWidget onOpen={setDetailBill} />}
 
         {/* Empty State — only for roles that can see bills */}
         {canSeeBills && !billsLoading && !dataError && bills.length === 0 && canAddBills && (

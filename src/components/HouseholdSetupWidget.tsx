@@ -14,8 +14,10 @@ import {
   Clock,
 } from 'lucide-react';
 import { getReadinessSummary } from '@/utils/readiness';
+import { useProfile } from '@/hooks/useProfile';
 
 const STORAGE_KEY = 'billvie_setup_widget_collapsed';
+const DISMISS_PREFIX = 'billvie_setup_widget_dismissed:';
 
 const icons: Record<string, React.ElementType> = {
   bills: Receipt,
@@ -59,8 +61,12 @@ const ProgressRing = ({ covered, total }: { covered: number; total: number }) =>
 
 const HouseholdSetupWidget = () => {
   const navigate = useNavigate();
+  const { profile } = useProfile();
   const { checks, covered, total } = getReadinessSummary();
   const complete = covered === total;
+
+  const dismissKey = profile?.householdId ? `${DISMISS_PREFIX}${profile.householdId}` : null;
+  const isDismissed = dismissKey ? localStorage.getItem(dismissKey) === 'true' : false;
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (complete) return true;
@@ -75,7 +81,14 @@ const HouseholdSetupWidget = () => {
     localStorage.setItem(STORAGE_KEY, String(next));
   };
 
-  if (complete) return null;
+  const handleDismiss = () => {
+    if (dismissKey) localStorage.setItem(dismissKey, 'true');
+    setIsDismissedState(true);
+  };
+
+  const [isDismissedState, setIsDismissedState] = useState(isDismissed);
+
+  if (isDismissedState) return null;
 
   return (
     <section className="bg-card border border-border rounded-xl p-4 mb-6">
@@ -98,6 +111,15 @@ const HouseholdSetupWidget = () => {
             </p>
           )}
         </div>
+        {complete && (
+          <button
+            onClick={handleDismiss}
+            aria-label="Dismiss household setup"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+          >
+            Dismiss
+          </button>
+        )}
         <button
           onClick={toggle}
           aria-expanded={!isCollapsed}
