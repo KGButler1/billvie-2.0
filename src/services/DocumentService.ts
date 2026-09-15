@@ -21,6 +21,7 @@ function rowToDoc(row: Record<string, unknown>): HouseholdDocument {
     physicalLocation: (row.physical_location as string) || undefined,
     importantDate: (row.important_date as string) || undefined,
     importantDateLabel: (row.important_date_label as string) || undefined,
+    expiresOn: (row.expires_on as string) || undefined,
     deletedAt: (row.deleted_at as string) || undefined,
     scanSourced: (row.scan_sourced as boolean) || false,
     source: (row.source as 'manual' | 'bill_scan') || 'manual',
@@ -40,6 +41,7 @@ function docToRow(doc: Partial<HouseholdDocument>): Record<string, unknown> {
   if (doc.physicalLocation !== undefined) row.physical_location = doc.physicalLocation || null;
   if (doc.importantDate !== undefined) row.important_date = doc.importantDate || null;
   if (doc.importantDateLabel !== undefined) row.important_date_label = doc.importantDateLabel || null;
+  if (doc.expiresOn !== undefined) row.expires_on = doc.expiresOn || null;
   if (doc.deletedAt !== undefined) row.deleted_at = doc.deletedAt || null;
   if (doc.scanSourced !== undefined) row.scan_sourced = doc.scanSourced;
   if (doc.source !== undefined) row.source = doc.source;

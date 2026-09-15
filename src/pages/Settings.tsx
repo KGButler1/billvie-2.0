@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff, CalendarClock } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff, CalendarClock, Mail, Eye } from 'lucide-react';
 import DownloadDataSheet from '@/components/DownloadDataSheet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import UserAvatar, { getInitials } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
+import { AttentionService, DismissalRecord } from '@/services/AttentionService';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import AdminOnly from '@/components/AdminOnly';
 
@@ -53,6 +54,12 @@ const Settings = () => {
   const [windowLoading, setWindowLoading] = useState(true);
   const [windowSaving, setWindowSaving] = useState(false);
   const [setupDismissed, setSetupDismissed] = useState(false);
+  const [digestFrequency, setDigestFrequency] = useState<'off' | 'weekly' | 'monthly'>('weekly');
+  const [digestLoading, setDigestLoading] = useState(true);
+  const [digestSaving, setDigestSaving] = useState(false);
+  const [hiddenReminders, setHiddenReminders] = useState<DismissalRecord[]>([]);
+  const [hiddenRemindersLoading, setHiddenRemindersLoading] = useState(true);
+  const [restoringKey, setRestoringKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.householdId) {
@@ -89,6 +96,44 @@ const Settings = () => {
       .catch(() => setWindowDays(14))
       .finally(() => setWindowLoading(false));
   }, []);
+
+  useEffect(() => {
+    AttentionService.getDigestFrequency()
+      .then(setDigestFrequency)
+      .catch(() => setDigestFrequency('weekly'))
+      .finally(() => setDigestLoading(false));
+    AttentionService.getPermanentDismissals()
+      .then(setHiddenReminders)
+      .catch(() => {})
+      .finally(() => setHiddenRemindersLoading(false));
+  }, []);
+
+  const handleDigestChange = async (frequency: 'off' | 'weekly' | 'monthly') => {
+    setDigestSaving(true);
+    try {
+      await AttentionService.updateDigestFrequency(frequency);
+      setDigestFrequency(frequency);
+      toast.success(frequency === 'off' ? 'Digest turned off' : `Digest set to ${frequency}`);
+    } catch {
+      toast.error('Could not update digest frequency. Please try again.');
+    } finally {
+      setDigestSaving(false);
+    }
+  };
+
+  const handleRestoreReminder = async (ruleKey: string, entityId: string | null) => {
+    const key = `${ruleKey}:${entityId ?? ''}`;
+    setRestoringKey(key);
+    try {
+      await AttentionService.removeDismissal(ruleKey, entityId);
+      setHiddenReminders(prev => prev.filter(r => !(r.ruleKey === ruleKey && r.entityId === entityId)));
+      toast.success('Reminder restored');
+    } catch {
+      toast.error('Could not restore this reminder. Please try again.');
+    } finally {
+      setRestoringKey(null);
+    }
+  };
 
   const handleWindowChange = async (days: number) => {
     setWindowSaving(true);
@@ -278,22 +323,87 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* Notifications Section */}
+        {/* Smart Reminders Section */}
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Notifications</h2>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Smart Reminders</h2>
           <div className="bg-card rounded-xl border border-border overflow-hidden">
-            <div className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-primary" />
+                  <Mail className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <Label htmlFor="notifications" className="font-medium">Bill Reminders</Label>
-                  <p className="text-sm text-muted-foreground">Notify 3 days before due, coming soon</p>
+                  <p className="font-medium">Email digest</p>
+                  <p className="text-sm text-muted-foreground">A short email only when something needs attention</p>
                 </div>
               </div>
-              <Switch id="notifications" disabled checked={false} />
+              {digestLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'off', label: 'Off' },
+                    { value: 'weekly', label: 'Weekly' },
+                    { value: 'monthly', label: 'Monthly' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleDigestChange(opt.value as 'off' | 'weekly' | 'monthly')}
+                      disabled={digestSaving}
+                      className={cn(
+                        'p-3 rounded-lg border text-sm transition-colors',
+                        digestFrequency === opt.value
+                          ? 'border-primary bg-primary/10 text-primary font-medium'
+                          : 'border-border hover:bg-muted',
+                        digestSaving && 'opacity-50'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!isPaid && (
+                <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                  <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Card expiry, document expiry, and snapshot staleness alerts are part of Smart Reminders.{' '}
+                    <button onClick={() => { setUpgradeReason('general'); setShowUpgradeModal(true); }} className="text-primary hover:underline">
+                      Upgrade to Pro
+                    </button>
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Hidden reminders */}
+            {hiddenReminders.length > 0 && (
+              <div className="border-t border-border p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Hidden reminders</p>
+                </div>
+                <div className="space-y-2">
+                  {hiddenReminders.map((d) => {
+                    const key = `${d.ruleKey}:${d.entityId ?? ''}`;
+                    return (
+                      <div key={d.id} className="flex items-center justify-between gap-2">
+                        <p className="text-sm text-muted-foreground truncate">{d.ruleKey.replace(/_/g, ' ').toLowerCase()}</p>
+                        <button
+                          onClick={() => handleRestoreReminder(d.ruleKey, d.entityId)}
+                          disabled={restoringKey === key}
+                          className="text-sm text-primary hover:underline disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                        >
+                          {restoringKey === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Show again'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Scan, Shield } from 'lucide-react';
+import { Plus, Scan, Shield, AlertCircle, X } from 'lucide-react';
 import { BillService } from '@/services/BillService';
 import { getCachedWindowDays } from '@/services/supabaseData';
 import { MilestoneService } from '@/services/MilestoneService';
@@ -28,6 +28,7 @@ import SpendingChart from '@/components/SpendingChart';
 import ActiveEventsWidget from '@/components/ActiveEventsWidget';
 import UpgradeModal from '@/components/UpgradeModal';
 import DashboardSuggestions from '@/components/DashboardSuggestions';
+import NeedsAttentionCard from '@/components/NeedsAttentionCard';
 import DocumentsWidget from '@/components/DocumentsWidget';
 import AdvisorWidget from '@/components/AdvisorWidget';
 import BillsWidget from '@/components/BillsWidget';
@@ -56,6 +57,8 @@ const Dashboard = () => {
   const [isScanningBill, setIsScanningBill] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [showCriticalBanner, setShowCriticalBanner] = useState(false);
+  const [criticalDismissed, setCriticalDismissed] = useState(false);
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [billsLoading, setBillsLoading] = useState(() => !BillService.isLoaded());
@@ -63,6 +66,14 @@ const Dashboard = () => {
   const needsAttentionRef = useRef<HTMLDivElement>(null);
 
   const { role, isAdmin, canEdit, canSee, accessLoading } = useViewerAccess();
+
+  const handleCriticalSeen = useCallback((hasCritical: boolean) => {
+    if (hasCritical && !criticalDismissed) {
+      setShowCriticalBanner(true);
+    } else {
+      setShowCriticalBanner(false);
+    }
+  }, [criticalDismissed]);
 
   useEffect(() => {
     UserService.initializeTheme();
@@ -273,6 +284,33 @@ const Dashboard = () => {
             {canAddBills && <AddButton label="Add bill" onClick={handleTryAddBill} />}
           </div>
         </div>
+
+        {/* Critical attention banner — session-scoped, dismissible */}
+        {isAdmin && showCriticalBanner && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-4"
+          >
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+              <p className="text-sm text-destructive font-medium flex-1">
+                Something needs your attention — see below
+              </p>
+              <button
+                onClick={() => { setCriticalDismissed(true); setShowCriticalBanner(false); }}
+                aria-label="Dismiss critical alert"
+                className="p-1 rounded-lg hover:bg-destructive/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-destructive" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Needs attention card */}
+        {isAdmin && <NeedsAttentionCard onCriticalSeen={handleCriticalSeen} />}
 
         {/* For you — only for trusted persons with flagged items */}
         {!isAdmin && <ForYouCard />}

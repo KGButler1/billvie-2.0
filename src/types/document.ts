@@ -11,6 +11,7 @@ export interface HouseholdDocument {
   physicalLocation?: string;
   importantDate?: string; // ISO date — expiry, renewal, term end
   importantDateLabel?: string; // e.g. "Expires", "Renews", "Term ends"
+  expiresOn?: string; // ISO date — dedicated expiry for Smart Reminders (optional)
   taggedPersonIds?: string[]; // TrustedPerson ids — wayfinding only, never access
 
   scanSourced?: boolean; // true when auto-created by bill-scan; hidden from document lists

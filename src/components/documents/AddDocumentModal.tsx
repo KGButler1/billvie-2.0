@@ -46,6 +46,7 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
   const [notes, setNotes] = useState(document?.notes ?? '');
   const [importantDate, setImportantDate] = useState(document?.importantDate ?? '');
   const [importantDateLabel, setImportantDateLabel] = useState(document?.importantDateLabel ?? '');
+  const [expiresOn, setExpiresOn] = useState(document?.expiresOn ?? '');
   const [stagedFiles, setStagedFiles] = useState<CapturedFile[]>([]);
   // Sharing with family is the product's purpose; sending something to your
   // accountant is a decision.
@@ -186,6 +187,7 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
       notes: notes.trim() || undefined,
       importantDate: importantDate || undefined,
       importantDateLabel: importantDateLabel.trim() || undefined,
+      expiresOn: expiresOn || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
       attachment: undefined,
       externalLink: externalLink.trim() || undefined,
@@ -339,6 +341,21 @@ const AddDocumentModal = ({ document, onAdd, onEdit, onClose }: AddDocumentModal
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 For anything with an expiry or renewal — a passport, a fixed-term policy, a lease
+              </p>
+            </div>
+
+            {/* Expiry date for Smart Reminders */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Expiry date <span className="text-muted-foreground font-normal">(optional, for reminders)</span>
+              </label>
+              <Input
+                type="date"
+                value={expiresOn}
+                onChange={(e) => setExpiresOn(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Set this to get a reminder before this document expires
               </p>
             </div>
 
