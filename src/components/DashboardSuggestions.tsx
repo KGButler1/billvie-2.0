@@ -17,15 +17,25 @@ const DashboardSuggestions = ({ fabMenuOpen = false }: DashboardSuggestionsProps
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
 
+  const [onboardingDone, setOnboardingDone] = useState(false);
+
   useEffect(() => {
-    if (!OnboardingService.isCompleted()) return;
+    let active = true;
+    OnboardingService.isCompleted().then((done) => {
+      if (active) setOnboardingDone(done);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!onboardingDone) return;
 
     const timer = setTimeout(() => {
       setSuggestion(SuggestionsService.getEligibleSuggestion(isPaid));
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [isPaid]);
+  }, [isPaid, onboardingDone]);
 
   const dismiss = () => {
     if (suggestion) SuggestionsService.dismiss(suggestion.id);

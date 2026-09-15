@@ -4,6 +4,7 @@ import { X, Check, Sparkles, Receipt, Calendar, FileText, Share2, ChartBar as Ba
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { getHouseholdId } from '@/services/supabaseData';
 import { PRO_PRICE, PRO_PERIOD, PRO_FEATURES, FREE_BILL_LIMIT, FREE_EVENT_LIMIT, FREE_DOCUMENT_LIMIT, PRO_PRICE_ID } from '@/constants/pricing';
 
 interface UpgradeModalProps {
@@ -81,6 +82,7 @@ const UpgradeModal = ({ isOpen, onClose, reason = 'general' }: UpgradeModalProps
           success_url: `${window.location.origin}/settings?upgrade=success`,
           cancel_url: `${window.location.origin}/settings?upgrade=canceled`,
           mode: 'subscription',
+          householdId: await getHouseholdId(),
         },
       });
       if (error) throw error;

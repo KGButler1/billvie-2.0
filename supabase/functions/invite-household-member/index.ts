@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { email, name, role, keyPersonId, accessLevel, scopes, canEdit } = await req.json();
+    const { email, name, role, keyPersonId, accessLevel, scopes, canEdit, householdId: requestedHouseholdId } = await req.json();
     if (!email || !email.trim()) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
@@ -68,20 +68,27 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get the caller's household
-    const { data: callerPerson, error: callerError } = await userClient
+    // Get the caller's household — filter by household_id when provided (multi-household support)
+    let callerQuery = userClient
       .from("trusted_person")
       .select("household_id, access_level, status")
       .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
+      .eq("status", "active");
 
-    if (callerError || !callerPerson) {
+    if (requestedHouseholdId) {
+      callerQuery = callerQuery.eq("household_id", requestedHouseholdId);
+    }
+
+    const { data: callerRows, error: callerError } = await callerQuery;
+
+    if (callerError || !callerRows || callerRows.length === 0) {
       return new Response(
         JSON.stringify({ error: "Could not find your household" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const callerPerson = callerRows[0];
 
     // Authorization: only owners and co-owners can invite
     if (callerPerson.access_level !== "owner" && callerPerson.access_level !== "co_owner") {

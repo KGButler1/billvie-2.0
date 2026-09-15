@@ -39,19 +39,29 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: person, error: personError } = await supabase
+    const body = await req.json();
+    const { return_url, householdId: requestedHouseholdId } = body;
+
+    let personQuery = supabase
       .from("trusted_person")
       .select("household_id")
       .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
+      .eq("status", "active");
 
-    if (personError || !person) {
+    if (requestedHouseholdId) {
+      personQuery = personQuery.eq("household_id", requestedHouseholdId);
+    }
+
+    const { data: personRows, error: personError } = await personQuery;
+
+    if (personError || !personRows || personRows.length === 0) {
       return new Response(JSON.stringify({ error: "No household found" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const person = personRows[0];
 
     const { data: household } = await supabase
       .from("households")
@@ -66,7 +76,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { return_url } = await req.json();
     if (!return_url) {
       return new Response(JSON.stringify({ error: "Missing return_url" }), {
         status: 400,

@@ -56,7 +56,7 @@ const Auth = () => {
         });
         if (signUpError) {
           if (signUpError.message.toLowerCase().includes('already')) {
-            setError('An account with this email already exists. Try signing in instead.');
+            setError('You already have a Billvie account. Sign in — you can create a household from your profile menu.');
             setMode('signin');
           } else {
             setError(signUpError.message);
@@ -84,6 +84,16 @@ const Auth = () => {
         if (signInError) {
           setError(signInError);
           return;
+        }
+        const pendingToken = sessionStorage.getItem('pending_invite_token');
+        if (pendingToken) {
+          sessionStorage.removeItem('pending_invite_token');
+          const { error: acceptError } = await supabase.rpc('accept_household_invite', {
+            p_token: pendingToken,
+          });
+          if (acceptError) {
+            // Still navigate — the user is signed in, invite can be retried
+          }
         }
         navigate('/dashboard');
       }

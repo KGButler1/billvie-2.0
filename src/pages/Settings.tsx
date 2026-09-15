@@ -143,7 +143,7 @@ const Settings = () => {
     setPortalLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('stripe-portal', {
-        body: { return_url: `${window.location.origin}/settings` },
+        body: { return_url: `${window.location.origin}/settings`, householdId: await getHouseholdId() },
       });
       if (error) throw error;
       if (data?.url) {

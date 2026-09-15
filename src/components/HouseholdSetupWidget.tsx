@@ -16,7 +16,7 @@ import {
 import { getReadinessSummary } from '@/utils/readiness';
 import { useProfile } from '@/hooks/useProfile';
 
-const STORAGE_KEY = 'billvie_setup_widget_collapsed';
+const STORAGE_PREFIX = 'billvie_setup_widget_collapsed';
 const DISMISS_PREFIX = 'billvie_setup_widget_dismissed:';
 
 const icons: Record<string, React.ElementType> = {
@@ -67,10 +67,12 @@ const HouseholdSetupWidget = () => {
 
   const dismissKey = profile?.householdId ? `${DISMISS_PREFIX}${profile.householdId}` : null;
   const isDismissed = dismissKey ? localStorage.getItem(dismissKey) === 'true' : false;
+  const collapseKey = profile?.householdId ? `${STORAGE_PREFIX}:${profile.householdId}` : null;
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (complete) return true;
-    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!collapseKey) return false;
+    const stored = localStorage.getItem(collapseKey);
     if (stored !== null) return stored === 'true';
     return false;
   });
@@ -78,7 +80,7 @@ const HouseholdSetupWidget = () => {
   const toggle = () => {
     const next = !isCollapsed;
     setIsCollapsed(next);
-    localStorage.setItem(STORAGE_KEY, String(next));
+    if (collapseKey) localStorage.setItem(collapseKey, String(next));
   };
 
   const handleDismiss = () => {

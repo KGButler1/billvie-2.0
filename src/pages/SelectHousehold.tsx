@@ -1,43 +1,23 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building, Plus, ArrowRight, Loader2 } from 'lucide-react';
 import BillvieLogo from '@/components/BillvieLogo';
 import { Button } from '@/components/ui/button';
 import { HouseholdService } from '@/services/HouseholdService';
-import { HouseholdMembership } from '@/services/supabaseData';
-
-const roleLabel = (accessLevel: string | null, role: string) => {
-  if (accessLevel === 'owner') return 'Owner';
-  if (role === 'advisor') return 'Advisor';
-  if (role === 'accountant') return 'Accountant';
-  return 'Trusted';
-};
+import { useHouseholds, roleLabel } from '@/hooks/useHouseholds';
 
 const SelectHousehold = () => {
-  const navigate = useNavigate();
-  const [households, setHouseholds] = useState<HouseholdMembership[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-
-  useEffect(() => {
-    HouseholdService.listMemberships()
-      .then(setHouseholds)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { households, loading, hasOwnedHousehold } = useHouseholds();
 
   const handleSelect = (id: string) => {
     HouseholdService.switchTo(id);
   };
 
   const handleCreate = async () => {
-    setCreating(true);
     try {
       const id = await HouseholdService.createOwnHousehold();
-      HouseholdService.switchTo(id);
+      HouseholdService.switchTo(id, '/onboarding');
     } catch {
-      setCreating(false);
+      // error handled by caller
     }
   };
 
@@ -83,14 +63,12 @@ const SelectHousehold = () => {
                 </button>
               ))}
 
-              <Button variant="outline" className="w-full" onClick={handleCreate} disabled={creating}>
-                {creating ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
+              {!hasOwnedHousehold && (
+                <Button variant="outline" className="w-full" onClick={handleCreate}>
                   <Plus className="w-4 h-4 mr-2" />
-                )}
-                Create your own household
-              </Button>
+                  Create your own household
+                </Button>
+              )}
             </div>
           )}
         </motion.div>

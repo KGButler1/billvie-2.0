@@ -39,22 +39,29 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: person, error: personError } = await supabase
+    const body = await req.json();
+    const { price_id, success_url, cancel_url, mode, householdId: requestedHouseholdId } = body;
+
+    let personQuery = supabase
       .from("trusted_person")
       .select("household_id")
       .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
+      .eq("status", "active");
 
-    if (personError || !person) {
+    if (requestedHouseholdId) {
+      personQuery = personQuery.eq("household_id", requestedHouseholdId);
+    }
+
+    const { data: personRows, error: personError } = await personQuery;
+
+    if (personError || !personRows || personRows.length === 0) {
       return new Response(JSON.stringify({ error: "No household found" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const body = await req.json();
-    const { price_id, success_url, cancel_url, mode } = body;
+    const person = personRows[0];
 
     if (!price_id || !success_url || !cancel_url) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {

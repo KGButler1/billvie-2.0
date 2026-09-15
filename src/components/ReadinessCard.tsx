@@ -6,17 +6,20 @@ import {
   isReadinessCardDismissed,
   dismissReadinessCard,
 } from '@/utils/readiness';
+import { useProfile } from '@/hooks/useProfile';
 
 const ReadinessCard = () => {
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(() => isReadinessCardDismissed());
+  const { profile } = useProfile();
+  const householdId = profile?.householdId;
+  const [dismissed, setDismissed] = useState(() => isReadinessCardDismissed(householdId));
   const { covered, total } = getReadinessSummary();
 
   if (dismissed) return null;
 
   const handleDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dismissReadinessCard();
+    if (householdId) dismissReadinessCard(householdId);
     setDismissed(true);
   };
 

@@ -192,7 +192,7 @@ const Dashboard = () => {
     if (me?.role === 'advisor' || me?.role === 'accountant') {
       return `${ownerName} has invited you in as an advisor`;
     }
-    return `${ownerName} has trusted you with a view into this household`;
+    return `${ownerName} has trusted you with a view into ${profile?.householdName ?? 'this household'}`;
   }, [accessLoading, role, ownerName, profile?.userId]);
 
   const bentoTileCount = (canSeeBills ? 1 : 0) + 1 + (canShowPeopleCard ? 1 : 0);

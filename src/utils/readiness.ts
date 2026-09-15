@@ -114,15 +114,17 @@ export const getReadinessSummary = () => {
   };
 };
 
-const DISMISS_KEY = 'billvie_readiness_card_dismissed';
+const DISMISS_PREFIX = 'billvie_readiness_card_dismissed';
 
-export const isReadinessCardDismissed = (): boolean =>
-  localStorage.getItem(DISMISS_KEY) === 'true';
-
-export const dismissReadinessCard = (): void => {
-  localStorage.setItem(DISMISS_KEY, 'true');
+export const isReadinessCardDismissed = (householdId?: string): boolean => {
+  if (!householdId) return false;
+  return localStorage.getItem(`${DISMISS_PREFIX}:${householdId}`) === 'true';
 };
 
-export const resetReadinessCard = (): void => {
-  localStorage.removeItem(DISMISS_KEY);
+export const dismissReadinessCard = (householdId: string): void => {
+  localStorage.setItem(`${DISMISS_PREFIX}:${householdId}`, 'true');
+};
+
+export const resetReadinessCard = (householdId: string): void => {
+  localStorage.removeItem(`${DISMISS_PREFIX}:${householdId}`);
 };

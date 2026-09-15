@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal, Lock } from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, FolderOpen, Settings, Users, Building, CircleHelp as HelpCircle, FileText, Shield, Search, LogOut, MoveHorizontal as MoreHorizontal, Lock, Check, Plus } from 'lucide-react';
 import { openSearch } from '@/components/search/GlobalSearch';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { useHouseholds, roleLabel } from '@/hooks/useHouseholds';
 import { AccessScope } from '@/types/people';
 import UpgradeModal from '@/components/UpgradeModal';
+import CreateHouseholdDialog from '@/components/CreateHouseholdDialog';
+import { HouseholdService } from '@/services/HouseholdService';
 
 import { cn } from '@/lib/utils';
 import {
@@ -67,15 +70,22 @@ const useFilteredNav = (items: NavItem[]) => {
   });
 };
 
-const AccountDropdownContent = () => {
+interface AccountDropdownContentProps {
+  onCreateHousehold: () => void;
+}
+
+const AccountDropdownContent = ({ onCreateHousehold }: AccountDropdownContentProps) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { profile } = useProfile();
   const { isAdmin, canSee, accessLoading } = useViewerAccess();
+  const { households, loading: householdsLoading, currentHouseholdId, hasOwnedHousehold } = useHouseholds();
 
   const canSeeEvents = accessLoading || isAdmin || canSee('events');
   const canSeeTaxDocs = accessLoading || isAdmin || canSee('tax_documents');
   const canSeeSnapshot = accessLoading || isAdmin || canSee('financial_info');
+
+  const currentMembership = households.find((h) => h.householdId === currentHouseholdId) || null;
 
   return (
     <>
@@ -92,6 +102,33 @@ const AccountDropdownContent = () => {
           </div>
         </div>
       </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel>Households</DropdownMenuLabel>
+      {!householdsLoading && households.map((h) => {
+        const isCurrent = h.householdId === currentHouseholdId;
+        return (
+          <DropdownMenuItem
+            key={h.householdId}
+            disabled={isCurrent}
+            onClick={() => {
+              if (!isCurrent) HouseholdService.switchTo(h.householdId);
+            }}
+            className="flex items-center justify-between"
+          >
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium truncate">{h.householdName}</span>
+              <span className="text-xs text-muted-foreground">{roleLabel(h.accessLevel, h.role)}</span>
+            </div>
+            {isCurrent && <Check className="w-4 h-4 text-primary shrink-0 ml-2" />}
+          </DropdownMenuItem>
+        );
+      })}
+      {!householdsLoading && !hasOwnedHousehold && (
+        <DropdownMenuItem onClick={onCreateHousehold}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create your own household
+        </DropdownMenuItem>
+      )}
       <DropdownMenuSeparator />
       <DropdownMenuLabel>Records &amp; Tools</DropdownMenuLabel>
       {canSeeEvents && (
@@ -144,6 +181,9 @@ const BottomNav = () => {
   const { profile } = useProfile();
   const demo = isDemoModeActive();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { households: navHouseholds, currentHouseholdId: navCurrentId } = useHouseholds();
+  const navCurrentMembership = navHouseholds.find((h) => h.householdId === navCurrentId) || null;
 
   const isActive = (path: string) => location.pathname === demoPrefix(path);
 
@@ -221,7 +261,7 @@ const BottomNav = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64 bg-background z-50">
-                  <AccountDropdownContent />
+                  <AccountDropdownContent onCreateHousehold={() => setShowCreateDialog(true)} />
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -234,6 +274,14 @@ const BottomNav = () => {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
           reason="financial"
+        />
+      )}
+
+      {showCreateDialog && (
+        <CreateHouseholdDialog
+          open={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          currentMembership={navCurrentMembership}
         />
       )}
 
@@ -269,7 +317,7 @@ const BottomNav = () => {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 bg-background z-50 mb-2">
-              <AccountDropdownContent />
+              <AccountDropdownContent onCreateHousehold={() => setShowCreateDialog(true)} />
             </DropdownMenuContent>
           </DropdownMenu>
         )}

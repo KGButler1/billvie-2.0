@@ -52,21 +52,29 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: callerPerson, error: callerError } = await userClient
+    const body = await req.json().catch(() => ({}));
+    const requestedHouseholdId = body.householdId;
+
+    let callerQuery = userClient
       .from("trusted_person")
       .select("household_id")
       .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
+      .eq("status", "active");
 
-    if (callerError || !callerPerson) {
+    if (requestedHouseholdId) {
+      callerQuery = callerQuery.eq("household_id", requestedHouseholdId);
+    }
+
+    const { data: callerRows, error: callerError } = await callerQuery;
+
+    if (callerError || !callerRows || callerRows.length === 0) {
       return new Response(
         JSON.stringify({ error: "Could not find your household" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const householdId = callerPerson.household_id;
+    const householdId = callerRows[0].household_id;
 
     const { data: settings } = await userClient
       .from("user_settings")

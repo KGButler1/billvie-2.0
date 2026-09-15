@@ -58,10 +58,14 @@ export async function getHouseholdId(): Promise<string> {
   throw new NeedsHouseholdSelectionError();
 }
 
-export function setCurrentHousehold(householdId: string): void {
+export function setCurrentHousehold(householdId: string, redirectTo?: string): void {
   localStorage.setItem(STORAGE_KEY, householdId);
   clearHouseholdCache();
-  window.location.reload();
+  if (redirectTo) {
+    window.location.href = redirectTo;
+  } else {
+    window.location.reload();
+  }
 }
 
 export function clearHouseholdCache(): void {

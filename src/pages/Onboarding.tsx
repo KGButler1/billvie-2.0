@@ -82,18 +82,18 @@ const Onboarding = () => {
     });
     setAddedItemName(billName.trim());
     clearDraft();
-    OnboardingService.setState({ firstItemAdded: true });
+    void OnboardingService.setState({ firstItemAdded: true });
     goTo('confirmation');
   };
 
   const handleAddPlaceholder = () => {
     setAddedItemName(selectedAction === 'contact' ? 'a key contact' : 'a document');
-    OnboardingService.setState({ firstItemAdded: true });
+    void OnboardingService.setState({ firstItemAdded: true });
     goTo('confirmation');
   };
 
   const finishOnboarding = () => {
-    OnboardingService.complete();
+    void OnboardingService.complete();
     navigate('/dashboard');
   };
 
@@ -409,7 +409,7 @@ const Onboarding = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    OnboardingService.setState({ sharingOffered: true });
+                    void OnboardingService.setState({ sharingOffered: true });
                     goTo('family-preview');
                   }}
                   className="btn-hero w-full text-base h-12"

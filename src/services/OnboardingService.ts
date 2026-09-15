@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'billvie_onboarding';
+import { getHouseholdId } from '@/services/supabaseData';
 
 export interface OnboardingState {
   completed: boolean;
@@ -13,27 +13,36 @@ const DEFAULT_STATE: OnboardingState = {
   sharingOffered: false,
 };
 
+const STORAGE_PREFIX = 'billvie_onboarding';
+
+function keyForHousehold(householdId: string): string {
+  return `${STORAGE_PREFIX}:${householdId}`;
+}
+
 export const OnboardingService = {
-  getState(): OnboardingState {
-    const stored = localStorage.getItem(STORAGE_KEY);
+  async getState(): Promise<OnboardingState> {
+    const householdId = await getHouseholdId();
+    const stored = localStorage.getItem(keyForHousehold(householdId));
     return stored ? JSON.parse(stored) : DEFAULT_STATE;
   },
 
-  setState(state: Partial<OnboardingState>) {
-    const current = OnboardingService.getState();
+  async setState(state: Partial<OnboardingState>): Promise<void> {
+    const householdId = await getHouseholdId();
+    const current = await OnboardingService.getState();
     const updated = { ...current, ...state };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(keyForHousehold(householdId), JSON.stringify(updated));
   },
 
-  isCompleted(): boolean {
-    return OnboardingService.getState().completed;
+  async isCompleted(): Promise<boolean> {
+    return (await OnboardingService.getState()).completed;
   },
 
-  complete() {
-    OnboardingService.setState({ completed: true, completedAt: new Date().toISOString() });
+  async complete(): Promise<void> {
+    await OnboardingService.setState({ completed: true, completedAt: new Date().toISOString() });
   },
 
-  reset() {
-    localStorage.removeItem(STORAGE_KEY);
+  async reset(): Promise<void> {
+    const householdId = await getHouseholdId();
+    localStorage.removeItem(keyForHousehold(householdId));
   },
 };

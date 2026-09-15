@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { ChevronDown, Plus, Building } from 'lucide-react';
+import { ChevronDown, Building } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,32 +8,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { HouseholdService } from '@/services/HouseholdService';
-import { HouseholdMembership } from '@/services/supabaseData';
+import { useHouseholds, roleLabel } from '@/hooks/useHouseholds';
 import { useProfile } from '@/hooks/useProfile';
-import { cn } from '@/lib/utils';
-
-const roleLabel = (accessLevel: string | null, role: string) => {
-  if (accessLevel === 'owner') return 'Owner';
-  if (role === 'advisor') return 'Advisor';
-  if (role === 'accountant') return 'Accountant';
-  return 'Trusted';
-};
 
 const HouseholdSwitcher = () => {
   const { profile } = useProfile();
-  const [households, setHouseholds] = useState<HouseholdMembership[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    HouseholdService.listMemberships()
-      .then(setHouseholds)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [profile?.householdId]);
+  const { households, loading, currentHouseholdId } = useHouseholds();
 
   if (loading || households.length < 2) return null;
 
-  const current = households.find((h) => h.householdId === profile?.householdId) || households[0];
+  const current = households.find((h) => h.householdId === currentHouseholdId) || households[0];
   const others = households.filter((h) => h.householdId !== current.householdId);
 
   return (
@@ -60,16 +43,6 @@ const HouseholdSwitcher = () => {
             </div>
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={async () => {
-            const id = await HouseholdService.createOwnHousehold();
-            HouseholdService.switchTo(id);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create your own household
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

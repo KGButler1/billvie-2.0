@@ -17,7 +17,7 @@ export class HouseholdService {
     return data as string;
   }
 
-  static switchTo(householdId: string): void {
-    setCurrentHousehold(householdId);
+  static switchTo(householdId: string, redirectTo?: string): void {
+    setCurrentHousehold(householdId, redirectTo);
   }
 }

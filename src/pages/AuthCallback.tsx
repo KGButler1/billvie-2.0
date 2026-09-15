@@ -20,6 +20,17 @@ const AuthCallback = () => {
 
     const bootstrap = async () => {
       try {
+        const pendingToken = sessionStorage.getItem('pending_invite_token');
+        if (pendingToken) {
+          sessionStorage.removeItem('pending_invite_token');
+          const { error: acceptError } = await supabase.rpc('accept_household_invite', {
+            p_token: pendingToken,
+          });
+          if (acceptError) throw acceptError;
+          navigate('/dashboard');
+          return;
+        }
+
         const invite = await checkPendingInvite(session.user.email);
 
         if (invite) {

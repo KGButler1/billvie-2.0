@@ -124,7 +124,7 @@ export const PeopleService = {
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
       },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId, accessLevel, scopes, canEdit: canEdit ?? false }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), role, keyPersonId, accessLevel, scopes, canEdit: canEdit ?? false, householdId: await getHouseholdId() }),
     });
 
     if (!response.ok) {

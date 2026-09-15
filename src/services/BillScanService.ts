@@ -1,4 +1,5 @@
 import { supabase, getValidSession, SessionExpiredError } from '@/lib/supabase';
+import { getHouseholdId } from '@/services/supabaseData';
 
 export interface ScanQuota {
   used: number;
@@ -169,7 +170,7 @@ export const BillScanService = {
         Authorization: authHeader,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, householdId: await getHouseholdId() }),
     });
 
     return res.json();
