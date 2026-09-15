@@ -42,6 +42,7 @@ import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { useAccessRedirect } from '@/hooks/useAccessRedirect';
 import { ItemFlagService } from '@/services/ItemFlagService';
+import { toast } from 'sonner';
 import { PeopleService } from '@/services/PeopleService';
 import { FlaggedInitialsStack } from '@/components/people/PersonTags';
 
@@ -81,6 +82,8 @@ const Bills = () => {
   const [upgradeReason, setUpgradeReason] = useState<'bills' | 'scan'>('bills');
   const [demoNudge, setDemoNudge] = useState(false);
   const [isLoading, setIsLoading] = useState(() => !BillService.isLoaded());
+
+  const { profile } = useProfile();
 
   const loadBills = () => {
     const upcoming = BillService.getUpcomingBills();
@@ -134,12 +137,13 @@ const Bills = () => {
   );
 
   const forYouCount = useMemo(() => {
-    const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+    if (!profile?.personId) return 0;
+    const me = PeopleService.getById(profile.personId);
     if (!me) return 0;
     return ItemFlagService.getFlagsForPersonByType(me.id, 'bill')
       .filter((f) => bills.some((b) => b.id === f.itemId))
       .length;
-  }, [bills, profile?.userId]);
+  }, [bills, profile?.personId]);
 
   const forPersonName = useMemo(() => {
     if (!forPersonFilter) return null;
@@ -150,10 +154,12 @@ const Bills = () => {
   const visibleBills = useMemo(() => {
     let list = bills;
     if (forYouFilter) {
-      const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
-      if (me) {
-        const flaggedIds = ItemFlagService.getFlagsForPersonByType(me.id, 'bill').map((f) => f.itemId);
-        list = list.filter((b) => flaggedIds.includes(b.id));
+      if (profile?.personId) {
+        const me = PeopleService.getById(profile.personId);
+        if (me) {
+          const flaggedIds = ItemFlagService.getFlagsForPersonByType(me.id, 'bill').map((f) => f.itemId);
+          list = list.filter((b) => flaggedIds.includes(b.id));
+        }
       }
     }
     if (forPersonFilter) {
@@ -226,7 +232,6 @@ const Bills = () => {
   const insuranceCount = FinancialInfoService.getInsurance().length;
   const superCount = FinancialInfoService.getSuperannuation().length;
 
-  const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
 
   const handleTryAddBill = () => {
@@ -258,7 +263,12 @@ const Bills = () => {
     if (linkedDocumentId) DocumentLinkService.linkToBill(linkedDocumentId, created.id);
     if (tax) TaxTagService.setTag(created.id, 'bill', tax);
     if (flaggedPersonIds && flaggedPersonIds.length > 0) {
-      await ItemFlagService.setFlags('bill', created.id, flaggedPersonIds);
+      try {
+        await ItemFlagService.setFlags('bill', created.id, flaggedPersonIds);
+      } catch (e) {
+        console.error('Failed to save flags:', e);
+        toast.error("Couldn't save who this is for — everything else was saved");
+      }
     }
     const msg = MilestoneService.recordMilestone('bills');
     if (msg) showMilestoneToast(msg);
@@ -283,7 +293,12 @@ const Bills = () => {
     });
     if (tax) TaxTagService.setTag(id, 'bill', tax);
     if (flaggedPersonIds) {
-      await ItemFlagService.setFlags('bill', id, flaggedPersonIds);
+      try {
+        await ItemFlagService.setFlags('bill', id, flaggedPersonIds);
+      } catch (e) {
+        console.error('Failed to save flags:', e);
+        toast.error("Couldn't save who this is for — everything else was saved");
+      }
     }
     loadBills();
     setEditingBill(null);

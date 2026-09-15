@@ -43,6 +43,7 @@ import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { ItemFlagService } from '@/services/ItemFlagService';
+import { toast } from 'sonner';
 import { TaxTagService } from '@/services/TaxTagService';
 import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 
@@ -138,7 +139,12 @@ const Dashboard = () => {
     await BillService.updateBill(id, updates);
     if (tax) TaxTagService.setTag(id, 'bill', tax);
     if (flaggedPersonIds) {
-      await ItemFlagService.setFlags('bill', id, flaggedPersonIds);
+      try {
+        await ItemFlagService.setFlags('bill', id, flaggedPersonIds);
+      } catch (e) {
+        console.error('Failed to save flags:', e);
+        toast.error("Couldn't save who this is for — everything else was saved");
+      }
     }
     loadBills();
     setEditingBill(null);
@@ -188,10 +194,11 @@ const Dashboard = () => {
 
   const canShowPeopleCard = useMemo(() => {
     if (accessLoading || isAdmin) return true;
-    const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+    if (!profile?.personId) return true;
+    const me = PeopleService.getById(profile.personId);
     if (!me) return true;
     return me.role === 'household';
-  }, [accessLoading, isAdmin, profile?.userId]);
+  }, [accessLoading, isAdmin, profile?.personId]);
 
   const canAddBills = isAdmin || (canEdit && canSee('bills'));
 
@@ -204,12 +211,14 @@ const Dashboard = () => {
     if (accessLoading) return 'Loading…';
     if (role === 'owner') return 'Only you and people you invite can see this';
     if (role === 'co_owner') return `You and ${ownerName} manage this household together`;
-    const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
-    if (me?.role === 'advisor' || me?.role === 'accountant') {
-      return `${ownerName} has invited you in as an advisor`;
+    if (profile?.personId) {
+      const me = PeopleService.getById(profile.personId);
+      if (me?.role === 'advisor' || me?.role === 'accountant') {
+        return `${ownerName} has invited you in as an advisor`;
+      }
     }
     return `${ownerName} has trusted you with a view into ${profile?.householdName ?? 'this household'}`;
-  }, [accessLoading, role, ownerName, profile?.userId]);
+  }, [accessLoading, role, ownerName, profile?.personId]);
 
   const bentoTileCount = (canSeeBills ? 1 : 0) + 1 + (canShowPeopleCard ? 1 : 0);
   const bentoColsClass =

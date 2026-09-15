@@ -25,8 +25,11 @@ const ForYouCard = () => {
   }, []);
 
   const me = useMemo(
-    () => PeopleService.getAll().find((p) => p.userId === profile?.userId),
-    [profile?.userId]
+    () => {
+      if (!profile?.personId) return undefined;
+      return PeopleService.getById(profile.personId);
+    },
+    [profile?.personId]
   );
 
   const ownerFirstName = useMemo(() => {

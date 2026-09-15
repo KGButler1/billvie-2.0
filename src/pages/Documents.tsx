@@ -40,6 +40,7 @@ import EditOnly from '@/components/EditOnly';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import { useAccessRedirect } from '@/hooks/useAccessRedirect';
 import { ItemFlagService } from '@/services/ItemFlagService';
+import { toast } from 'sonner';
 import { PeopleService } from '@/services/PeopleService';
 import { FlaggedInitialsStack } from '@/components/people/PersonTags';
 import { X } from 'lucide-react';
@@ -113,7 +114,12 @@ const Documents = () => {
     if (linkedBillId) await DocumentLinkService.linkToBill(created.id, linkedBillId);
     if (tax) await TaxTagService.setTag(created.id, 'document', tax);
     if (flaggedPersonIds && flaggedPersonIds.length > 0) {
-      await ItemFlagService.setFlags('document', created.id, flaggedPersonIds);
+      try {
+        await ItemFlagService.setFlags('document', created.id, flaggedPersonIds);
+      } catch (e) {
+        console.error('Failed to save flags:', e);
+        toast.error("Couldn't save who this is for — everything else was saved");
+      }
     }
     if (linkedFinancialEntry) {
       if (linkedFinancialEntry.type === 'insurance') {
@@ -138,7 +144,12 @@ const Documents = () => {
     await DocumentService.update(id, updates);
     if (tax) await TaxTagService.setTag(id, 'document', tax);
     if (flaggedPersonIds) {
-      await ItemFlagService.setFlags('document', id, flaggedPersonIds);
+      try {
+        await ItemFlagService.setFlags('document', id, flaggedPersonIds);
+      } catch (e) {
+        console.error('Failed to save flags:', e);
+        toast.error("Couldn't save who this is for — everything else was saved");
+      }
     }
     reload();
     setEditingId(null);
@@ -160,10 +171,12 @@ const Documents = () => {
   const filteredDocs = useMemo(() => {
     let list = documents;
     if (forYouFilter) {
-      const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
-      if (me) {
-        const flaggedIds = ItemFlagService.getFlagsForPersonByType(me.id, 'document').map((f) => f.itemId);
-        list = list.filter((d) => flaggedIds.includes(d.id));
+      if (profile?.personId) {
+        const me = PeopleService.getById(profile.personId);
+        if (me) {
+          const flaggedIds = ItemFlagService.getFlagsForPersonByType(me.id, 'document').map((f) => f.itemId);
+          list = list.filter((d) => flaggedIds.includes(d.id));
+        }
       }
     }
     if (forPersonFilter) {
@@ -201,12 +214,13 @@ const Documents = () => {
   }, [documents]);
 
   const forYouCount = useMemo(() => {
-    const me = PeopleService.getAll().find((p) => p.userId === profile?.userId);
+    if (!profile?.personId) return 0;
+    const me = PeopleService.getById(profile.personId);
     if (!me) return 0;
     return ItemFlagService.getFlagsForPersonByType(me.id, 'document')
       .filter((f) => documents.some((d) => d.id === f.itemId))
       .length;
-  }, [documents, profile?.userId]);
+  }, [documents, profile?.personId]);
 
   const forPersonName = useMemo(() => {
     if (!forPersonFilter) return null;
