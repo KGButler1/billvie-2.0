@@ -43,6 +43,8 @@ import OrganizationStrip from '@/components/OrganizationStrip';
 import PeopleBubbleRow from '@/components/PeopleBubbleRow';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { ItemFlagService } from '@/services/ItemFlagService';
+import { TaxTagService } from '@/services/TaxTagService';
+import { TaxRelevanceValue } from '@/components/tax/TaxRelevanceFields';
 
 const Dashboard = () => {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -124,9 +126,20 @@ const Dashboard = () => {
     setIsScanningBill(false);
   };
 
-  const handleUpdateBill = async (updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>) => {
-    if (!editingBill) return;
-    await BillService.updateBill(editingBill.id, updates);
+  const handleUpdateBill = async (
+    updates: Omit<Bill, 'id' | 'status' | 'createdAt' | 'updatedAt'>,
+    _linkedDocumentId?: string,
+    tax?: TaxRelevanceValue,
+    billId?: string,
+    flaggedPersonIds?: string[]
+  ) => {
+    const id = billId ?? editingBill?.id;
+    if (!id) return;
+    await BillService.updateBill(id, updates);
+    if (tax) TaxTagService.setTag(id, 'bill', tax);
+    if (flaggedPersonIds) {
+      await ItemFlagService.setFlags('bill', id, flaggedPersonIds);
+    }
     loadBills();
     setEditingBill(null);
     setDetailBill(null);

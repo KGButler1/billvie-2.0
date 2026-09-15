@@ -286,7 +286,7 @@ const QuickAddBill = ({ onAdd, onClose, initialBill, mode = 'add' }: QuickAddBil
       category: category || undefined,
       notes: notes.trim() || undefined,
       taggedPersonIds: taggedPersonIds.length ? taggedPersonIds : undefined,
-    }, !isEdit ? linkedDocument?.id : undefined, tax, isEdit ? (editingBill?.id ?? initialBill?.id) : undefined, taggedPersonIds);
+    }, !isEdit ? linkedDocument?.id : undefined, tax, isEdit ? initialBill?.id : undefined, taggedPersonIds);
   };
 
   // Helper to get display label for custom options
