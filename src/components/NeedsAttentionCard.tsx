@@ -70,7 +70,7 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   const handleSnooze = async (item: AttentionItem) => {
     setActionLoading(`${item.ruleKey}:${item.entityId ?? ''}`);
     try {
-      await AttentionService.snooze(item.ruleKey, item.entityId, 30);
+      await AttentionService.snooze(item.ruleKey, item.entityId, 30, item.title, item.detail);
       toast.success('Snoozed for 30 days');
       await loadItems();
     } catch {
@@ -83,7 +83,7 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   const handleDismiss = async (item: AttentionItem) => {
     setActionLoading(`${item.ruleKey}:${item.entityId ?? ''}`);
     try {
-      await AttentionService.dismiss(item.ruleKey, item.entityId);
+      await AttentionService.dismiss(item.ruleKey, item.entityId, item.title, item.detail);
       toast.success("Won't remind you about this again");
       await loadItems();
     } catch {

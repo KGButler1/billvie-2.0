@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff, CalendarClock, Mail, Eye } from 'lucide-react';
+import DetailsAccordion from '@/components/shared/DetailsAccordion';
 import DownloadDataSheet from '@/components/DownloadDataSheet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -381,30 +382,32 @@ const Settings = () => {
             {/* Hidden reminders */}
             {hiddenReminders.length > 0 && (
               <div className="border-t border-border p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Eye className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Hidden reminders</p>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  These reminders were dismissed and won't reappear until you show them again.
-                </p>
-                <div className="space-y-2">
-                  {hiddenReminders.map((d) => {
-                    const key = `${d.ruleKey}:${d.entityId ?? ''}`;
-                    return (
-                      <div key={d.id} className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-muted-foreground truncate">{d.ruleKey.replace(/_/g, ' ').toLowerCase()}</p>
-                        <button
-                          onClick={() => handleRestoreReminder(d.ruleKey, d.entityId)}
-                          disabled={restoringKey === key}
-                          className="text-sm text-primary hover:underline disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
-                        >
-                          {restoringKey === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Show again'}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                <DetailsAccordion
+                  label={`Hidden reminders (${hiddenReminders.length})`}
+                  defaultOpen={false}
+                >
+                  <p className="text-xs text-muted-foreground">
+                    These reminders were dismissed and won't reappear until you show them again.
+                  </p>
+                  <div className="space-y-2">
+                    {hiddenReminders.map((d) => {
+                      const key = `${d.ruleKey}:${d.entityId ?? ''}`;
+                      const displayTitle = d.title ?? d.ruleKey.replace(/_/g, ' ').toLowerCase();
+                      return (
+                        <div key={d.id} className="flex items-center justify-between gap-2">
+                          <p className="text-sm text-muted-foreground truncate">{displayTitle}</p>
+                          <button
+                            onClick={() => handleRestoreReminder(d.ruleKey, d.entityId)}
+                            disabled={restoringKey === key}
+                            className="text-sm text-primary hover:underline disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                          >
+                            {restoringKey === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Show again'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </DetailsAccordion>
               </div>
             )}
           </div>

@@ -23,6 +23,8 @@ export interface DismissalRecord {
   entityId: string | null;
   snoozedUntil: string | null;
   dismissedAt: string | null;
+  title: string | null;
+  detail: string | null;
 }
 
 function rowToItem(row: Record<string, unknown>): AttentionItem {
@@ -50,7 +52,13 @@ export const AttentionService = {
     return (data || []).map(rowToItem);
   },
 
-  async snooze(ruleKey: string, entityId: string | null, days: number): Promise<void> {
+  async snooze(
+    ruleKey: string,
+    entityId: string | null,
+    days: number,
+    title?: string,
+    detail?: string | null
+  ): Promise<void> {
     const householdId = await getHouseholdId();
     const snoozedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     const { error } = await supabase
@@ -62,6 +70,8 @@ export const AttentionService = {
           entity_id: entityId,
           snoozed_until: snoozedUntil,
           dismissed_at: null,
+          title: title ?? null,
+          detail: detail ?? null,
         },
         { onConflict: 'household_id,rule_key,entity_id' }
       );
@@ -77,6 +87,8 @@ export const AttentionService = {
       entity_id: item.entityId,
       snoozed_until: snoozedUntil,
       dismissed_at: null,
+      title: item.title,
+      detail: item.detail,
     }));
     const { error } = await supabase
       .from('attention_dismissals')
@@ -84,7 +96,12 @@ export const AttentionService = {
     if (error) throw error;
   },
 
-  async dismiss(ruleKey: string, entityId: string | null): Promise<void> {
+  async dismiss(
+    ruleKey: string,
+    entityId: string | null,
+    title?: string,
+    detail?: string | null
+  ): Promise<void> {
     const householdId = await getHouseholdId();
     const { error } = await supabase
       .from('attention_dismissals')
@@ -95,6 +112,8 @@ export const AttentionService = {
           entity_id: entityId,
           dismissed_at: new Date().toISOString(),
           snoozed_until: null,
+          title: title ?? null,
+          detail: detail ?? null,
         },
         { onConflict: 'household_id,rule_key,entity_id' }
       );
@@ -115,6 +134,8 @@ export const AttentionService = {
       entityId: (r.entity_id as string) || null,
       snoozedUntil: (r.snoozed_until as string) || null,
       dismissedAt: (r.dismissed_at as string) || null,
+      title: (r.title as string) || null,
+      detail: (r.detail as string) || null,
     }));
   },
 
