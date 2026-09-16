@@ -20,7 +20,7 @@ export const calculateBillStatus = (bill: Bill): BillStatus => {
   const dueDate = startOfDay(parseISO(bill.dueDate));
   const daysUntilDue = differenceInDays(dueDate, today);
 
-  if (daysUntilDue < 0) return bill.isAutoDebited ? 'pending' : 'overdue';
+  if (daysUntilDue <= 0) return bill.isAutoDebited ? 'pending' : 'overdue';
   return 'pending';
 };
 
