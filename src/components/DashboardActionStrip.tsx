@@ -31,10 +31,10 @@ const DashboardActionStrip = ({
       <div
         className={cn(
           'w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0',
-          hasUrgent ? 'bg-destructive/10' : 'bg-muted'
+          hasUrgent ? 'bg-amber-500/10' : 'bg-muted'
         )}
       >
-        <AlertTriangle className={cn('w-6 h-6', hasUrgent ? 'text-destructive' : 'text-muted-foreground')} />
+        <AlertTriangle className={cn('w-6 h-6', hasUrgent ? 'text-amber-500' : 'text-muted-foreground')} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">
