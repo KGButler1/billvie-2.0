@@ -7,6 +7,7 @@ import BottomNav from '@/components/BottomNav';
 import FabMenu from '@/components/FabMenu';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -443,7 +444,6 @@ const People = () => {
                     {isCurrentUserAdmin && entry.scopes.length > 0 && (
                       <div>
                         <Button
-                          variant="outline"
                           size="sm"
                           onClick={() => setPreviewOpen(previewOpen === entry.key ? null : entry.key)}
                         >
@@ -642,38 +642,42 @@ const People = () => {
       }
     };
 
+    const scopesWithItems = relevantScopes.filter((scope) => getItems(scope).length > 0);
+    if (scopesWithItems.length === 0) return null;
+
     return (
       <div className="pt-2 border-t border-border">
-        <div className="space-y-3">
-          {relevantScopes.map((scope) => {
+        <Accordion type="multiple" defaultValue={scopesWithItems}>
+          {scopesWithItems.map((scope) => {
             const items = getItems(scope);
-            if (items.length === 0) return null;
             return (
-              <div key={scope}>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+              <AccordionItem key={scope} value={scope} className="border-none">
+                <AccordionTrigger className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-1.5 hover:no-underline">
                   {ACCESS_SCOPE_LABELS[scope]}
-                </p>
-                <div className="space-y-1">
-                  {items.map((item) => {
-                    const excluded = ExclusionService.isExcluded(personId, scope, item.id);
-                    return (
-                      <label
-                        key={item.id}
-                        className="flex items-center justify-between min-h-[40px] gap-4 cursor-pointer"
-                      >
-                        <span className="text-sm min-w-0 truncate">{item.label}</span>
-                        <Switch
-                          checked={!excluded}
-                          onCheckedChange={(v) => toggleExclusion(entry, scope, item.id, !v)}
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-1">
+                    {items.map((item) => {
+                      const excluded = ExclusionService.isExcluded(personId, scope, item.id);
+                      return (
+                        <label
+                          key={item.id}
+                          className="flex items-center justify-between min-h-[40px] gap-4 cursor-pointer"
+                        >
+                          <span className="text-sm min-w-0 truncate">{item.label}</span>
+                          <Switch
+                            checked={!excluded}
+                            onCheckedChange={(v) => toggleExclusion(entry, scope, item.id, !v)}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             );
           })}
-        </div>
+        </Accordion>
       </div>
     );
   };

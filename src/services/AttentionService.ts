@@ -42,6 +42,17 @@ function rowToItem(row: Record<string, unknown>): AttentionItem {
   };
 }
 
+export function computeSnoozeUntil(item: AttentionItem, bufferDays: number): Date {
+  const FLAT_SNOOZE_DAYS = 30;
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  if (!item.dueAt) {
+    return new Date(Date.now() + FLAT_SNOOZE_DAYS * 24 * 60 * 60 * 1000);
+  }
+  const due = new Date(item.dueAt);
+  const target = new Date(due.getTime() - bufferDays * 24 * 60 * 60 * 1000);
+  return target > tomorrow ? target : tomorrow;
+}
+
 export const AttentionService = {
   async fetchItems(): Promise<AttentionItem[]> {
     const householdId = await getHouseholdId();
@@ -55,12 +66,11 @@ export const AttentionService = {
   async snooze(
     ruleKey: string,
     entityId: string | null,
-    days: number,
+    snoozedUntil: string,
     title?: string,
     detail?: string | null
   ): Promise<void> {
     const householdId = await getHouseholdId();
-    const snoozedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     const { error } = await supabase
       .from('attention_dismissals')
       .upsert(
@@ -78,21 +88,20 @@ export const AttentionService = {
     if (error) throw error;
   },
 
-  async snoozeAll(items: AttentionItem[], days: number): Promise<void> {
+  async snoozeAll(rows: { ruleKey: string; entityId: string | null; snoozedUntil: string; title: string; detail: string | null }[]): Promise<void> {
     const householdId = await getHouseholdId();
-    const snoozedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-    const rows = items.map((item) => ({
+    const dbRows = rows.map((r) => ({
       household_id: householdId,
-      rule_key: item.ruleKey,
-      entity_id: item.entityId,
-      snoozed_until: snoozedUntil,
+      rule_key: r.ruleKey,
+      entity_id: r.entityId,
+      snoozed_until: r.snoozedUntil,
       dismissed_at: null,
-      title: item.title,
-      detail: item.detail,
+      title: r.title,
+      detail: r.detail,
     }));
     const { error } = await supabase
       .from('attention_dismissals')
-      .upsert(rows, { onConflict: 'household_id,rule_key,entity_id' });
+      .upsert(dbRows, { onConflict: 'household_id,rule_key,entity_id' });
     if (error) throw error;
   },
 

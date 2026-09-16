@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff, CalendarClock, Mail, Eye } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, User, CreditCard, Landmark, Trash2, LogOut, Bell, Download, FileText, FileSpreadsheet, ChevronRight, Check, Lock, Undo2, Camera, Loader as Loader2, EyeOff, CalendarClock, Mail, Eye, Shield } from 'lucide-react';
 import DetailsAccordion from '@/components/shared/DetailsAccordion';
 import DownloadDataSheet from '@/components/DownloadDataSheet';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,7 +13,7 @@ import { BillService } from '@/services/BillService';
 import { EventService } from '@/services/EventService';
 import { FinancialInfoService } from '@/services/FinancialInfoService';
 import { UserSettings } from '@/types/bill';
-import { getComingUpWindowDays, getCachedWindowDays, setCachedWindowDays, getHouseholdId } from '@/services/supabaseData';
+import { getComingUpWindowDays, getCachedWindowDays, setCachedWindowDays, getHouseholdId, getSnoozeBufferDays, getCachedSnoozeBufferDays, setCachedSnoozeBufferDays } from '@/services/supabaseData';
 import BottomNav from '@/components/BottomNav';
 import UpgradeModal from '@/components/UpgradeModal';
 import ManageCardsSheet from '@/components/cards/ManageCardsSheet';
@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { PRO_PRICE, PRO_PERIOD, FREE_FEATURES } from '@/constants/pricing';
 import { AttentionService, DismissalRecord } from '@/services/AttentionService';
+import { format } from 'date-fns';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
 import AdminOnly from '@/components/AdminOnly';
 
@@ -61,6 +62,10 @@ const Settings = () => {
   const [hiddenReminders, setHiddenReminders] = useState<DismissalRecord[]>([]);
   const [hiddenRemindersLoading, setHiddenRemindersLoading] = useState(true);
   const [restoringKey, setRestoringKey] = useState<string | null>(null);
+  const [snoozedReminders, setSnoozedReminders] = useState<DismissalRecord[]>([]);
+  const [snoozeBufferDays, setSnoozeBufferDays] = useState<number>(getCachedSnoozeBufferDays());
+  const [snoozeBufferLoading, setSnoozeBufferLoading] = useState(true);
+  const [snoozeBufferSaving, setSnoozeBufferSaving] = useState(false);
 
   useEffect(() => {
     if (profile?.householdId) {
@@ -103,10 +108,17 @@ const Settings = () => {
       .then(setDigestFrequency)
       .catch(() => setDigestFrequency('weekly'))
       .finally(() => setDigestLoading(false));
-    AttentionService.getPermanentDismissals()
-      .then(setHiddenReminders)
+    AttentionService.getDismissals()
+      .then((all) => {
+        setHiddenReminders(all.filter((d) => d.dismissedAt !== null));
+        setSnoozedReminders(all.filter((d) => d.snoozedUntil !== null && new Date(d.snoozedUntil) > new Date()));
+      })
       .catch(() => {})
       .finally(() => setHiddenRemindersLoading(false));
+    getSnoozeBufferDays()
+      .then(setSnoozeBufferDays)
+      .catch(() => setSnoozeBufferDays(3))
+      .finally(() => setSnoozeBufferLoading(false));
   }, []);
 
   const handleDigestChange = async (frequency: 'off' | 'weekly' | 'monthly') => {
@@ -128,11 +140,31 @@ const Settings = () => {
     try {
       await AttentionService.removeDismissal(ruleKey, entityId);
       setHiddenReminders(prev => prev.filter(r => !(r.ruleKey === ruleKey && r.entityId === entityId)));
+      setSnoozedReminders(prev => prev.filter(r => !(r.ruleKey === ruleKey && r.entityId === entityId)));
       toast.success('Reminder restored');
     } catch {
       toast.error('Could not restore this reminder. Please try again.');
     } finally {
       setRestoringKey(null);
+    }
+  };
+
+  const handleSnoozeBufferChange = async (days: number) => {
+    setSnoozeBufferSaving(true);
+    try {
+      const householdId = await getHouseholdId();
+      const { error } = await supabase.rpc('update_snooze_buffer_days', {
+        p_household_id: householdId,
+        p_days: days,
+      });
+      if (error) throw error;
+      setSnoozeBufferDays(days);
+      setCachedSnoozeBufferDays(days);
+      toast.success(`Snooze buffer set to ${days} days`);
+    } catch {
+      toast.error('Could not update the snooze buffer. Please try again.');
+    } finally {
+      setSnoozeBufferSaving(false);
     }
   };
 
@@ -379,7 +411,46 @@ const Settings = () => {
               )}
             </div>
 
-            {/* Hidden reminders */}
+            {/* Snooze buffer */}
+            <div className="border-t border-border p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <Label className="font-medium">Snooze buffer</Label>
+                  <p className="text-sm text-muted-foreground">
+                    When you snooze a bill or reminder with a due date, it won't stay hidden past this many days before it's due.
+                  </p>
+                </div>
+              </div>
+              {snoozeBufferLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, 3, 5, 7].map((days) => (
+                    <button
+                      key={days}
+                      onClick={() => handleSnoozeBufferChange(days)}
+                      disabled={snoozeBufferSaving}
+                      className={cn(
+                        'p-3 rounded-lg border text-sm transition-colors',
+                        snoozeBufferDays === days
+                          ? 'border-primary bg-primary/10 text-primary font-medium'
+                          : 'border-border hover:bg-muted',
+                        snoozeBufferSaving && 'opacity-50'
+                      )}
+                    >
+                      {days} days
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Dismissed reminders */}
             {hiddenReminders.length > 0 && (
               <div className="border-t border-border p-4">
                 <DetailsAccordion
@@ -402,6 +473,38 @@ const Settings = () => {
                             className="text-sm text-primary hover:underline disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
                           >
                             {restoringKey === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Show again'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </DetailsAccordion>
+              </div>
+            )}
+
+            {/* Snoozed reminders */}
+            {snoozedReminders.length > 0 && (
+              <div className="border-t border-border p-4">
+                <DetailsAccordion
+                  label={`Snoozed (${snoozedReminders.length})`}
+                  defaultOpen={false}
+                >
+                  <div className="space-y-2">
+                    {snoozedReminders.map((d) => {
+                      const key = `${d.ruleKey}:${d.entityId ?? ''}`;
+                      const displayTitle = d.title ?? d.ruleKey.replace(/_/g, ' ').toLowerCase();
+                      return (
+                        <div key={d.id} className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm text-muted-foreground truncate">{displayTitle}</p>
+                            <p className="text-xs text-muted-foreground">Until {format(new Date(d.snoozedUntil!), 'd MMM')}</p>
+                          </div>
+                          <button
+                            onClick={() => handleRestoreReminder(d.ruleKey, d.entityId)}
+                            disabled={restoringKey === key}
+                            className="text-sm text-primary hover:underline disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                          >
+                            {restoringKey === key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Remind me now'}
                           </button>
                         </div>
                       );

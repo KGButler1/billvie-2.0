@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, AlertTriangle, Info, Clock, X, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
-import { AttentionService, AttentionItem, AttentionSeverity } from '@/services/AttentionService';
+import { AttentionService, AttentionItem, AttentionSeverity, computeSnoozeUntil } from '@/services/AttentionService';
 import { useProfile } from '@/hooks/useProfile';
 import { useViewerAccess } from '@/hooks/useViewerAccess';
+import { getCachedSnoozeBufferDays } from '@/services/supabaseData';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
@@ -44,6 +46,8 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  const bufferDays = getCachedSnoozeBufferDays();
+
   const loadItems = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -70,8 +74,9 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   const handleSnooze = async (item: AttentionItem) => {
     setActionLoading(`${item.ruleKey}:${item.entityId ?? ''}`);
     try {
-      await AttentionService.snooze(item.ruleKey, item.entityId, 30, item.title, item.detail);
-      toast.success('Snoozed for 30 days');
+      const snoozedUntil = computeSnoozeUntil(item, bufferDays);
+      await AttentionService.snooze(item.ruleKey, item.entityId, snoozedUntil.toISOString(), item.title, item.detail);
+      toast.success(`Snoozed until ${format(snoozedUntil, 'd MMM')}`);
       await loadItems();
     } catch {
       toast.error('Could not snooze this item. Please try again.');
@@ -96,8 +101,18 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
   const handleSnoozeAll = async () => {
     setBulkLoading(true);
     try {
-      await AttentionService.snoozeAll(sorted, 30);
-      toast.success(`Snoozed ${sorted.length} reminder${sorted.length === 1 ? '' : 's'} for 30 days`);
+      const rows = sorted.map((item) => {
+        const snoozedUntil = computeSnoozeUntil(item, bufferDays);
+        return {
+          ruleKey: item.ruleKey,
+          entityId: item.entityId,
+          snoozedUntil: snoozedUntil.toISOString(),
+          title: item.title,
+          detail: item.detail,
+        };
+      });
+      await AttentionService.snoozeAll(rows);
+      toast.success(`Snoozed ${sorted.length} reminder${sorted.length === 1 ? '' : 's'}`);
       await loadItems();
     } catch {
       toast.error('Could not snooze these reminders. Please try again.');
@@ -177,6 +192,9 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
             const dismissTooltip = isFreeGap
               ? "Don't remind me about this — restore anytime in Settings"
               : "Dismiss — won't show again until you restore it in Settings";
+            const snoozedUntil = computeSnoozeUntil(item, bufferDays);
+            const snoozeTooltip = `Snooze — you'll see this again on ${format(snoozedUntil, 'd MMM')}`;
+            const snoozeAriaLabel = `Snooze ${item.title} until ${format(snoozedUntil, 'd MMM')}`;
             return (
               <motion.div
                 key={`${item.ruleKey}-${item.entityId ?? 'null'}-${idx}`}
@@ -208,13 +226,13 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
                             <button
                               onClick={() => handleSnooze(item)}
                               disabled={isActing || bulkLoading}
-                              aria-label={`Snooze ${item.title} for 30 days`}
+                              aria-label={snoozeAriaLabel}
                               className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
                             >
                               {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent>Snooze for 30 days</TooltipContent>
+                          <TooltipContent>{snoozeTooltip}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -276,7 +294,7 @@ const NeedsAttentionCard = ({ onCriticalSeen }: NeedsAttentionCardProps) => {
                 className="w-full text-sm text-muted-foreground hover:text-foreground py-2 disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {bulkLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Snooze all for 30 days
+                Snooze all
               </button>
             )}
           </>
