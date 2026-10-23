@@ -65,11 +65,11 @@ const EventDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 lg:pt-16">
       <EventHeader event={event} onUpdate={loadEvent} />
 
       {/* Desktop back-nav — matches RecentlyDeleted pattern */}
-      <div className="hidden lg:flex items-center gap-3 container mx-auto px-4 pt-8 mb-2">
+      <div className="hidden lg:flex items-center gap-3 container mx-auto px-4 mb-2">
         <h1 className="text-2xl font-bold">{event.name}</h1>
         <button
           onClick={() => navigate('/events')}
@@ -81,7 +81,7 @@ const EventDetail = () => {
         <span className="text-sm text-muted-foreground">· {EVENT_TYPE_LABELS[event.type]}</span>
       </div>
 
-      <main className="container mx-auto px-4 pt-20 lg:pt-4">
+      <main className="container mx-auto px-4 pt-20 lg:pt-8">
         <ScopeGate scope="events">
         <p className="text-sm text-muted-foreground mb-4">
           What's committed for this, and what your household would need to know.

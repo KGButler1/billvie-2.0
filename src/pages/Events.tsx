@@ -114,7 +114,7 @@ const Events = () => {
   }, [allEvents, activeEvents, completedEvents, statusFilter, sort]);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 lg:pt-16">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
