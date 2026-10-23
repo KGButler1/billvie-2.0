@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Calendar, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EventService } from '@/services/EventService';
 import { useProfile } from '@/hooks/useProfile';
@@ -12,6 +12,7 @@ import CreateEventModal from '@/components/CreateEventModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import EventCard from '@/components/events/EventCard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import ScopeGate from '@/components/ScopeGate';
 import EditOnly from '@/components/EditOnly';
@@ -23,30 +24,33 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { isEventInPast, eventSortDate } from '@/utils/eventDate';
 
-type StatusFilter = 'all' | 'active' | 'completed';
 type SortKey = 'date' | 'name' | 'budget';
 
-const STATUS_CHIPS: { key: StatusFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'active', label: 'Active' },
-  { key: 'completed', label: 'Completed' },
-];
-
 const SORT_LABELS: Record<SortKey, string> = {
-  date: 'Newest first',
+  date: 'Soonest first',
   name: 'Name (A–Z)',
   budget: 'Budget (high to low)',
 };
+
+const PAST_COLLAPSED_KEY = 'billvie:events_past_collapsed';
 
 const Events = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sort, setSort] = useState<SortKey>('date');
   const [isLoading, setIsLoading] = useState(() => !EventService.isLoaded());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pastCollapsed, setPastCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(PAST_COLLAPSED_KEY) !== 'expanded';
+    } catch {
+      return true;
+    }
+  });
 
   const { profile } = useProfile();
   const isPaid = profile?.isPaid ?? false;
@@ -84,38 +88,65 @@ const Events = () => {
     loadEvents();
   };
 
-  const allEvents = events;
-  const activeEvents = events.filter(e => e.status === 'active' || e.status === 'planning');
-  const completedEvents = events.filter(e => e.status === 'completed' || e.status === 'archived');
   const hasSampleEvents = events.some(e => e.isSample);
   const eventLimit = isPaid ? EVENT_LIMITS.paid : EVENT_LIMITS.free;
   const currentEventCount = EventService.getEventCount();
 
-  const counts = useMemo(() => ({
-    all: allEvents.length,
-    active: activeEvents.length,
-    completed: completedEvents.length,
-  }), [allEvents, activeEvents, completedEvents]);
-
-  const visibleEvents = useMemo(() => {
-    let list = allEvents;
-    if (statusFilter === 'active') list = activeEvents;
-    else if (statusFilter === 'completed') list = completedEvents;
-
-    const sorted = [...list];
-    if (sort === 'name') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === 'budget') {
-      sorted.sort((a, b) => (b.budget ?? 0) - (a.budget ?? 0));
-    } else {
-      sorted.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const togglePastCollapsed = () => {
+    const next = !pastCollapsed;
+    setPastCollapsed(next);
+    try {
+      localStorage.setItem(PAST_COLLAPSED_KEY, next ? 'collapsed' : 'expanded');
+    } catch {
+      // ignore
     }
-    return sorted;
-  }, [allEvents, activeEvents, completedEvents, statusFilter, sort]);
+  };
+
+  const { activeEvents, pastEvents } = useMemo(() => {
+    const filtered = searchQuery.trim()
+      ? events.filter(e => e.name.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+      : events;
+
+    const active = filtered.filter(e => !isEventInPast(e));
+    const past = filtered.filter(e => isEventInPast(e));
+
+    // Active: dated first (soonest), then undated (newest first)
+    active.sort((a, b) => {
+      const aDate = eventSortDate(a);
+      const bDate = eventSortDate(b);
+      const aHasDate = !!(a.startDate || a.endDate);
+      const bHasDate = !!(b.startDate || b.endDate);
+      if (aHasDate && bHasDate) return aDate.localeCompare(bDate);
+      if (aHasDate && !bHasDate) return -1;
+      if (!aHasDate && bHasDate) return 1;
+
+      // Both undated — apply sort control
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      if (sort === 'budget') return (b.budget ?? 0) - (a.budget ?? 0);
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    // If sort is name or budget, re-sort active (overriding the date-first logic)
+    if (sort === 'name') {
+      active.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === 'budget') {
+      active.sort((a, b) => (b.budget ?? 0) - (a.budget ?? 0));
+    }
+
+    // Past: most recent first (by sort date, then created)
+    past.sort((a, b) => {
+      const aDate = eventSortDate(a);
+      const bDate = eventSortDate(b);
+      if (aDate && bDate) return bDate.localeCompare(aDate);
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    return { activeEvents: active, pastEvents: past };
+  }, [events, searchQuery, sort]);
 
   return (
     <div className="min-h-screen bg-background pb-24 lg:pt-16">
-      {/* Header */}
+      {/* Mobile Header */}
       <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div>
@@ -150,46 +181,37 @@ const Events = () => {
           what's planned, what's paid, and what can still change.
         </p>
 
-        {/* Toolbar */}
+        {/* Search + Sort */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {STATUS_CHIPS.map(chip => (
-              <button
-                key={chip.key}
-                onClick={() => setStatusFilter(chip.key)}
-                className={cn(
-                  'text-sm px-3 py-1.5 rounded-full border transition-colors',
-                  statusFilter === chip.key
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border hover:bg-muted',
-                )}
-              >
-                {chip.label} ({counts[chip.key]})
-              </button>
-            ))}
+          <div className="relative flex-1 min-w-[160px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search events"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-10"
+              aria-label="Search events"
+            />
           </div>
+          <Select value={sort} onValueChange={v => setSort(v as SortKey)}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-50">
+              {Object.entries(SORT_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <Select value={sort} onValueChange={v => setSort(v as SortKey)}>
-              <SelectTrigger className="w-[170px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {Object.entries(SORT_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <EditOnly>
-            <Button onClick={handleTryCreateEvent} className="gap-1.5">
-              <Plus className="w-4 h-4" />
-              Add Event
-            </Button>
-            </EditOnly>
-          </div>
+          <EditOnly>
+          <Button onClick={handleTryCreateEvent} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            Add Event
+          </Button>
+          </EditOnly>
         </div>
 
         <AnimatePresence mode="wait">
@@ -199,31 +221,35 @@ const Events = () => {
             </motion.div>
           ) : (
             <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {visibleEvents.length > 0 ? (
+              {activeEvents.length > 0 ? (
                 <div className="space-y-4">
-                  {visibleEvents.map((event, index) => (
-                    <div key={event.id} className={cn(event.status === 'completed' || event.status === 'archived' ? 'opacity-60' : '')}>
-                      <EventCard
-                        event={event}
-                        index={index}
-                        onDelete={handleDeleteEvent}
-                        onClick={() => navigate(`/events/${event.id}`)}
-                      />
-                    </div>
+                  {activeEvents.map((event, index) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      index={index}
+                      onDelete={handleDeleteEvent}
+                      onClick={() => navigate(`/events/${event.id}`)}
+                      onStatusChange={loadEvents}
+                    />
                   ))}
                 </div>
-              ) : (
+              ) : pastEvents.length === 0 ? (
                 <div className="text-center py-20">
                   <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
                     <Calendar className="w-8 h-8 text-primary" />
                   </div>
                   <h2 className="text-xl font-semibold mb-2">
-                    {events.length === 0 ? 'Plan your first event' : 'Nothing matches this filter'}
+                    {events.length === 0
+                      ? 'Plan your first event'
+                      : searchQuery
+                        ? 'No events match your search'
+                        : 'Nothing matches this filter'}
                   </h2>
                   <p className="text-muted-foreground mb-6">
                     {events.length === 0
                       ? 'Track trips, weddings, moves, and more!'
-                      : 'Try a different status filter.'}
+                      : 'Try a different search.'}
                   </p>
                   {events.length === 0 && (
                     <EditOnly>
@@ -233,6 +259,52 @@ const Events = () => {
                     </Button>
                     </EditOnly>
                   )}
+                </div>
+              ) : (
+                <p className="text-center py-12 text-muted-foreground text-sm">
+                  No active events. All past events are listed below.
+                </p>
+              )}
+
+              {/* Past events section */}
+              {pastEvents.length > 0 && (
+                <div className="mt-8">
+                  <button
+                    onClick={togglePastCollapsed}
+                    className="flex items-center gap-2 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+                  >
+                    {pastCollapsed ? (
+                      <ChevronRight className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                    Past events ({pastEvents.length})
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {!pastCollapsed && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-4">
+                          {pastEvents.map((event, index) => (
+                            <EventCard
+                              key={event.id}
+                              event={event}
+                              index={index}
+                              onDelete={handleDeleteEvent}
+                              onClick={() => navigate(`/events/${event.id}`)}
+                              onStatusChange={loadEvents}
+                              showBudgetDetail
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </motion.div>

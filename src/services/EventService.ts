@@ -1,6 +1,7 @@
-import { Event, EventExpense, EventType, EventStatus } from '@/types/bill';
+import { Event, EventExpense, EventType, EventStatus, DatePrecision } from '@/types/bill';
 import { supabase } from '@/lib/supabase';
 import { getHouseholdId } from './supabaseData';
+import { isEventInPast } from '@/utils/eventDate';
 
 function rowToEvent(row: Record<string, unknown>, expenses: EventExpense[]): Event {
   return {
@@ -11,6 +12,7 @@ function rowToEvent(row: Record<string, unknown>, expenses: EventExpense[]): Eve
     startDate: (row.start_date as string) || undefined,
     endDate: (row.end_date as string) || undefined,
     status: (row.status as EventStatus) || 'planning',
+    datePrecision: (row.date_precision as DatePrecision) || 'day',
     expenses,
     isSample: row.is_sample as boolean | undefined,
     deletedAt: (row.deleted_at as string) || undefined,
@@ -27,6 +29,7 @@ function eventToRow(event: Partial<Event>): Record<string, unknown> {
   if (event.startDate !== undefined) row.start_date = event.startDate || null;
   if (event.endDate !== undefined) row.end_date = event.endDate || null;
   if (event.status !== undefined) row.status = event.status;
+  if (event.datePrecision !== undefined) row.date_precision = event.datePrecision;
   if (event.isSample !== undefined) row.is_sample = event.isSample;
   if (event.deletedAt !== undefined) row.deleted_at = event.deletedAt || null;
   return row;
@@ -87,7 +90,9 @@ export class EventService {
   }
 
   static getActiveEvents(): Event[] {
-    return this.getAllEvents().filter((e) => e.status === 'active' || e.status === 'planning');
+    return this.getAllEvents().filter(
+      (e) => (e.status === 'active' || e.status === 'planning') && !isEventInPast(e)
+    );
   }
 
   static async createEvent(eventData: Omit<Event, 'id' | 'expenses' | 'createdAt' | 'updatedAt'>): Promise<Event> {

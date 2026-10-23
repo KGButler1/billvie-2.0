@@ -54,6 +54,7 @@ export type EventType =
   | 'custom';
 
 export type EventStatus = 'planning' | 'active' | 'completed' | 'archived';
+export type DatePrecision = 'day' | 'month';
 
 export interface EventExpense {
   id: string;
@@ -86,6 +87,7 @@ export interface Event {
   budget?: number;
   startDate?: string;
   endDate?: string;
+  datePrecision?: DatePrecision;
   status: EventStatus;
   expenses: EventExpense[];
   isSample?: boolean;

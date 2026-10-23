@@ -20,9 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
 import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog';
 import { UserService } from '@/services/UserService';
+import { formatEventDate } from '@/utils/eventDate';
 
 interface EventHeaderProps {
   event: Event;
@@ -68,11 +68,7 @@ const EventHeader = ({ event, onUpdate }: EventHeaderProps) => {
     setShowDeleteDialog(true);
   };
 
-  const dateRange = event.startDate && event.endDate
-    ? `${format(parseISO(event.startDate), 'MMM d')} - ${format(parseISO(event.endDate), 'MMM d, yyyy')}`
-    : event.startDate
-    ? format(parseISO(event.startDate), 'MMM d, yyyy')
-    : null;
+  const dateRange = formatEventDate(event);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
